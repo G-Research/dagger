@@ -1094,27 +1094,10 @@ func (s *directorySchema) asGit(
 		return inst, err
 	}
 
-	dgstInputs := []string{
-		string(repo.Remote.Digest()),
-	}
-
-	shallowFile, err := backend.File(ctx, "shallow")
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return inst, err
-	}
-	if shallowFile != nil {
-		dt, err := shallowFile.Contents(ctx, nil, nil)
-		if err != nil {
-			return inst, err
-		}
-		dgstInputs = append(dgstInputs, string(dt))
-	}
-
 	inst, err = dagql.NewResultForCurrentID(ctx, repo)
 	if err != nil {
 		return inst, err
 	}
-	inst = inst.WithDigest(dagql.HashFrom(dgstInputs...))
 	return inst, nil
 }
 
@@ -1182,7 +1165,7 @@ func maintainContentHashing[A any](
 		}
 
 		// in practice right now, a custom digest is always a content hash
-		// *unless* it's been manually rewritten using dagql.HashFrom (e.g. in
+		// *unless* it's been manually rewritten using hashutil.HashStrings (e.g. in
 		// the case of GitRef.tree - that case is manually rewritten to avoid
 		// accidental collisions later)
 		if parent.ID().HasCustomDigest() && parent.ID().Digest().Algorithm() == digest.SHA256 {

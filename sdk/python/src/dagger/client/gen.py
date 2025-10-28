@@ -312,6 +312,16 @@ class ExistsType(Enum):
     """Tests path is a symlink"""
 
 
+class FunctionCachePolicy(Enum):
+    """The behavior configured for function result caching."""
+
+    Default = "Default"
+
+    Never = "Never"
+
+    PerSession = "PerSession"
+
+
 class ImageLayerCompression(Enum):
     """Compression algorithm to use for image layers."""
 
@@ -5934,6 +5944,24 @@ class EnvFile(Type):
         _ctx = self._select("id", _args)
         return await _ctx.execute(EnvFileID)
 
+    def namespace(self, prefix: str) -> Self:
+        """Filters variables by prefix and removes the pref from keys. Variables
+        without the prefix are excluded. For example, with the prefix
+        "MY_APP_" and variables: MY_APP_TOKEN=topsecret MY_APP_NAME=hello
+        FOO=bar the resulting environment will contain: TOKEN=topsecret
+        NAME=hello
+
+        Parameters
+        ----------
+        prefix:
+            The prefix to filter by
+        """
+        _args = [
+            Arg("prefix", prefix),
+        ]
+        _ctx = self._select("namespace", _args)
+        return EnvFile(_ctx)
+
     async def variables(self, *, raw: bool | None = None) -> list["EnvVariable"]:
         """Return all variables
 
@@ -6788,6 +6816,29 @@ class Function(Type):
         _ctx = self._select("withArg", _args)
         return Function(_ctx)
 
+    def with_cache_policy(
+        self,
+        policy: FunctionCachePolicy,
+        *,
+        time_to_live: str | None = None,
+    ) -> Self:
+        """Returns the function updated to use the provided cache policy.
+
+        Parameters
+        ----------
+        policy:
+            The cache policy to use.
+        time_to_live:
+            The TTL for the cache policy, if applicable. Provided as a
+            duration string, e.g. "5m", "1h30s".
+        """
+        _args = [
+            Arg("policy", policy),
+            Arg("timeToLive", time_to_live, None),
+        ]
+        _ctx = self._select("withCachePolicy", _args)
+        return Function(_ctx)
+
     def with_description(self, description: str) -> Self:
         """Returns the function with the given doc string.
 
@@ -7573,6 +7624,12 @@ class GitRepository(Type):
         ]
         _ctx = self._select("tags", _args)
         return await _ctx.execute(list[str])
+
+    def uncommitted(self) -> Changeset:
+        """Returns the changeset of uncommitted changes in the git repository."""
+        _args: list[Arg] = []
+        _ctx = self._select("uncommitted", _args)
+        return Changeset(_ctx)
 
     async def url(self) -> str | None:
         """The URL of the git repository.
@@ -12351,6 +12408,7 @@ __all__ = [
     "Function",
     "FunctionArg",
     "FunctionArgID",
+    "FunctionCachePolicy",
     "FunctionCall",
     "FunctionCallArgValue",
     "FunctionCallArgValueID",

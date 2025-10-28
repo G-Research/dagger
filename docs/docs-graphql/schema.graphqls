@@ -2553,6 +2553,17 @@ type EnvFile {
   """A unique identifier for this EnvFile."""
   id: EnvFileID!
 
+  """
+  Filters variables by prefix and removes the pref from keys. Variables without
+  the prefix are excluded. For example, with the prefix "MY_APP_" and variables:
+  MY_APP_TOKEN=topsecret MY_APP_NAME=hello FOO=bar the resulting environment
+  will contain: TOKEN=topsecret NAME=hello
+  """
+  namespace(
+    """The prefix to filter by"""
+    prefix: String!
+  ): EnvFile!
+
   """Return all variables"""
   variables(
     """
@@ -2889,6 +2900,17 @@ type Function {
     sourceMap: SourceMapID
   ): Function!
 
+  """Returns the function updated to use the provided cache policy."""
+  withCachePolicy(
+    """The cache policy to use."""
+    policy: FunctionCachePolicy!
+
+    """
+    The TTL for the cache policy, if applicable. Provided as a duration string, e.g. "5m", "1h30s".
+    """
+    timeToLive: String
+  ): Function!
+
   """Returns the function with the given doc string."""
   withDescription(
     """The doc string to set."""
@@ -2946,6 +2968,13 @@ type FunctionArg {
 The `FunctionArgID` scalar type represents an identifier for an object of type FunctionArg.
 """
 scalar FunctionArgID
+
+"""The behavior configured for function result caching."""
+enum FunctionCachePolicy {
+  Default
+  PerSession
+  Never
+}
 
 """An active function call."""
 type FunctionCall {
@@ -3120,6 +3149,9 @@ type GitRepository {
     """Glob patterns (e.g., "refs/tags/v*")."""
     patterns: [String!]
   ): [String!]!
+
+  """Returns the changeset of uncommitted changes in the git repository."""
+  uncommitted: Changeset!
 
   """The URL of the git repository."""
   url: String
@@ -3593,7 +3625,7 @@ type Module {
   """
   The container that runs the module's entrypoint. It will fail to execute if the module doesn't compile.
   """
-  runtime: Container
+  runtime: Container!
 
   """The SDK config used by this module."""
   sdk: SDKConfig

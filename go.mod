@@ -3,8 +3,8 @@ module github.com/dagger/dagger
 go 1.24.4
 
 require (
-	dagger.io/dagger v0.19.2
-	github.com/dagger/dagger/engine/distconsts v0.19.2
+	dagger.io/dagger v0.19.3
+	github.com/dagger/dagger/engine/distconsts v0.19.3
 )
 
 replace (
@@ -292,6 +292,7 @@ require (
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/lunixbochs/vtclean v1.0.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
+	github.com/matryer/moq v0.5.3 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/mattn/goveralls v0.0.12 // indirect
@@ -362,3 +363,5 @@ replace (
 	go.opentelemetry.io/otel/log => go.opentelemetry.io/otel/log v0.14.0
 	go.opentelemetry.io/otel/sdk/log => go.opentelemetry.io/otel/sdk/log v0.14.0
 )
+
+tool github.com/matryer/moq

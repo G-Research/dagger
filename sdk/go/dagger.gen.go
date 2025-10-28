@@ -5446,6 +5446,16 @@ func (r *EnvFile) MarshalJSON() ([]byte, error) {
 	return json.Marshal(id)
 }
 
+// Filters variables by prefix and removes the pref from keys. Variables without the prefix are excluded. For example, with the prefix "MY_APP_" and variables: MY_APP_TOKEN=topsecret MY_APP_NAME=hello FOO=bar the resulting environment will contain: TOKEN=topsecret NAME=hello
+func (r *EnvFile) Namespace(prefix string) *EnvFile {
+	q := r.query.Select("namespace")
+	q = q.Arg("prefix", prefix)
+
+	return &EnvFile{
+		query: q,
+	}
+}
+
 // EnvFileVariablesOpts contains options for EnvFile.Variables
 type EnvFileVariablesOpts struct {
 	// Return values exactly as written to the file. No quote removal or variable expansion
@@ -6460,6 +6470,28 @@ func (r *Function) WithArg(name string, typeDef *TypeDef, opts ...FunctionWithAr
 	}
 }
 
+// FunctionWithCachePolicyOpts contains options for Function.WithCachePolicy
+type FunctionWithCachePolicyOpts struct {
+	// The TTL for the cache policy, if applicable. Provided as a duration string, e.g. "5m", "1h30s".
+	TimeToLive string
+}
+
+// Returns the function updated to use the provided cache policy.
+func (r *Function) WithCachePolicy(policy FunctionCachePolicy, opts ...FunctionWithCachePolicyOpts) *Function {
+	q := r.query.Select("withCachePolicy")
+	for i := len(opts) - 1; i >= 0; i-- {
+		// `timeToLive` optional argument
+		if !querybuilder.IsZeroValue(opts[i].TimeToLive) {
+			q = q.Arg("timeToLive", opts[i].TimeToLive)
+		}
+	}
+	q = q.Arg("policy", policy)
+
+	return &Function{
+		query: q,
+	}
+}
+
 // Returns the function with the given doc string.
 func (r *Function) WithDescription(description string) *Function {
 	q := r.query.Select("withDescription")
@@ -7247,6 +7279,15 @@ func (r *GitRepository) Tags(ctx context.Context, opts ...GitRepositoryTagsOpts)
 
 	q = q.Bind(&response)
 	return response, q.Execute(ctx)
+}
+
+// Returns the changeset of uncommitted changes in the git repository.
+func (r *GitRepository) Uncommitted() *Changeset {
+	q := r.query.Select("uncommitted")
+
+	return &Changeset{
+		query: q,
+	}
 }
 
 // The URL of the git repository.
@@ -12543,6 +12584,67 @@ const (
 
 	// Tests path is a symlink
 	ExistsTypeSymlinkType ExistsType = "SYMLINK_TYPE"
+)
+
+// The behavior configured for function result caching.
+type FunctionCachePolicy string
+
+func (FunctionCachePolicy) IsEnum() {}
+
+func (v FunctionCachePolicy) Name() string {
+	switch v {
+	case FunctionCachePolicyDefault:
+		return "Default"
+	case FunctionCachePolicyPerSession:
+		return "PerSession"
+	case FunctionCachePolicyNever:
+		return "Never"
+	default:
+		return ""
+	}
+}
+
+func (v FunctionCachePolicy) Value() string {
+	return string(v)
+}
+
+func (v *FunctionCachePolicy) MarshalJSON() ([]byte, error) {
+	if *v == "" {
+		return []byte(`""`), nil
+	}
+	name := v.Name()
+	if name == "" {
+		return nil, fmt.Errorf("invalid enum value %q", *v)
+	}
+	return json.Marshal(name)
+}
+
+func (v *FunctionCachePolicy) UnmarshalJSON(dt []byte) error {
+	var s string
+	if err := json.Unmarshal(dt, &s); err != nil {
+		return err
+	}
+	switch s {
+	case "":
+		*v = ""
+	case "Default":
+		*v = FunctionCachePolicyDefault
+	case "Never":
+		*v = FunctionCachePolicyNever
+	case "PerSession":
+		*v = FunctionCachePolicyPerSession
+	default:
+		return fmt.Errorf("invalid enum value %q", s)
+	}
+	return nil
+}
+
+const (
+	FunctionCachePolicyDefault FunctionCachePolicy = "Default"
+
+	FunctionCachePolicyPerSession FunctionCachePolicy = "PerSession"
+
+	FunctionCachePolicyNever FunctionCachePolicy = "Never"
 )
 
 // Compression algorithm to use for image layers.
