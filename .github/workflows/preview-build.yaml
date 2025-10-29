@@ -1,0 +1,39 @@
+name: Preview build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'preview-build'
+
+jobs:
+  preview-build:
+    permissions:
+      contents: read
+      packages: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build dagger and engine
+        run: |
+          ./install.sh
+          export PATH=$PATH:$(pwd)/bin
+          ./hack/build
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag and push engine images
+        run: |
+          REPO_LC=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+
+          docker tag localhost/dagger-engine.dev:latest ghcr.io/${REPO_LC}/engine:latest
+          docker tag localhost/dagger-engine.dev:latest ghcr.io/${REPO_LC}/engine:${GITHUB_SHA}
+
+          docker push ghcr.io/${REPO_LC}/engine:latest
+          docker push ghcr.io/${REPO_LC}/engine:${GITHUB_SHA}
