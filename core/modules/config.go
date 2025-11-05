@@ -59,6 +59,9 @@ type ModuleConfig struct {
 	// An optional blueprint module
 	Blueprint *ModuleConfigDependency `json:"blueprint,omitempty"`
 
+	// Toolchain modules
+	Toolchains []*ModuleConfigDependency `json:"toolchains,omitempty"`
+
 	// Paths to explicitly include from the module, relative to the configuration file.
 	Include []string `json:"include,omitempty"`
 
@@ -94,6 +97,7 @@ type ModuleConfigUserFields struct {
 type SDK struct {
 	Source string         `json:"source"`
 	Config map[string]any `json:"config,omitempty"`
+	Debug  bool           `json:"debug,omitempty"`
 	// The experimental features enabled for this module.
 	Experimental map[string]bool `json:"experimental,omitempty"`
 }

@@ -75,6 +75,13 @@
           "$ref": "#/$defs/ModuleConfigDependency",
           "description": "An optional blueprint module"
         },
+        "toolchains": {
+          "items": {
+            "$ref": "#/$defs/ModuleConfigDependency"
+          },
+          "type": "array",
+          "description": "Toolchain modules"
+        },
         "include": {
           "items": {
             "type": "string"
@@ -131,6 +138,9 @@
         },
         "config": {
           "type": "object"
+        },
+        "debug": {
+          "type": "boolean"
         },
         "experimental": {
           "additionalProperties": {
