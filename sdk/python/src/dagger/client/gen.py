@@ -534,12 +534,14 @@ class Address(Type):
         *,
         exclude: list[str] | None = None,
         include: list[str] | None = None,
+        gitignore: bool | None = False,
         no_cache: bool | None = False,
     ) -> "Directory":
         """Load a directory from the address."""
         _args = [
             Arg("exclude", [] if exclude is None else exclude, []),
             Arg("include", [] if include is None else include, []),
+            Arg("gitignore", gitignore, False),
             Arg("noCache", no_cache, False),
         ]
         _ctx = self._select("directory", _args)
@@ -550,12 +552,14 @@ class Address(Type):
         *,
         exclude: list[str] | None = None,
         include: list[str] | None = None,
+        gitignore: bool | None = False,
         no_cache: bool | None = False,
     ) -> "File":
         """Load a file from the address."""
         _args = [
             Arg("exclude", [] if exclude is None else exclude, []),
             Arg("include", [] if include is None else include, []),
+            Arg("gitignore", gitignore, False),
             Arg("noCache", no_cache, False),
         ]
         _ctx = self._select("file", _args)
@@ -2136,6 +2140,7 @@ class Container(Type):
         *,
         exclude: list[str] | None = None,
         include: list[str] | None = None,
+        gitignore: bool | None = False,
         owner: str | None = "",
         expand: bool | None = False,
     ) -> Self:
@@ -2154,6 +2159,8 @@ class Container(Type):
         include:
             Patterns to include in the written directory (e.g. ["*.go",
             "go.mod", "go.sum"]).
+        gitignore:
+            Apply .gitignore rules when writing the directory.
         owner:
             A user:group to set for the directory and its contents.
             The user and group can either be an ID (1000:1000) or a name
@@ -2169,6 +2176,7 @@ class Container(Type):
             Arg("source", source),
             Arg("exclude", [] if exclude is None else exclude, []),
             Arg("include", [] if include is None else include, []),
+            Arg("gitignore", gitignore, False),
             Arg("owner", owner, ""),
             Arg("expand", expand, False),
         ]
@@ -3268,6 +3276,7 @@ class CurrentModule(Type):
         *,
         exclude: list[str] | None = None,
         include: list[str] | None = None,
+        gitignore: bool | None = False,
     ) -> "Directory":
         """Load a directory from the module's scratch working directory,
         including any changes that may have been made to it during module
@@ -3283,11 +3292,14 @@ class CurrentModule(Type):
         include:
             Include only artifacts that match the given pattern (e.g.,
             ["app/", "package.*"]).
+        gitignore:
+            Apply .gitignore filter rules inside the directory
         """
         _args = [
             Arg("path", path),
             Arg("exclude", [] if exclude is None else exclude, []),
             Arg("include", [] if include is None else include, []),
+            Arg("gitignore", gitignore, False),
         ]
         _ctx = self._select("workdir", _args)
         return Directory(_ctx)
@@ -3627,6 +3639,7 @@ class Directory(Type):
         *,
         exclude: list[str] | None = None,
         include: list[str] | None = None,
+        gitignore: bool | None = False,
     ) -> Self:
         """Return a snapshot with some paths included or excluded
 
@@ -3638,10 +3651,13 @@ class Directory(Type):
         include:
             If set, only paths matching one of these glob patterns is included
             in the new snapshot. Example: (e.g., ["app/", "package.*"]).
+        gitignore:
+            If set, apply .gitignore rules when filtering the directory.
         """
         _args = [
             Arg("exclude", [] if exclude is None else exclude, []),
             Arg("include", [] if include is None else include, []),
+            Arg("gitignore", gitignore, False),
         ]
         _ctx = self._select("filter", _args)
         return Directory(_ctx)
@@ -3889,6 +3905,7 @@ class Directory(Type):
         *,
         exclude: list[str] | None = None,
         include: list[str] | None = None,
+        gitignore: bool | None = False,
         owner: str | None = "",
     ) -> Self:
         """Return a snapshot with a directory added
@@ -3905,6 +3922,8 @@ class Directory(Type):
         include:
             Include only artifacts that match the given pattern (e.g.,
             ["app/", "package.*"]).
+        gitignore:
+            Apply .gitignore filter rules inside the directory
         owner:
             A user:group to set for the copied directory and its contents.
             The user and group must be an ID (1000:1000), not a name
@@ -3916,6 +3935,7 @@ class Directory(Type):
             Arg("source", source),
             Arg("exclude", [] if exclude is None else exclude, []),
             Arg("include", [] if include is None else include, []),
+            Arg("gitignore", gitignore, False),
             Arg("owner", owner, ""),
         ]
         _ctx = self._select("withDirectory", _args)
@@ -9677,6 +9697,12 @@ class ModuleSource(Type):
     def __await__(self):
         return self.sync().__await__()
 
+    async def toolchains(self) -> list["ModuleSource"]:
+        """The toolchains referenced by the module source."""
+        _args: list[Arg] = []
+        _ctx = self._select("toolchains", _args)
+        return await _ctx.execute_object_list(ModuleSource)
+
     def user_defaults(self) -> EnvFile:
         """User-defined defaults read from local .env files"""
         _args: list[Arg] = []
@@ -9839,6 +9865,20 @@ class ModuleSource(Type):
         _ctx = self._select("withSourceSubpath", _args)
         return ModuleSource(_ctx)
 
+    def with_toolchains(self, toolchains: list["ModuleSource"]) -> Self:
+        """Add toolchains to the module source.
+
+        Parameters
+        ----------
+        toolchains:
+            The toolchain modules to add.
+        """
+        _args = [
+            Arg("toolchains", toolchains),
+        ]
+        _ctx = self._select("withToolchains", _args)
+        return ModuleSource(_ctx)
+
     def with_update_blueprint(self) -> Self:
         """Update the blueprint module to the latest version."""
         _args: list[Arg] = []
@@ -9857,6 +9897,20 @@ class ModuleSource(Type):
             Arg("dependencies", dependencies),
         ]
         _ctx = self._select("withUpdateDependencies", _args)
+        return ModuleSource(_ctx)
+
+    def with_update_toolchains(self, toolchains: list[str]) -> Self:
+        """Update one or more toolchains.
+
+        Parameters
+        ----------
+        toolchains:
+            The toolchains to update.
+        """
+        _args = [
+            Arg("toolchains", toolchains),
+        ]
+        _ctx = self._select("withUpdateToolchains", _args)
         return ModuleSource(_ctx)
 
     def with_updated_clients(self, clients: list[str]) -> Self:
@@ -9923,6 +9977,20 @@ class ModuleSource(Type):
             Arg("features", features),
         ]
         _ctx = self._select("withoutExperimentalFeatures", _args)
+        return ModuleSource(_ctx)
+
+    def without_toolchains(self, toolchains: list[str]) -> Self:
+        """Remove the provided toolchains from the module source.
+
+        Parameters
+        ----------
+        toolchains:
+            The toolchains to remove.
+        """
+        _args = [
+            Arg("toolchains", toolchains),
+        ]
+        _ctx = self._select("withoutToolchains", _args)
         return ModuleSource(_ctx)
 
     def with_(self, cb: Callable[["ModuleSource"], "ModuleSource"]) -> "ModuleSource":

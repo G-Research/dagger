@@ -26,7 +26,7 @@ func New(
 	source *dagger.Directory,
 	// Go version
 	// +optional
-	// +default="1.25.2"
+	// +default="1.25.3"
 	version string,
 	// Use a custom module cache
 	// +optional
@@ -238,6 +238,7 @@ func (p Go) GenerateDaggerRuntimes(ctx context.Context) (Go, error) {
 }
 
 // Download dependencies into the module cache
+// +cache="session"
 func (p Go) Download(ctx context.Context) (Go, error) {
 	_, err := p.Base.
 		// run `go mod download` with only go.mod files (re-run only if mod files have changed)
@@ -408,6 +409,7 @@ func (p Go) Binary(
 }
 
 // Run tests for the given packages
+// +cache="session"
 func (p Go) Test(
 	ctx context.Context,
 	// Only run these tests

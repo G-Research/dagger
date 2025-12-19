@@ -1865,6 +1865,8 @@ pub struct AddressDirectoryOpts<'a> {
     #[builder(setter(into, strip_option), default)]
     pub exclude: Option<Vec<&'a str>>,
     #[builder(setter(into, strip_option), default)]
+    pub gitignore: Option<bool>,
+    #[builder(setter(into, strip_option), default)]
     pub include: Option<Vec<&'a str>>,
     #[builder(setter(into, strip_option), default)]
     pub no_cache: Option<bool>,
@@ -1873,6 +1875,8 @@ pub struct AddressDirectoryOpts<'a> {
 pub struct AddressFileOpts<'a> {
     #[builder(setter(into, strip_option), default)]
     pub exclude: Option<Vec<&'a str>>,
+    #[builder(setter(into, strip_option), default)]
+    pub gitignore: Option<bool>,
     #[builder(setter(into, strip_option), default)]
     pub include: Option<Vec<&'a str>>,
     #[builder(setter(into, strip_option), default)]
@@ -1914,6 +1918,9 @@ impl Address {
         if let Some(include) = opts.include {
             query = query.arg("include", include);
         }
+        if let Some(gitignore) = opts.gitignore {
+            query = query.arg("gitignore", gitignore);
+        }
         if let Some(no_cache) = opts.no_cache {
             query = query.arg("noCache", no_cache);
         }
@@ -1948,6 +1955,9 @@ impl Address {
         }
         if let Some(include) = opts.include {
             query = query.arg("include", include);
+        }
+        if let Some(gitignore) = opts.gitignore {
+            query = query.arg("gitignore", gitignore);
         }
         if let Some(no_cache) = opts.no_cache {
             query = query.arg("noCache", no_cache);
@@ -2534,6 +2544,9 @@ pub struct ContainerWithDirectoryOpts<'a> {
     /// Replace "${VAR}" or "$VAR" in the value of path according to the current environment variables defined in the container (e.g. "/$VAR/foo").
     #[builder(setter(into, strip_option), default)]
     pub expand: Option<bool>,
+    /// Apply .gitignore rules when writing the directory.
+    #[builder(setter(into, strip_option), default)]
+    pub gitignore: Option<bool>,
     /// Patterns to include in the written directory (e.g. ["*.go", "go.mod", "go.sum"]).
     #[builder(setter(into, strip_option), default)]
     pub include: Option<Vec<&'a str>>,
@@ -3523,6 +3536,9 @@ impl Container {
         }
         if let Some(include) = opts.include {
             query = query.arg("include", include);
+        }
+        if let Some(gitignore) = opts.gitignore {
+            query = query.arg("gitignore", gitignore);
         }
         if let Some(owner) = opts.owner {
             query = query.arg("owner", owner);
@@ -4917,6 +4933,9 @@ pub struct CurrentModuleWorkdirOpts<'a> {
     /// Exclude artifacts that match the given pattern (e.g., ["node_modules/", ".git*"]).
     #[builder(setter(into, strip_option), default)]
     pub exclude: Option<Vec<&'a str>>,
+    /// Apply .gitignore filter rules inside the directory
+    #[builder(setter(into, strip_option), default)]
+    pub gitignore: Option<bool>,
     /// Include only artifacts that match the given pattern (e.g., ["app/", "package.*"]).
     #[builder(setter(into, strip_option), default)]
     pub include: Option<Vec<&'a str>>,
@@ -4974,6 +4993,9 @@ impl CurrentModule {
         }
         if let Some(include) = opts.include {
             query = query.arg("include", include);
+        }
+        if let Some(gitignore) = opts.gitignore {
+            query = query.arg("gitignore", gitignore);
         }
         Directory {
             proc: self.proc.clone(),
@@ -5065,6 +5087,9 @@ pub struct DirectoryFilterOpts<'a> {
     /// If set, paths matching one of these glob patterns is excluded from the new snapshot. Example: ["node_modules/", ".git*", ".env"]
     #[builder(setter(into, strip_option), default)]
     pub exclude: Option<Vec<&'a str>>,
+    /// If set, apply .gitignore rules when filtering the directory.
+    #[builder(setter(into, strip_option), default)]
+    pub gitignore: Option<bool>,
     /// If set, only paths matching one of these glob patterns is included in the new snapshot. Example: (e.g., ["app/", "package.*"]).
     #[builder(setter(into, strip_option), default)]
     pub include: Option<Vec<&'a str>>,
@@ -5122,6 +5147,9 @@ pub struct DirectoryWithDirectoryOpts<'a> {
     /// Exclude artifacts that match the given pattern (e.g., ["node_modules/", ".git*"]).
     #[builder(setter(into, strip_option), default)]
     pub exclude: Option<Vec<&'a str>>,
+    /// Apply .gitignore filter rules inside the directory
+    #[builder(setter(into, strip_option), default)]
+    pub gitignore: Option<bool>,
     /// Include only artifacts that match the given pattern (e.g., ["app/", "package.*"]).
     #[builder(setter(into, strip_option), default)]
     pub include: Option<Vec<&'a str>>,
@@ -5477,6 +5505,9 @@ impl Directory {
         if let Some(include) = opts.include {
             query = query.arg("include", include);
         }
+        if let Some(gitignore) = opts.gitignore {
+            query = query.arg("gitignore", gitignore);
+        }
         Directory {
             proc: self.proc.clone(),
             selection: query,
@@ -5705,6 +5736,9 @@ impl Directory {
         }
         if let Some(include) = opts.include {
             query = query.arg("include", include);
+        }
+        if let Some(gitignore) = opts.gitignore {
+            query = query.arg("gitignore", gitignore);
         }
         if let Some(owner) = opts.owner {
             query = query.arg("owner", owner);
@@ -10069,6 +10103,15 @@ impl ModuleSource {
         let query = self.selection.select("sync");
         query.execute(self.graphql_client.clone()).await
     }
+    /// The toolchains referenced by the module source.
+    pub fn toolchains(&self) -> Vec<ModuleSource> {
+        let query = self.selection.select("toolchains");
+        vec![ModuleSource {
+            proc: self.proc.clone(),
+            selection: query,
+            graphql_client: self.graphql_client.clone(),
+        }]
+    }
     /// User-defined defaults read from local .env files
     pub fn user_defaults(&self) -> EnvFile {
         let query = self.selection.select("userDefaults");
@@ -10230,6 +10273,20 @@ impl ModuleSource {
             graphql_client: self.graphql_client.clone(),
         }
     }
+    /// Add toolchains to the module source.
+    ///
+    /// # Arguments
+    ///
+    /// * `toolchains` - The toolchain modules to add.
+    pub fn with_toolchains(&self, toolchains: Vec<ModuleSourceId>) -> ModuleSource {
+        let mut query = self.selection.select("withToolchains");
+        query = query.arg("toolchains", toolchains);
+        ModuleSource {
+            proc: self.proc.clone(),
+            selection: query,
+            graphql_client: self.graphql_client.clone(),
+        }
+    }
     /// Update the blueprint module to the latest version.
     pub fn with_update_blueprint(&self) -> ModuleSource {
         let query = self.selection.select("withUpdateBlueprint");
@@ -10249,6 +10306,26 @@ impl ModuleSource {
         query = query.arg(
             "dependencies",
             dependencies
+                .into_iter()
+                .map(|i| i.into())
+                .collect::<Vec<String>>(),
+        );
+        ModuleSource {
+            proc: self.proc.clone(),
+            selection: query,
+            graphql_client: self.graphql_client.clone(),
+        }
+    }
+    /// Update one or more toolchains.
+    ///
+    /// # Arguments
+    ///
+    /// * `toolchains` - The toolchains to update.
+    pub fn with_update_toolchains(&self, toolchains: Vec<impl Into<String>>) -> ModuleSource {
+        let mut query = self.selection.select("withUpdateToolchains");
+        query = query.arg(
+            "toolchains",
+            toolchains
                 .into_iter()
                 .map(|i| i.into())
                 .collect::<Vec<String>>(),
@@ -10333,6 +10410,26 @@ impl ModuleSource {
     ) -> ModuleSource {
         let mut query = self.selection.select("withoutExperimentalFeatures");
         query = query.arg("features", features);
+        ModuleSource {
+            proc: self.proc.clone(),
+            selection: query,
+            graphql_client: self.graphql_client.clone(),
+        }
+    }
+    /// Remove the provided toolchains from the module source.
+    ///
+    /// # Arguments
+    ///
+    /// * `toolchains` - The toolchains to remove.
+    pub fn without_toolchains(&self, toolchains: Vec<impl Into<String>>) -> ModuleSource {
+        let mut query = self.selection.select("withoutToolchains");
+        query = query.arg(
+            "toolchains",
+            toolchains
+                .into_iter()
+                .map(|i| i.into())
+                .collect::<Vec<String>>(),
+        );
         ModuleSource {
             proc: self.proc.clone(),
             selection: query,

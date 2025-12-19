@@ -15,13 +15,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/containerd/containerd/content"
-	localcontentstore "github.com/containerd/containerd/content/local"
-	"github.com/containerd/containerd/diff/apply"
-	"github.com/containerd/containerd/diff/walking"
-	ctdmetadata "github.com/containerd/containerd/metadata"
-	"github.com/containerd/containerd/remotes/docker"
-	ctdsnapshot "github.com/containerd/containerd/snapshots"
+	"github.com/containerd/containerd/v2/core/content"
+	"github.com/containerd/containerd/v2/core/diff/apply"
+	ctdmetadata "github.com/containerd/containerd/v2/core/metadata"
+	"github.com/containerd/containerd/v2/core/remotes/docker"
+	ctdsnapshot "github.com/containerd/containerd/v2/core/snapshots"
+	localcontentstore "github.com/containerd/containerd/v2/plugins/content/local"
+	"github.com/containerd/containerd/v2/plugins/diff/walking"
 	"github.com/containerd/go-runc"
 	"github.com/containerd/platforms"
 	"github.com/dagger/dagger/dagql"
@@ -243,7 +243,7 @@ func NewServer(ctx context.Context, opts *NewServerOpts) (*Server, error) {
 	srv.solverCacheDBPath = filepath.Join(srv.rootDir, "cache.db")
 
 	srv.workerRootDir = filepath.Join(srv.rootDir, "worker")
-	if err := os.MkdirAll(srv.workerRootDir, 0700); err != nil {
+	if err := os.MkdirAll(srv.workerRootDir, 0o700); err != nil {
 		return nil, err
 	}
 	srv.snapshotterRootDir = filepath.Join(srv.workerRootDir, "snapshots")
@@ -327,7 +327,7 @@ func NewServer(ctx context.Context, opts *NewServerOpts) (*Server, error) {
 		return nil, err
 	}
 
-	srv.snapshotter, srv.snapshotterName, err = newSnapshotter(srv.snapshotterRootDir, ociCfg, srv.bkSessionManager, srv.registryHosts)
+	srv.snapshotter, srv.snapshotterName, err = newSnapshotter(srv.snapshotterRootDir, ociCfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create snapshotter: %w", err)
 	}
@@ -337,7 +337,7 @@ func NewServer(ctx context.Context, opts *NewServerOpts) (*Server, error) {
 		return nil, fmt.Errorf("failed to create content store: %w", err)
 	}
 
-	srv.containerdMetaBoltDB, err = bolt.Open(srv.containerdMetaDBPath, 0644, nil)
+	srv.containerdMetaBoltDB, err = bolt.Open(srv.containerdMetaDBPath, 0o644, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open metadata db: %w", err)
 	}
@@ -584,7 +584,7 @@ func NewServer(ctx context.Context, opts *NewServerOpts) (*Server, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to read secret salt rand bytes: %w", err)
 		}
-		err = os.WriteFile(secretSaltPath, srv.secretSalt, 0600)
+		err = os.WriteFile(secretSaltPath, srv.secretSalt, 0o600)
 		if err != nil {
 			slog.Warn("failed to write secret salt", "error", err, "path", secretSaltPath)
 		}

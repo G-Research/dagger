@@ -157,8 +157,8 @@ sleep infinity
 	sshfsEndpoint := fmt.Sprintf("root@%s:%d/root/repo", ip, sshPort)
 	t.Logf("sshfs endpoint using resolved service IP %s: %s", ip, sshfsEndpoint)
 
-	privKeySecret := c.SetSecret("sshfs-private-key", string(userPrivateKey))
-	hostKeySecret := c.SetSecret("sshfs-public-key", string(userPublicKey))
+	privKeySecret := c.SetSecret("sshfs-private-key", userPrivateKey)
+	hostKeySecret := c.SetSecret("sshfs-public-key", userPublicKey)
 
 	// readiness: attempt a few ssh connections before proceeding so sshfs mount won't race
 	for i := range 10 {

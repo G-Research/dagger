@@ -356,6 +356,8 @@ type AddressDirectoryOpts struct {
 
 	Include []string
 
+	Gitignore bool
+
 	NoCache bool
 }
 
@@ -370,6 +372,10 @@ func (r *Address) Directory(opts ...AddressDirectoryOpts) *Directory {
 		// `include` optional argument
 		if !querybuilder.IsZeroValue(opts[i].Include) {
 			q = q.Arg("include", opts[i].Include)
+		}
+		// `gitignore` optional argument
+		if !querybuilder.IsZeroValue(opts[i].Gitignore) {
+			q = q.Arg("gitignore", opts[i].Gitignore)
 		}
 		// `noCache` optional argument
 		if !querybuilder.IsZeroValue(opts[i].NoCache) {
@@ -388,6 +394,8 @@ type AddressFileOpts struct {
 
 	Include []string
 
+	Gitignore bool
+
 	NoCache bool
 }
 
@@ -402,6 +410,10 @@ func (r *Address) File(opts ...AddressFileOpts) *File {
 		// `include` optional argument
 		if !querybuilder.IsZeroValue(opts[i].Include) {
 			q = q.Arg("include", opts[i].Include)
+		}
+		// `gitignore` optional argument
+		if !querybuilder.IsZeroValue(opts[i].Gitignore) {
+			q = q.Arg("gitignore", opts[i].Gitignore)
 		}
 		// `noCache` optional argument
 		if !querybuilder.IsZeroValue(opts[i].NoCache) {
@@ -2007,6 +2019,8 @@ type ContainerWithDirectoryOpts struct {
 	Exclude []string
 	// Patterns to include in the written directory (e.g. ["*.go", "go.mod", "go.sum"]).
 	Include []string
+	// Apply .gitignore rules when writing the directory.
+	Gitignore bool
 	// A user:group to set for the directory and its contents.
 	//
 	// The user and group can either be an ID (1000:1000) or a name (foo:bar).
@@ -2029,6 +2043,10 @@ func (r *Container) WithDirectory(path string, source *Directory, opts ...Contai
 		// `include` optional argument
 		if !querybuilder.IsZeroValue(opts[i].Include) {
 			q = q.Arg("include", opts[i].Include)
+		}
+		// `gitignore` optional argument
+		if !querybuilder.IsZeroValue(opts[i].Gitignore) {
+			q = q.Arg("gitignore", opts[i].Gitignore)
 		}
 		// `owner` optional argument
 		if !querybuilder.IsZeroValue(opts[i].Owner) {
@@ -3044,6 +3062,8 @@ type CurrentModuleWorkdirOpts struct {
 	Exclude []string
 	// Include only artifacts that match the given pattern (e.g., ["app/", "package.*"]).
 	Include []string
+	// Apply .gitignore filter rules inside the directory
+	Gitignore bool
 }
 
 // Load a directory from the module's scratch working directory, including any changes that may have been made to it during module function execution.
@@ -3057,6 +3077,10 @@ func (r *CurrentModule) Workdir(path string, opts ...CurrentModuleWorkdirOpts) *
 		// `include` optional argument
 		if !querybuilder.IsZeroValue(opts[i].Include) {
 			q = q.Arg("include", opts[i].Include)
+		}
+		// `gitignore` optional argument
+		if !querybuilder.IsZeroValue(opts[i].Gitignore) {
+			q = q.Arg("gitignore", opts[i].Gitignore)
 		}
 	}
 	q = q.Arg("path", path)
@@ -3373,6 +3397,8 @@ type DirectoryFilterOpts struct {
 	Exclude []string
 	// If set, only paths matching one of these glob patterns is included in the new snapshot. Example: (e.g., ["app/", "package.*"]).
 	Include []string
+	// If set, apply .gitignore rules when filtering the directory.
+	Gitignore bool
 }
 
 // Return a snapshot with some paths included or excluded
@@ -3386,6 +3412,10 @@ func (r *Directory) Filter(opts ...DirectoryFilterOpts) *Directory {
 		// `include` optional argument
 		if !querybuilder.IsZeroValue(opts[i].Include) {
 			q = q.Arg("include", opts[i].Include)
+		}
+		// `gitignore` optional argument
+		if !querybuilder.IsZeroValue(opts[i].Gitignore) {
+			q = q.Arg("gitignore", opts[i].Gitignore)
 		}
 	}
 
@@ -3644,6 +3674,8 @@ type DirectoryWithDirectoryOpts struct {
 	Exclude []string
 	// Include only artifacts that match the given pattern (e.g., ["app/", "package.*"]).
 	Include []string
+	// Apply .gitignore filter rules inside the directory
+	Gitignore bool
 	// A user:group to set for the copied directory and its contents.
 	//
 	// The user and group must be an ID (1000:1000), not a name (foo:bar).
@@ -3664,6 +3696,10 @@ func (r *Directory) WithDirectory(path string, source *Directory, opts ...Direct
 		// `include` optional argument
 		if !querybuilder.IsZeroValue(opts[i].Include) {
 			q = q.Arg("include", opts[i].Include)
+		}
+		// `gitignore` optional argument
+		if !querybuilder.IsZeroValue(opts[i].Gitignore) {
+			q = q.Arg("gitignore", opts[i].Gitignore)
 		}
 		// `owner` optional argument
 		if !querybuilder.IsZeroValue(opts[i].Owner) {
@@ -9488,6 +9524,39 @@ func (r *ModuleSource) Sync(ctx context.Context) (*ModuleSource, error) {
 	}, nil
 }
 
+// The toolchains referenced by the module source.
+func (r *ModuleSource) Toolchains(ctx context.Context) ([]ModuleSource, error) {
+	q := r.query.Select("toolchains")
+
+	q = q.Select("id")
+
+	type toolchains struct {
+		Id ModuleSourceID
+	}
+
+	convert := func(fields []toolchains) []ModuleSource {
+		out := []ModuleSource{}
+
+		for i := range fields {
+			val := ModuleSource{id: &fields[i].Id}
+			val.query = q.Root().Select("loadModuleSourceFromID").Arg("id", fields[i].Id)
+			out = append(out, val)
+		}
+
+		return out
+	}
+	var response []toolchains
+
+	q = q.Bind(&response)
+
+	err := q.Execute(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return convert(response), nil
+}
+
 // User-defined defaults read from local .env files
 func (r *ModuleSource) UserDefaults() *EnvFile {
 	q := r.query.Select("userDefaults")
@@ -9602,6 +9671,16 @@ func (r *ModuleSource) WithSourceSubpath(path string) *ModuleSource {
 	}
 }
 
+// Add toolchains to the module source.
+func (r *ModuleSource) WithToolchains(toolchains []*ModuleSource) *ModuleSource {
+	q := r.query.Select("withToolchains")
+	q = q.Arg("toolchains", toolchains)
+
+	return &ModuleSource{
+		query: q,
+	}
+}
+
 // Update the blueprint module to the latest version.
 func (r *ModuleSource) WithUpdateBlueprint() *ModuleSource {
 	q := r.query.Select("withUpdateBlueprint")
@@ -9615,6 +9694,16 @@ func (r *ModuleSource) WithUpdateBlueprint() *ModuleSource {
 func (r *ModuleSource) WithUpdateDependencies(dependencies []string) *ModuleSource {
 	q := r.query.Select("withUpdateDependencies")
 	q = q.Arg("dependencies", dependencies)
+
+	return &ModuleSource{
+		query: q,
+	}
+}
+
+// Update one or more toolchains.
+func (r *ModuleSource) WithUpdateToolchains(toolchains []string) *ModuleSource {
+	q := r.query.Select("withUpdateToolchains")
+	q = q.Arg("toolchains", toolchains)
 
 	return &ModuleSource{
 		query: q,
@@ -9664,6 +9753,16 @@ func (r *ModuleSource) WithoutDependencies(dependencies []string) *ModuleSource 
 func (r *ModuleSource) WithoutExperimentalFeatures(features []ModuleSourceExperimentalFeature) *ModuleSource {
 	q := r.query.Select("withoutExperimentalFeatures")
 	q = q.Arg("features", features)
+
+	return &ModuleSource{
+		query: q,
+	}
+}
+
+// Remove the provided toolchains from the module source.
+func (r *ModuleSource) WithoutToolchains(toolchains []string) *ModuleSource {
+	q := r.query.Select("withoutToolchains")
+	q = q.Arg("toolchains", toolchains)
 
 	return &ModuleSource{
 		query: q,
