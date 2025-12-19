@@ -37,9 +37,6 @@ func (s *volumeSchema) sshfsVolume(ctx context.Context, parent dagql.ObjectResul
 	if err != nil {
 		return i, err
 	}
-	if err := query.RequireMainClient(ctx); err != nil {
-		return i, err
-	}
 
 	srv, err := core.CurrentDagqlServer(ctx)
 	if err != nil {
