@@ -182,7 +182,7 @@ func (sdk *goSDK) Codegen(
 	source dagql.ObjectResult[*core.ModuleSource],
 ) (_ *core.GeneratedCode, rerr error) {
 	ctx, span := core.Tracer(ctx).Start(ctx, "go SDK: run codegen")
-	defer telemetry.End(span, func() error { return rerr })
+	defer telemetry.EndWithCause(span, &rerr)
 	dag, err := sdk.root.Server.Server(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get dag for go module sdk codegen: %w", err)
@@ -386,7 +386,7 @@ func (sdk *goSDK) Runtime(
 	source dagql.ObjectResult[*core.ModuleSource],
 ) (inst dagql.ObjectResult[*core.Container], rerr error) {
 	ctx, span := core.Tracer(ctx).Start(ctx, "go SDK: load runtime")
-	defer telemetry.End(span, func() error { return rerr })
+	defer telemetry.EndWithCause(span, &rerr)
 
 	dag, err := sdk.root.Server.Server(ctx)
 	if err != nil {
@@ -456,6 +456,12 @@ func (sdk *goSDK) Runtime(
 		return inst, fmt.Errorf("failed to build go runtime binary: %w", err)
 	}
 
+	if cfg := source.Self().SDK; cfg != nil && cfg.Debug {
+		if err := dag.Select(ctx, ctr, &ctr, dagql.Selector{Field: "terminal"}); err != nil {
+			return inst, fmt.Errorf("failed to enable go sdk runtime terminal: %w", err)
+		}
+	}
+
 	return ctr, nil
 }
 
@@ -512,6 +518,19 @@ func (sdk *goSDK) baseWithCodegen(
 	}
 	if !src.Self().ConfigExists {
 		codegenArgs = append(codegenArgs, "--is-init")
+	}
+
+	var engineVersion dagql.String
+	if err := dag.Select(ctx, dag.Root(), &engineVersion,
+		dagql.Selector{
+			Field: "version",
+		},
+	); err != nil {
+		return ctr, fmt.Errorf("failed to get engine version: %w", err)
+	}
+
+	if !engine.IsDevVersion(engineVersion.String()) {
+		codegenArgs = append(codegenArgs, "--lib-version", engineVersion)
 	}
 
 	selectors := []dagql.Selector{

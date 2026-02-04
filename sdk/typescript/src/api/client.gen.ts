@@ -111,10 +111,157 @@ function CacheSharingModeNameToValue(name: string): CacheSharingMode {
  */
 export type CacheVolumeID = string & { __CacheVolumeID: never }
 
+export type ChangesetWithChangesetOpts = {
+  /**
+   * What to do on a merge conflict
+   */
+  onConflict?: ChangesetMergeConflict
+}
+
+export type ChangesetWithChangesetsOpts = {
+  /**
+   * What to do on a merge conflict
+   */
+  onConflict?: ChangesetsMergeConflict
+}
+
 /**
  * The `ChangesetID` scalar type represents an identifier for an object of type Changeset.
  */
 export type ChangesetID = string & { __ChangesetID: never }
+
+/**
+ * Strategy to use when merging changesets with conflicting changes.
+ */
+export enum ChangesetMergeConflict {
+  /**
+   * Attempt the merge and fail if git merge fails due to conflicts
+   */
+  Fail = "FAIL",
+
+  /**
+   * Fail before attempting merge if file-level conflicts are detected
+   */
+  FailEarly = "FAIL_EARLY",
+
+  /**
+   * Let git create conflict markers in files. For modify/delete conflicts, keeps the modified version. Fails on binary conflicts.
+   */
+  LeaveConflictMarkers = "LEAVE_CONFLICT_MARKERS",
+
+  /**
+   * The conflict is resolved by applying the version of the calling changeset
+   */
+  PreferOurs = "PREFER_OURS",
+
+  /**
+   * The conflict is resolved by applying the version of the other changeset
+   */
+  PreferTheirs = "PREFER_THEIRS",
+}
+
+/**
+ * Utility function to convert a ChangesetMergeConflict value to its name so
+ * it can be uses as argument to call a exposed function.
+ */
+function ChangesetMergeConflictValueToName(
+  value: ChangesetMergeConflict,
+): string {
+  switch (value) {
+    case ChangesetMergeConflict.Fail:
+      return "FAIL"
+    case ChangesetMergeConflict.FailEarly:
+      return "FAIL_EARLY"
+    case ChangesetMergeConflict.LeaveConflictMarkers:
+      return "LEAVE_CONFLICT_MARKERS"
+    case ChangesetMergeConflict.PreferOurs:
+      return "PREFER_OURS"
+    case ChangesetMergeConflict.PreferTheirs:
+      return "PREFER_THEIRS"
+    default:
+      return value
+  }
+}
+
+/**
+ * Utility function to convert a ChangesetMergeConflict name to its value so
+ * it can be properly used inside the module runtime.
+ */
+function ChangesetMergeConflictNameToValue(
+  name: string,
+): ChangesetMergeConflict {
+  switch (name) {
+    case "FAIL":
+      return ChangesetMergeConflict.Fail
+    case "FAIL_EARLY":
+      return ChangesetMergeConflict.FailEarly
+    case "LEAVE_CONFLICT_MARKERS":
+      return ChangesetMergeConflict.LeaveConflictMarkers
+    case "PREFER_OURS":
+      return ChangesetMergeConflict.PreferOurs
+    case "PREFER_THEIRS":
+      return ChangesetMergeConflict.PreferTheirs
+    default:
+      return name as ChangesetMergeConflict
+  }
+}
+/**
+ * Strategy to use when merging multiple changesets with git octopus merge.
+ */
+export enum ChangesetsMergeConflict {
+  /**
+   * Attempt the octopus merge and fail if git merge fails due to conflicts
+   */
+  Fail = "FAIL",
+
+  /**
+   * Fail before attempting merge if file-level conflicts are detected between any changesets
+   */
+  FailEarly = "FAIL_EARLY",
+}
+
+/**
+ * Utility function to convert a ChangesetsMergeConflict value to its name so
+ * it can be uses as argument to call a exposed function.
+ */
+function ChangesetsMergeConflictValueToName(
+  value: ChangesetsMergeConflict,
+): string {
+  switch (value) {
+    case ChangesetsMergeConflict.Fail:
+      return "FAIL"
+    case ChangesetsMergeConflict.FailEarly:
+      return "FAIL_EARLY"
+    default:
+      return value
+  }
+}
+
+/**
+ * Utility function to convert a ChangesetsMergeConflict name to its value so
+ * it can be properly used inside the module runtime.
+ */
+function ChangesetsMergeConflictNameToValue(
+  name: string,
+): ChangesetsMergeConflict {
+  switch (name) {
+    case "FAIL":
+      return ChangesetsMergeConflict.Fail
+    case "FAIL_EARLY":
+      return ChangesetsMergeConflict.FailEarly
+    default:
+      return name as ChangesetsMergeConflict
+  }
+}
+/**
+ * The `CheckGroupID` scalar type represents an identifier for an object of type CheckGroup.
+ */
+export type CheckGroupID = string & { __CheckGroupID: never }
+
+/**
+ * The `CheckID` scalar type represents an identifier for an object of type Check.
+ */
+export type CheckID = string & { __CheckID: never }
 
 /**
  * The `CloudID` scalar type represents an identifier for an object of type Cloud.
@@ -285,6 +432,13 @@ export type ContainerPublishOpts = {
    * Defaults to "OCI", which is compatible with most recent registries, but "Docker" may be needed for older registries without OCI support.
    */
   mediaTypes?: ImageMediaTypes
+}
+
+export type ContainerStatOpts = {
+  /**
+   * If specified, do not follow symlinks.
+   */
+  doNotFollowSymlinks?: boolean
 }
 
 export type ContainerTerminalOpts = {
@@ -900,6 +1054,13 @@ export type DirectorySearchOpts = {
   limit?: number
 }
 
+export type DirectoryStatOpts = {
+  /**
+   * If specified, do not follow symlinks.
+   */
+  doNotFollowSymlinks?: boolean
+}
+
 export type DirectoryTerminalOpts = {
   /**
    * If set, override the default container used for the terminal.
@@ -1031,6 +1192,13 @@ export type EnumTypeDefID = string & { __EnumTypeDefID: never }
  */
 export type EnumValueTypeDefID = string & { __EnumValueTypeDefID: never }
 
+export type EnvChecksOpts = {
+  /**
+   * Only include checks matching the specified patterns
+   */
+  include?: string[]
+}
+
 export type EnvFileGetOpts = {
   /**
    * Return the value exactly as written to the file. No quote removal or variable expansion
@@ -1131,6 +1299,8 @@ export type FieldTypeDefID = string & { __FieldTypeDefID: never }
 export type FileAsEnvFileOpts = {
   /**
    * Replace "${VAR}" or "$VAR" with the value of other vars
+   *
+   * @deprecated Variable expansion is now enabled by default
    */
   expand?: boolean
 }
@@ -1222,6 +1392,83 @@ export type FileWithReplacedOpts = {
  */
 export type FileID = string & { __FileID: never }
 
+/**
+ * File type.
+ */
+export enum FileType {
+  /**
+   * directory file type
+   */
+  Directory = "DIRECTORY",
+
+  /**
+   * directory file type
+   */
+  DirectoryType = FileType.Directory,
+
+  /**
+   * regular file type
+   */
+  Regular = "REGULAR",
+
+  /**
+   * regular file type
+   */
+  RegularType = FileType.Regular,
+
+  /**
+   * symlink file type
+   */
+  Symlink = "SYMLINK",
+
+  /**
+   * symlink file type
+   */
+  SymlinkType = FileType.Symlink,
+
+  /**
+   * unknown file type
+   */
+  Unknown = "UNKNOWN",
+}
+
+/**
+ * Utility function to convert a FileType value to its name so
+ * it can be uses as argument to call a exposed function.
+ */
+function FileTypeValueToName(value: FileType): string {
+  switch (value) {
+    case FileType.Directory:
+      return "DIRECTORY"
+    case FileType.Regular:
+      return "REGULAR"
+    case FileType.Symlink:
+      return "SYMLINK"
+    case FileType.Unknown:
+      return "UNKNOWN"
+    default:
+      return value
+  }
+}
+
+/**
+ * Utility function to convert a FileType name to its value so
+ * it can be properly used inside the module runtime.
+ */
+function FileTypeNameToValue(name: string): FileType {
+  switch (name) {
+    case "DIRECTORY":
+      return FileType.Directory
+    case "REGULAR":
+      return FileType.Regular
+    case "SYMLINK":
+      return FileType.Symlink
+    case "UNKNOWN":
+      return FileType.Unknown
+    default:
+      return name as FileType
+  }
+}
 export type FunctionWithArgOpts = {
   /**
    * A doc string for the argument, if any
@@ -1247,6 +1494,12 @@ export type FunctionWithArgOpts = {
    * The source map for the argument definition.
    */
   sourceMap?: SourceMap
+
+  /**
+   * If deprecated, the reason or migration path.
+   */
+  deprecated?: string
+  defaultAddress?: string
 }
 
 export type FunctionWithCachePolicyOpts = {
@@ -1254,6 +1507,13 @@ export type FunctionWithCachePolicyOpts = {
    * The TTL for the cache policy, if applicable. Provided as a duration string, e.g. "5m", "1h30s".
    */
   timeToLive?: string
+}
+
+export type FunctionWithDeprecatedOpts = {
+  /**
+   * Reason or migration path describing the deprecation.
+   */
+  reason?: string
 }
 
 /**
@@ -1567,6 +1827,13 @@ export type LabelID = string & { __LabelID: never }
  */
 export type ListTypeDefID = string & { __ListTypeDefID: never }
 
+export type ModuleChecksOpts = {
+  /**
+   * Only include checks matching the specified patterns
+   */
+  include?: string[]
+}
+
 export type ModuleServeOpts = {
   /**
    * Expose the dependencies of this module to the client
@@ -1778,6 +2045,8 @@ export type ClientEnvOpts = {
 export type ClientEnvFileOpts = {
   /**
    * Replace "${VAR}" or "$VAR" with the value of other vars
+   *
+   * @deprecated Variable expansion is now enabled by default
    */
   expand?: boolean
 }
@@ -1792,6 +2061,8 @@ export type ClientFileOpts = {
 export type ClientGitOpts = {
   /**
    * DEPRECATED: Set to true to keep .git directory.
+   *
+   * @deprecated Set to true to keep .git directory.
    */
   keepGitDir?: boolean
 
@@ -1898,12 +2169,12 @@ export type ClientSecretOpts = {
  */
 export enum ReturnType {
   /**
-   * Any execution (exit codes 0-127)
+   * Any execution (exit codes 0-127 and 192-255)
    */
   Any = "ANY",
 
   /**
-   * A failed execution (exit codes 1-127)
+   * A failed execution (exit codes 1-127 and 192-255)
    */
   Failure = "FAILURE",
 
@@ -2024,6 +2295,11 @@ export type SocketID = string & { __SocketID: never }
 export type SourceMapID = string & { __SourceMapID: never }
 
 /**
+ * The `StatID` scalar type represents an identifier for an object of type Stat.
+ */
+export type StatID = string & { __StatID: never }
+
+/**
  * The `TerminalID` scalar type represents an identifier for an object of type Terminal.
  */
 export type TerminalID = string & { __TerminalID: never }
@@ -2055,6 +2331,11 @@ export type TypeDefWithEnumMemberOpts = {
    * The source map for the enum member definition.
    */
   sourceMap?: SourceMap
+
+  /**
+   * If deprecated, the reason or migration path.
+   */
+  deprecated?: string
 }
 
 export type TypeDefWithEnumValueOpts = {
@@ -2067,6 +2348,11 @@ export type TypeDefWithEnumValueOpts = {
    * The source map for the enum value definition.
    */
   sourceMap?: SourceMap
+
+  /**
+   * If deprecated, the reason or migration path.
+   */
+  deprecated?: string
 }
 
 export type TypeDefWithFieldOpts = {
@@ -2079,6 +2365,11 @@ export type TypeDefWithFieldOpts = {
    * The source map for the field definition.
    */
   sourceMap?: SourceMap
+
+  /**
+   * If deprecated, the reason or migration path.
+   */
+  deprecated?: string
 }
 
 export type TypeDefWithInterfaceOpts = {
@@ -2089,6 +2380,7 @@ export type TypeDefWithInterfaceOpts = {
 export type TypeDefWithObjectOpts = {
   description?: string
   sourceMap?: SourceMap
+  deprecated?: string
 }
 
 export type TypeDefWithScalarOpts = {
@@ -2514,6 +2806,22 @@ export class Binding extends BaseClient {
   }
 
   /**
+   * Retrieve the binding value, as type Check
+   */
+  asCheck = (): Check => {
+    const ctx = this._ctx.select("asCheck")
+    return new Check(ctx)
+  }
+
+  /**
+   * Retrieve the binding value, as type CheckGroup
+   */
+  asCheckGroup = (): CheckGroup => {
+    const ctx = this._ctx.select("asCheckGroup")
+    return new CheckGroup(ctx)
+  }
+
+  /**
    * Retrieve the binding value, as type Cloud
    */
   asCloud = (): Cloud => {
@@ -2647,6 +2955,14 @@ export class Binding extends BaseClient {
   asSocket = (): Socket => {
     const ctx = this._ctx.select("asSocket")
     return new Socket(ctx)
+  }
+
+  /**
+   * Retrieve the binding value, as type Stat
+   */
+  asStat = (): Stat => {
+    const ctx = this._ctx.select("asStat")
+    return new Stat(ctx)
   }
 
   /**
@@ -2911,6 +3227,286 @@ export class Changeset extends BaseClient {
     const response: Awaited<ChangesetID> = await ctx.execute()
 
     return new Client(ctx.copy()).loadChangesetFromID(response)
+  }
+
+  /**
+   * Add changes to an existing changeset
+   *
+   * By default the operation will fail in case of conflicts, for instance a file modified in both changesets. The behavior can be adjusted using onConflict argument
+   * @param changes Changes to merge into the actual changeset
+   * @param opts.onConflict What to do on a merge conflict
+   */
+  withChangeset = (
+    changes: Changeset,
+    opts?: ChangesetWithChangesetOpts,
+  ): Changeset => {
+    const metadata = {
+      onConflict: {
+        is_enum: true,
+        value_to_name: ChangesetMergeConflictValueToName,
+      },
+    }
+
+    const ctx = this._ctx.select("withChangeset", {
+      changes,
+      ...opts,
+      __metadata: metadata,
+    })
+    return new Changeset(ctx)
+  }
+
+  /**
+   * Add changes from multiple changesets using git octopus merge strategy
+   *
+   * This is more efficient than chaining multiple withChangeset calls when merging many changesets.
+   *
+   * Only FAIL and FAIL_EARLY conflict strategies are supported (octopus merge cannot use -X ours/theirs).
+   * @param changes List of changesets to merge into the actual changeset
+   * @param opts.onConflict What to do on a merge conflict
+   */
+  withChangesets = (
+    changes: Changeset[],
+    opts?: ChangesetWithChangesetsOpts,
+  ): Changeset => {
+    const metadata = {
+      onConflict: {
+        is_enum: true,
+        value_to_name: ChangesetsMergeConflictValueToName,
+      },
+    }
+
+    const ctx = this._ctx.select("withChangesets", {
+      changes,
+      ...opts,
+      __metadata: metadata,
+    })
+    return new Changeset(ctx)
+  }
+
+  /**
+   * Call the provided function with current Changeset.
+   *
+   * This is useful for reusability and readability by not breaking the calling chain.
+   */
+  with = (arg: (param: Changeset) => Changeset) => {
+    return arg(this)
+  }
+}
+
+export class Check extends BaseClient {
+  private readonly _id?: CheckID = undefined
+  private readonly _completed?: boolean = undefined
+  private readonly _description?: string = undefined
+  private readonly _name?: string = undefined
+  private readonly _passed?: boolean = undefined
+  private readonly _resultEmoji?: string = undefined
+
+  /**
+   * Constructor is used for internal usage only, do not create object from it.
+   */
+  constructor(
+    ctx?: Context,
+    _id?: CheckID,
+    _completed?: boolean,
+    _description?: string,
+    _name?: string,
+    _passed?: boolean,
+    _resultEmoji?: string,
+  ) {
+    super(ctx)
+
+    this._id = _id
+    this._completed = _completed
+    this._description = _description
+    this._name = _name
+    this._passed = _passed
+    this._resultEmoji = _resultEmoji
+  }
+
+  /**
+   * A unique identifier for this Check.
+   */
+  id = async (): Promise<CheckID> => {
+    if (this._id) {
+      return this._id
+    }
+
+    const ctx = this._ctx.select("id")
+
+    const response: Awaited<CheckID> = await ctx.execute()
+
+    return response
+  }
+
+  /**
+   * Whether the check completed
+   */
+  completed = async (): Promise<boolean> => {
+    if (this._completed) {
+      return this._completed
+    }
+
+    const ctx = this._ctx.select("completed")
+
+    const response: Awaited<boolean> = await ctx.execute()
+
+    return response
+  }
+
+  /**
+   * The description of the check
+   */
+  description = async (): Promise<string> => {
+    if (this._description) {
+      return this._description
+    }
+
+    const ctx = this._ctx.select("description")
+
+    const response: Awaited<string> = await ctx.execute()
+
+    return response
+  }
+
+  /**
+   * Return the fully qualified name of the check
+   */
+  name = async (): Promise<string> => {
+    if (this._name) {
+      return this._name
+    }
+
+    const ctx = this._ctx.select("name")
+
+    const response: Awaited<string> = await ctx.execute()
+
+    return response
+  }
+
+  /**
+   * Whether the check passed
+   */
+  passed = async (): Promise<boolean> => {
+    if (this._passed) {
+      return this._passed
+    }
+
+    const ctx = this._ctx.select("passed")
+
+    const response: Awaited<boolean> = await ctx.execute()
+
+    return response
+  }
+
+  /**
+   * The path of the check within its module
+   */
+  path = async (): Promise<string[]> => {
+    const ctx = this._ctx.select("path")
+
+    const response: Awaited<string[]> = await ctx.execute()
+
+    return response
+  }
+
+  /**
+   * An emoji representing the result of the check
+   */
+  resultEmoji = async (): Promise<string> => {
+    if (this._resultEmoji) {
+      return this._resultEmoji
+    }
+
+    const ctx = this._ctx.select("resultEmoji")
+
+    const response: Awaited<string> = await ctx.execute()
+
+    return response
+  }
+
+  /**
+   * Execute the check
+   */
+  run = (): Check => {
+    const ctx = this._ctx.select("run")
+    return new Check(ctx)
+  }
+
+  /**
+   * Call the provided function with current Check.
+   *
+   * This is useful for reusability and readability by not breaking the calling chain.
+   */
+  with = (arg: (param: Check) => Check) => {
+    return arg(this)
+  }
+}
+
+export class CheckGroup extends BaseClient {
+  private readonly _id?: CheckGroupID = undefined
+
+  /**
+   * Constructor is used for internal usage only, do not create object from it.
+   */
+  constructor(ctx?: Context, _id?: CheckGroupID) {
+    super(ctx)
+
+    this._id = _id
+  }
+
+  /**
+   * A unique identifier for this CheckGroup.
+   */
+  id = async (): Promise<CheckGroupID> => {
+    if (this._id) {
+      return this._id
+    }
+
+    const ctx = this._ctx.select("id")
+
+    const response: Awaited<CheckGroupID> = await ctx.execute()
+
+    return response
+  }
+
+  /**
+   * Return a list of individual checks and their details
+   */
+  list = async (): Promise<Check[]> => {
+    type list = {
+      id: CheckID
+    }
+
+    const ctx = this._ctx.select("list").select("id")
+
+    const response: Awaited<list[]> = await ctx.execute()
+
+    return response.map((r) => new Client(ctx.copy()).loadCheckFromID(r.id))
+  }
+
+  /**
+   * Generate a markdown report
+   */
+  report = (): File => {
+    const ctx = this._ctx.select("report")
+    return new File(ctx)
+  }
+
+  /**
+   * Execute all selected checks
+   */
+  run = (): CheckGroup => {
+    const ctx = this._ctx.select("run")
+    return new CheckGroup(ctx)
+  }
+
+  /**
+   * Call the provided function with current CheckGroup.
+   *
+   * This is useful for reusability and readability by not breaking the calling chain.
+   */
+  with = (arg: (param: CheckGroup) => CheckGroup) => {
+    return arg(this)
   }
 }
 
@@ -3499,6 +4095,16 @@ export class Container extends BaseClient {
   }
 
   /**
+   * Return file status
+   * @param path Path to check (e.g., "/file.txt").
+   * @param opts.doNotFollowSymlinks If specified, do not follow symlinks.
+   */
+  stat = (path: string, opts?: ContainerStatOpts): Stat => {
+    const ctx = this._ctx.select("stat", { path, ...opts })
+    return new Stat(ctx)
+  }
+
+  /**
    * The buffered standard error stream of the last executed command
    *
    * Returns an error if no command was executed
@@ -3601,7 +4207,7 @@ export class Container extends BaseClient {
   }
 
   /**
-   * Retrieves this container plus the given OCI anotation.
+   * Retrieves this container plus the given OCI annotation.
    * @param name The name of the annotation.
    * @param value The value of the annotation.
    */
@@ -3666,6 +4272,15 @@ export class Container extends BaseClient {
     opts?: ContainerWithEntrypointOpts,
   ): Container => {
     const ctx = this._ctx.select("withEntrypoint", { args, ...opts })
+    return new Container(ctx)
+  }
+
+  /**
+   * Export environment variables from an env-file to the container.
+   * @param source Identifier of the envfile
+   */
+  withEnvFileVariables = (source: EnvFile): Container => {
+    const ctx = this._ctx.select("withEnvFileVariables", { source })
     return new Container(ctx)
   }
 
@@ -4297,6 +4912,29 @@ export class CurrentModule extends BaseClient {
   }
 
   /**
+   * The dependencies of the module.
+   */
+  dependencies = async (): Promise<Module_[]> => {
+    type dependencies = {
+      id: ModuleID
+    }
+
+    const ctx = this._ctx.select("dependencies").select("id")
+
+    const response: Awaited<dependencies[]> = await ctx.execute()
+
+    return response.map((r) => new Client(ctx.copy()).loadModuleFromID(r.id))
+  }
+
+  /**
+   * The generated files and directories made on top of the module source's context directory.
+   */
+  generatedContextDirectory = (): Directory => {
+    const ctx = this._ctx.select("generatedContextDirectory")
+    return new Directory(ctx)
+  }
+
+  /**
    * The name of the module being executed in
    */
   name = async (): Promise<string> => {
@@ -4651,6 +5289,16 @@ export class Directory extends BaseClient {
     return response.map((r) =>
       new Client(ctx.copy()).loadSearchResultFromID(r.id),
     )
+  }
+
+  /**
+   * Return file status
+   * @param path Path to stat (e.g., "/file.txt").
+   * @param opts.doNotFollowSymlinks If specified, do not follow symlinks.
+   */
+  stat = (path: string, opts?: DirectoryStatOpts): Stat => {
+    const ctx = this._ctx.select("stat", { path, ...opts })
+    return new Stat(ctx)
   }
 
   /**
@@ -5401,6 +6049,7 @@ export class EnumTypeDef extends BaseClient {
  */
 export class EnumValueTypeDef extends BaseClient {
   private readonly _id?: EnumValueTypeDefID = undefined
+  private readonly _deprecated?: string = undefined
   private readonly _description?: string = undefined
   private readonly _name?: string = undefined
   private readonly _value?: string = undefined
@@ -5411,6 +6060,7 @@ export class EnumValueTypeDef extends BaseClient {
   constructor(
     ctx?: Context,
     _id?: EnumValueTypeDefID,
+    _deprecated?: string,
     _description?: string,
     _name?: string,
     _value?: string,
@@ -5418,6 +6068,7 @@ export class EnumValueTypeDef extends BaseClient {
     super(ctx)
 
     this._id = _id
+    this._deprecated = _deprecated
     this._description = _description
     this._name = _name
     this._value = _value
@@ -5434,6 +6085,21 @@ export class EnumValueTypeDef extends BaseClient {
     const ctx = this._ctx.select("id")
 
     const response: Awaited<EnumValueTypeDefID> = await ctx.execute()
+
+    return response
+  }
+
+  /**
+   * The reason this enum member is deprecated, if any.
+   */
+  deprecated = async (): Promise<string> => {
+    if (this._deprecated) {
+      return this._deprecated
+    }
+
+    const ctx = this._ctx.select("deprecated")
+
+    const response: Awaited<string> = await ctx.execute()
 
     return response
   }
@@ -5517,6 +6183,26 @@ export class Env extends BaseClient {
     const response: Awaited<EnvID> = await ctx.execute()
 
     return response
+  }
+
+  /**
+   * Return the check with the given name from the installed modules. Must match exactly one check.
+   * @param name The name of the check to retrieve
+   * @experimental
+   */
+  check = (name: string): Check => {
+    const ctx = this._ctx.select("check", { name })
+    return new Check(ctx)
+  }
+
+  /**
+   * Return all checks defined by the installed modules
+   * @param opts.include Only include checks matching the specified patterns
+   * @experimental
+   */
+  checks = (opts?: EnvChecksOpts): CheckGroup => {
+    const ctx = this._ctx.select("checks", { ...opts })
+    return new CheckGroup(ctx)
   }
 
   /**
@@ -5649,6 +6335,56 @@ export class Env extends BaseClient {
    */
   withChangesetOutput = (name: string, description: string): Env => {
     const ctx = this._ctx.select("withChangesetOutput", { name, description })
+    return new Env(ctx)
+  }
+
+  /**
+   * Create or update a binding of type CheckGroup in the environment
+   * @param name The name of the binding
+   * @param value The CheckGroup value to assign to the binding
+   * @param description The purpose of the input
+   */
+  withCheckGroupInput = (
+    name: string,
+    value: CheckGroup,
+    description: string,
+  ): Env => {
+    const ctx = this._ctx.select("withCheckGroupInput", {
+      name,
+      value,
+      description,
+    })
+    return new Env(ctx)
+  }
+
+  /**
+   * Declare a desired CheckGroup output to be assigned in the environment
+   * @param name The name of the binding
+   * @param description A description of the desired value of the binding
+   */
+  withCheckGroupOutput = (name: string, description: string): Env => {
+    const ctx = this._ctx.select("withCheckGroupOutput", { name, description })
+    return new Env(ctx)
+  }
+
+  /**
+   * Create or update a binding of type Check in the environment
+   * @param name The name of the binding
+   * @param value The Check value to assign to the binding
+   * @param description The purpose of the input
+   */
+  withCheckInput = (name: string, value: Check, description: string): Env => {
+    const ctx = this._ctx.select("withCheckInput", { name, value, description })
+    return new Env(ctx)
+  }
+
+  /**
+   * Declare a desired Check output to be assigned in the environment
+   * @param name The name of the binding
+   * @param description A description of the desired value of the binding
+   */
+  withCheckOutput = (name: string, description: string): Env => {
+    const ctx = this._ctx.select("withCheckOutput", { name, description })
     return new Env(ctx)
   }
 
@@ -5899,9 +6635,22 @@ export class Env extends BaseClient {
   }
 
   /**
+   * Sets the main module for this environment (the project being worked on)
+   *
+   * Contextual path arguments will be populated using the environment's workspace.
+   */
+  withMainModule = (module_: Module_): Env => {
+    const ctx = this._ctx.select("withMainModule", {
+      module: module_,
+    })
+    return new Env(ctx)
+  }
+
+  /**
    * Installs a module into the environment, exposing its functions to the model
    *
    * Contextual path arguments will be populated using the environment's workspace.
+   * @deprecated Use withMainModule instead
    */
   withModule = (module_: Module_): Env => {
     const ctx = this._ctx.select("withModule", {
@@ -6143,6 +6892,27 @@ export class Env extends BaseClient {
    */
   withSocketOutput = (name: string, description: string): Env => {
     const ctx = this._ctx.select("withSocketOutput", { name, description })
+    return new Env(ctx)
+  }
+
+  /**
+   * Create or update a binding of type Stat in the environment
+   * @param name The name of the binding
+   * @param value The Stat value to assign to the binding
+   * @param description The purpose of the input
+   */
+  withStatInput = (name: string, value: Stat, description: string): Env => {
+    const ctx = this._ctx.select("withStatInput", { name, value, description })
+    return new Env(ctx)
+  }
+
+  /**
+   * Declare a desired Stat output to be assigned in the environment
+   * @param name The name of the binding
+   * @param description A description of the desired value of the binding
+   */
+  withStatOutput = (name: string, description: string): Env => {
+    const ctx = this._ctx.select("withStatOutput", { name, description })
     return new Env(ctx)
   }
 
@@ -6588,6 +7358,7 @@ export class ErrorValue extends BaseClient {
  */
 export class FieldTypeDef extends BaseClient {
   private readonly _id?: FieldTypeDefID = undefined
+  private readonly _deprecated?: string = undefined
   private readonly _description?: string = undefined
   private readonly _name?: string = undefined
 
@@ -6597,12 +7368,14 @@ export class FieldTypeDef extends BaseClient {
   constructor(
     ctx?: Context,
     _id?: FieldTypeDefID,
+    _deprecated?: string,
     _description?: string,
     _name?: string,
   ) {
     super(ctx)
 
     this._id = _id
+    this._deprecated = _deprecated
     this._description = _description
     this._name = _name
   }
@@ -6618,6 +7391,21 @@ export class FieldTypeDef extends BaseClient {
     const ctx = this._ctx.select("id")
 
     const response: Awaited<FieldTypeDefID> = await ctx.execute()
+
+    return response
+  }
+
+  /**
+   * The reason this enum member is deprecated, if any.
+   */
+  deprecated = async (): Promise<string> => {
+    if (this._deprecated) {
+      return this._deprecated
+    }
+
+    const ctx = this._ctx.select("deprecated")
+
+    const response: Awaited<string> = await ctx.execute()
 
     return response
   }
@@ -6727,6 +7515,14 @@ export class File extends BaseClient {
   asEnvFile = (opts?: FileAsEnvFileOpts): EnvFile => {
     const ctx = this._ctx.select("asEnvFile", { ...opts })
     return new EnvFile(ctx)
+  }
+
+  /**
+   * Parse the file contents as JSON.
+   */
+  asJSON = (): JSONValue => {
+    const ctx = this._ctx.select("asJSON")
+    return new JSONValue(ctx)
   }
 
   /**
@@ -6854,6 +7650,14 @@ export class File extends BaseClient {
   }
 
   /**
+   * Return file status
+   */
+  stat = (): Stat => {
+    const ctx = this._ctx.select("stat")
+    return new Stat(ctx)
+  }
+
+  /**
    * Force evaluation in the engine.
    */
   sync = async (): Promise<File> => {
@@ -6929,6 +7733,7 @@ export class File extends BaseClient {
  */
 export class Function_ extends BaseClient {
   private readonly _id?: FunctionID = undefined
+  private readonly _deprecated?: string = undefined
   private readonly _description?: string = undefined
   private readonly _name?: string = undefined
 
@@ -6938,12 +7743,14 @@ export class Function_ extends BaseClient {
   constructor(
     ctx?: Context,
     _id?: FunctionID,
+    _deprecated?: string,
     _description?: string,
     _name?: string,
   ) {
     super(ctx)
 
     this._id = _id
+    this._deprecated = _deprecated
     this._description = _description
     this._name = _name
   }
@@ -6978,6 +7785,21 @@ export class Function_ extends BaseClient {
     return response.map((r) =>
       new Client(ctx.copy()).loadFunctionArgFromID(r.id),
     )
+  }
+
+  /**
+   * The reason this function is deprecated, if any.
+   */
+  deprecated = async (): Promise<string> => {
+    if (this._deprecated) {
+      return this._deprecated
+    }
+
+    const ctx = this._ctx.select("deprecated")
+
+    const response: Awaited<string> = await ctx.execute()
+
+    return response
   }
 
   /**
@@ -7035,6 +7857,7 @@ export class Function_ extends BaseClient {
    * @param opts.defaultPath If the argument is a Directory or File type, default to load path from context directory, relative to root directory.
    * @param opts.ignore Patterns to ignore when loading the contextual argument value.
    * @param opts.sourceMap The source map for the argument definition.
+   * @param opts.deprecated If deprecated, the reason or migration path.
    */
   withArg = (
     name: string,
@@ -7063,6 +7886,23 @@ export class Function_ extends BaseClient {
       ...opts,
       __metadata: metadata,
     })
+    return new Function_(ctx)
+  }
+
+  /**
+   * Returns the function with a flag indicating it's a check.
+   */
+  withCheck = (): Function_ => {
+    const ctx = this._ctx.select("withCheck")
+    return new Function_(ctx)
+  }
+
+  /**
+   * Returns the function with the provided deprecation reason.
+   * @param opts.reason Reason or migration path describing the deprecation.
+   */
+  withDeprecated = (opts?: FunctionWithDeprecatedOpts): Function_ => {
+    const ctx = this._ctx.select("withDeprecated", { ...opts })
     return new Function_(ctx)
   }
 
@@ -7101,8 +7941,10 @@ export class Function_ extends BaseClient {
  */
 export class FunctionArg extends BaseClient {
   private readonly _id?: FunctionArgID = undefined
+  private readonly _defaultAddress?: string = undefined
   private readonly _defaultPath?: string = undefined
   private readonly _defaultValue?: JSON = undefined
+  private readonly _deprecated?: string = undefined
   private readonly _description?: string = undefined
   private readonly _name?: string = undefined
 
@@ -7112,16 +7954,20 @@ export class FunctionArg extends BaseClient {
   constructor(
     ctx?: Context,
     _id?: FunctionArgID,
+    _defaultAddress?: string,
     _defaultPath?: string,
     _defaultValue?: JSON,
+    _deprecated?: string,
     _description?: string,
     _name?: string,
   ) {
     super(ctx)
 
     this._id = _id
+    this._defaultAddress = _defaultAddress
     this._defaultPath = _defaultPath
     this._defaultValue = _defaultValue
+    this._deprecated = _deprecated
     this._description = _description
     this._name = _name
   }
@@ -7137,6 +7983,21 @@ export class FunctionArg extends BaseClient {
     const ctx = this._ctx.select("id")
 
     const response: Awaited<FunctionArgID> = await ctx.execute()
+
+    return response
+  }
+
+  /**
+   * Only applies to arguments of type Container. If the argument is not set, load it from the given address (e.g. alpine:latest)
+   */
+  defaultAddress = async (): Promise<string> => {
+    if (this._defaultAddress) {
+      return this._defaultAddress
+    }
+
+    const ctx = this._ctx.select("defaultAddress")
+
+    const response: Awaited<string> = await ctx.execute()
 
     return response
   }
@@ -7167,6 +8028,21 @@ export class FunctionArg extends BaseClient {
     const ctx = this._ctx.select("defaultValue")
 
     const response: Awaited<JSON> = await ctx.execute()
+
+    return response
+  }
+
+  /**
+   * The reason this function is deprecated, if any.
+   */
+  deprecated = async (): Promise<string> => {
+    if (this._deprecated) {
+      return this._deprecated
+    }
+
+    const ctx = this._ctx.select("deprecated")
+
+    const response: Awaited<string> = await ctx.execute()
 
     return response
   }
@@ -8551,6 +9427,22 @@ export class LLM extends BaseClient {
   }
 
   /**
+   * Clear the message history, leaving only the system prompts
+   */
+  withoutMessageHistory = (): LLM => {
+    const ctx = this._ctx.select("withoutMessageHistory")
+    return new LLM(ctx)
+  }
+
+  /**
+   * Clear the system prompts, leaving only the default system prompt
+   */
+  withoutSystemPrompts = (): LLM => {
+    const ctx = this._ctx.select("withoutSystemPrompts")
+    return new LLM(ctx)
+  }
+
+  /**
    * Call the provided function with current LLM.
    *
    * This is useful for reusability and readability by not breaking the calling chain.
@@ -8808,6 +9700,26 @@ export class Module_ extends BaseClient {
     const response: Awaited<ModuleID> = await ctx.execute()
 
     return response
+  }
+
+  /**
+   * Return the check defined by the module with the given name. Must match to exactly one check.
+   * @param name The name of the check to retrieve
+   * @experimental
+   */
+  check = (name: string): Check => {
+    const ctx = this._ctx.select("check", { name })
+    return new Check(ctx)
+  }
+
+  /**
+   * Return all checks defined by the module
+   * @param opts.include Only include checks matching the specified patterns
+   * @experimental
+   */
+  checks = (opts?: ModuleChecksOpts): CheckGroup => {
+    const ctx = this._ctx.select("checks", { ...opts })
+    return new CheckGroup(ctx)
   }
 
   /**
@@ -9774,6 +10686,7 @@ export class ModuleSource extends BaseClient {
  */
 export class ObjectTypeDef extends BaseClient {
   private readonly _id?: ObjectTypeDefID = undefined
+  private readonly _deprecated?: string = undefined
   private readonly _description?: string = undefined
   private readonly _name?: string = undefined
   private readonly _sourceModuleName?: string = undefined
@@ -9784,6 +10697,7 @@ export class ObjectTypeDef extends BaseClient {
   constructor(
     ctx?: Context,
     _id?: ObjectTypeDefID,
+    _deprecated?: string,
     _description?: string,
     _name?: string,
     _sourceModuleName?: string,
@@ -9791,6 +10705,7 @@ export class ObjectTypeDef extends BaseClient {
     super(ctx)
 
     this._id = _id
+    this._deprecated = _deprecated
     this._description = _description
     this._name = _name
     this._sourceModuleName = _sourceModuleName
@@ -9817,6 +10732,21 @@ export class ObjectTypeDef extends BaseClient {
   constructor_ = (): Function_ => {
     const ctx = this._ctx.select("constructor")
     return new Function_(ctx)
+  }
+
+  /**
+   * The reason this enum member is deprecated, if any.
+   */
+  deprecated = async (): Promise<string> => {
+    if (this._deprecated) {
+      return this._deprecated
+    }
+
+    const ctx = this._ctx.select("deprecated")
+
+    const response: Awaited<string> = await ctx.execute()
+
+    return response
   }
 
   /**
@@ -10295,6 +11225,22 @@ export class Client extends BaseClient {
   }
 
   /**
+   * Load a Check from its ID.
+   */
+  loadCheckFromID = (id: CheckID): Check => {
+    const ctx = this._ctx.select("loadCheckFromID", { id })
+    return new Check(ctx)
+  }
+
+  /**
+   * Load a CheckGroup from its ID.
+   */
+  loadCheckGroupFromID = (id: CheckGroupID): CheckGroup => {
+    const ctx = this._ctx.select("loadCheckGroupFromID", { id })
+    return new CheckGroup(ctx)
+  }
+
+  /**
    * Load a Cloud from its ID.
    */
   loadCloudFromID = (id: CloudID): Cloud => {
@@ -10661,6 +11607,14 @@ export class Client extends BaseClient {
   }
 
   /**
+   * Load a Stat from its ID.
+   */
+  loadStatFromID = (id: StatID): Stat => {
+    const ctx = this._ctx.select("loadStatFromID", { id })
+    return new Stat(ctx)
+  }
+
+  /**
    * Load a Terminal from its ID.
    */
   loadTerminalFromID = (id: TerminalID): Terminal => {
@@ -10800,15 +11754,22 @@ export class Client extends BaseClient {
  */
 export class SDKConfig extends BaseClient {
   private readonly _id?: SDKConfigID = undefined
+  private readonly _debug?: boolean = undefined
   private readonly _source?: string = undefined
 
   /**
    * Constructor is used for internal usage only, do not create object from it.
    */
-  constructor(ctx?: Context, _id?: SDKConfigID, _source?: string) {
+  constructor(
+    ctx?: Context,
+    _id?: SDKConfigID,
+    _debug?: boolean,
+    _source?: string,
+  ) {
     super(ctx)
 
     this._id = _id
+    this._debug = _debug
     this._source = _source
   }
 
@@ -10823,6 +11784,21 @@ export class SDKConfig extends BaseClient {
     const ctx = this._ctx.select("id")
 
     const response: Awaited<SDKConfigID> = await ctx.execute()
+
+    return response
+  }
+
+  /**
+   * Whether to start the SDK runtime in debug mode with an interactive terminal.
+   */
+  debug = async (): Promise<boolean> => {
+    if (this._debug) {
+      return this._debug
+    }
+
+    const ctx = this._ctx.select("debug")
+
+    const response: Awaited<boolean> = await ctx.execute()
 
     return response
   }
@@ -11558,6 +12534,112 @@ export class SourceMap extends BaseClient {
 }
 
 /**
+ * A file or directory status object.
+ */
+export class Stat extends BaseClient {
+  private readonly _id?: StatID = undefined
+  private readonly _fileType?: FileType = undefined
+  private readonly _name?: string = undefined
+  private readonly _permissions?: number = undefined
+  private readonly _size?: number = undefined
+
+  /**
+   * Constructor is used for internal usage only, do not create object from it.
+   */
+  constructor(
+    ctx?: Context,
+    _id?: StatID,
+    _fileType?: FileType,
+    _name?: string,
+    _permissions?: number,
+    _size?: number,
+  ) {
+    super(ctx)
+
+    this._id = _id
+    this._fileType = _fileType
+    this._name = _name
+    this._permissions = _permissions
+    this._size = _size
+  }
+
+  /**
+   * A unique identifier for this Stat.
+   */
+  id = async (): Promise<StatID> => {
+    if (this._id) {
+      return this._id
+    }
+
+    const ctx = this._ctx.select("id")
+
+    const response: Awaited<StatID> = await ctx.execute()
+
+    return response
+  }
+
+  /**
+   * file type
+   */
+  fileType = async (): Promise<FileType> => {
+    if (this._fileType) {
+      return this._fileType
+    }
+
+    const ctx = this._ctx.select("fileType")
+
+    const response: Awaited<FileType> = await ctx.execute()
+
+    return FileTypeNameToValue(response)
+  }
+
+  /**
+   * file name
+   */
+  name = async (): Promise<string> => {
+    if (this._name) {
+      return this._name
+    }
+
+    const ctx = this._ctx.select("name")
+
+    const response: Awaited<string> = await ctx.execute()
+
+    return response
+  }
+
+  /**
+   * permission bits
+   */
+  permissions = async (): Promise<number> => {
+    if (this._permissions) {
+      return this._permissions
+    }
+
+    const ctx = this._ctx.select("permissions")
+
+    const response: Awaited<number> = await ctx.execute()
+
+    return response
+  }
+
+  /**
+   * file size
+   */
+  size = async (): Promise<number> => {
+    if (this._size) {
+      return this._size
+    }
+
+    const ctx = this._ctx.select("size")
+
+    const response: Awaited<number> = await ctx.execute()
+
+    return response
+  }
+}
+
+/**
  * An interactive terminal that clients can connect to.
  */
 export class Terminal extends BaseClient {
@@ -11749,6 +12831,7 @@ export class TypeDef extends BaseClient {
    * @param opts.value The value of the member in the enum
    * @param opts.description A doc string for the member, if any
    * @param opts.sourceMap The source map for the enum member definition.
+   * @param opts.deprecated If deprecated, the reason or migration path.
    */
   withEnumMember = (
     name: string,
@@ -11763,6 +12846,7 @@ export class TypeDef extends BaseClient {
    * @param value The name of the value in the enum
    * @param opts.description A doc string for the value, if any
    * @param opts.sourceMap The source map for the enum value definition.
+   * @param opts.deprecated If deprecated, the reason or migration path.
    * @deprecated Use withEnumMember instead
    */
   withEnumValue = (value: string, opts?: TypeDefWithEnumValueOpts): TypeDef => {
@@ -11776,6 +12860,7 @@ export class TypeDef extends BaseClient {
    * @param typeDef The type of the field
    * @param opts.description A doc string for the field, if any
    * @param opts.sourceMap The source map for the field definition.
+   * @param opts.deprecated If deprecated, the reason or migration path.
    */
   withField = (
     name: string,

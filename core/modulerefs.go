@@ -56,7 +56,7 @@ func ParseRefString(
 	refPin string,
 ) (_ *ParsedRefString, rerr error) {
 	ctx, span := Tracer(ctx).Start(ctx, fmt.Sprintf("parseRefString: %s", refString), telemetry.Internal())
-	defer telemetry.End(span, func() error { return rerr })
+	defer telemetry.EndWithCause(span, &rerr)
 
 	kind := fastModuleSourceKindCheck(refString, refPin)
 	switch kind {
@@ -79,7 +79,7 @@ func ParseRefString(
 	}
 
 	// First, we stat ref in case the mod path github.com/username is a local directory
-	if stat, err := statFS.Stat(ctx, refString); err != nil {
+	if _, stat, err := statFS.Stat(ctx, refString); err != nil {
 		slog.Debug("parseRefString stat error", "error", err)
 	} else if stat.IsDir() {
 		return &ParsedRefString{
@@ -136,7 +136,7 @@ type gitEndpointError struct{ error }
 
 func ParseGitRefString(ctx context.Context, refString string) (_ ParsedGitRefString, rerr error) {
 	_, span := Tracer(ctx).Start(ctx, fmt.Sprintf("parseGitRefString: %s", refString), telemetry.Internal())
-	defer telemetry.End(span, func() error { return rerr })
+	defer telemetry.EndWithCause(span, &rerr)
 
 	scheme, schemelessRef := parseScheme(refString)
 
@@ -214,8 +214,16 @@ func ParseGitRefString(ctx context.Context, refString string) (_ ParsedGitRefStr
 		cloneUser += "@"
 	}
 
-	gitParsed.SourceCloneRef = gitParsed.scheme.Prefix() + sourceUser + gitParsed.RepoRoot.Root
-	gitParsed.cloneRef = gitParsed.scheme.Prefix() + cloneUser + gitParsed.RepoRoot.Root
+	// For SSH URLs, inject port after host if it is defined: ssh://user@host:port/path
+	repoRootWithPort := gitParsed.RepoRoot.Root
+	if gitParsed.scheme == SchemeSSH && endpoint.Port > 0 {
+		if host, rest, ok := strings.Cut(repoRootWithPort, "/"); ok {
+			repoRootWithPort = fmt.Sprintf("%s:%d/%s", host, endpoint.Port, rest)
+		}
+	}
+
+	gitParsed.SourceCloneRef = gitParsed.scheme.Prefix() + sourceUser + repoRootWithPort
+	gitParsed.cloneRef = gitParsed.scheme.Prefix() + cloneUser + repoRootWithPort
 
 	return gitParsed, nil
 }

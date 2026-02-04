@@ -1,0 +1,14 @@
+{
+  "name": "examples",
+  "engineVersion": "v0.19.10",
+  "sdk": {
+    "source": "go"
+  },
+  "dependencies": [
+    {
+      "name": "k3s",
+      "source": "../.."
+    }
+  ],
+  "disableDefaultFunctionCaching": true
+}

@@ -7,13 +7,13 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/containerd/containerd/v2/core/mount"
 	"github.com/containerd/continuity/fs"
 	"github.com/dagger/dagger/dagql"
 	"github.com/dagger/dagger/engine/buildkit"
 	bkcache "github.com/dagger/dagger/internal/buildkit/cache"
 	bkclient "github.com/dagger/dagger/internal/buildkit/client"
 	bkgw "github.com/dagger/dagger/internal/buildkit/frontend/gateway/client"
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
 	"github.com/dagger/dagger/util/gitutil"
 )
 
@@ -29,10 +29,6 @@ type LocalGitRef struct {
 }
 
 var _ GitRefBackend = (*LocalGitRef)(nil)
-
-func (repo *LocalGitRepository) PBDefinitions(ctx context.Context) ([]*pb.Definition, error) {
-	return repo.Directory.Self().PBDefinitions(ctx)
-}
 
 func (repo *LocalGitRepository) Get(ctx context.Context, ref *gitutil.Ref) (GitRefBackend, error) {
 	return &LocalGitRef{
@@ -129,7 +125,7 @@ func (repo *LocalGitRepository) Cleaned(ctx context.Context) (inst dagql.ObjectR
 		}
 	}()
 	skip := false
-	err = MountRef(ctx, bkref, bkSessionGroup, func(parentRoot string) error {
+	err = MountRef(ctx, bkref, bkSessionGroup, func(parentRoot string, _ *mount.Mount) error {
 		src, err := fs.RootPath(parentRoot, repo.Directory.Self().Dir)
 		if err != nil {
 			return err
@@ -240,10 +236,6 @@ func (ref *LocalGitRef) mount(ctx context.Context, depth int, fn func(*gitutil.G
 	return ref.repo.mount(ctx, depth, []GitRefBackend{ref}, fn)
 }
 
-func (ref *LocalGitRef) PBDefinitions(ctx context.Context) ([]*pb.Definition, error) {
-	return ref.repo.PBDefinitions(ctx)
-}
-
 func (ref *LocalGitRef) Tree(ctx context.Context, srv *dagql.Server, discardGitDir bool, depth int) (_ *Directory, rerr error) {
 	query, err := CurrentQuery(ctx)
 	if err != nil {
@@ -275,7 +267,7 @@ func (ref *LocalGitRef) Tree(ctx context.Context, srv *dagql.Server, discardGitD
 			return fmt.Errorf("could not find git url: %w", err)
 		}
 
-		return MountRef(ctx, bkref, bkSessionGroup, func(checkoutDir string) error {
+		return MountRef(ctx, bkref, bkSessionGroup, func(checkoutDir string, _ *mount.Mount) error {
 			checkoutDirGit := filepath.Join(checkoutDir, ".git")
 			if err := os.MkdirAll(checkoutDir, 0711); err != nil {
 				return err

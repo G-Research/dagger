@@ -21,7 +21,9 @@ import (
 	"time"
 
 	"github.com/containerd/platforms"
+	bkconfig "github.com/dagger/dagger/internal/buildkit/cmd/buildkitd/config"
 	"github.com/dagger/dagger/internal/buildkit/identity"
+	resolverconfig "github.com/dagger/dagger/internal/buildkit/util/resolver/config"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	ocispecs "github.com/opencontainers/image-spec/specs-go/v1"
@@ -173,7 +175,7 @@ func (ContainerSuite) TestExecSync(ctx context.Context, t *testctx.T) {
 				}
 			}
 		}`, nil)
-	requireErrOut(t, err, `process "false" did not complete successfully`)
+	requireErrOut(t, err, "exit code: 1")
 }
 
 func (ContainerSuite) TestError(ctx context.Context, t *testctx.T) {
@@ -3349,6 +3351,76 @@ func (ContainerSuite) TestWithRegistryAuth(ctx context.Context, t *testctx.T) {
 	require.Contains(t, pushedRef, "@sha256:")
 }
 
+// Regression test for #11667: Directory/File access on private registry images
+// requires auth credentials to be passed through when fetching uncached blobs.
+func (ContainerSuite) TestWithRegistryAuthFileAndDirectoryAccess(ctx context.Context, t *testctx.T) {
+	c := connect(ctx, t)
+
+	const htpasswd = "john:$2y$05$/iP8ud0Fs8o3NLlElyfVVOp6LesJl3oRLYoc3neArZKWX10OhynSC"
+	registrySvc := c.Container().
+		From("registry:2").
+		WithNewFile("/auth/htpasswd", htpasswd).
+		WithEnvVariable("REGISTRY_AUTH", "htpasswd").
+		WithEnvVariable("REGISTRY_AUTH_HTPASSWD_REALM", "Registry Realm").
+		WithEnvVariable("REGISTRY_AUTH_HTPASSWD_PATH", "/auth/htpasswd").
+		WithExposedPort(5000, dagger.ContainerWithExposedPortOpts{Protocol: dagger.NetworkProtocolTcp}).
+		AsService(dagger.ContainerAsServiceOpts{UseEntrypoint: true})
+
+	devEngine := devEngineContainerAsService(devEngineContainer(c,
+		func(ctr *dagger.Container) *dagger.Container {
+			return ctr.WithServiceBinding("registry", registrySvc)
+		},
+		engineWithBkConfig(ctx, t, func(ctx context.Context, t *testctx.T, cfg bkconfig.Config) bkconfig.Config {
+			cfg.Registries = map[string]resolverconfig.RegistryConfig{
+				"registry:5000": {PlainHTTP: ptr(true)},
+			}
+			return cfg
+		}),
+	))
+
+	const authFile = `{"auths":{"registry:5000":{"auth":"am9objp4RmxlamFQZGpydDI1RHZy"}}}` // john:xFlejaPdjrt25Dvr
+	imageRef := "registry:5000/test:" + identity.NewID()
+
+	clientCtr := func() *dagger.Container {
+		return engineClientContainer(ctx, t, c, devEngine).
+			WithNewFile("/docker/config.json", authFile).
+			WithEnvVariable("DOCKER_CONFIG", "/docker")
+	}
+
+	_, err := clientCtr().
+		With(daggerNonNestedExec("core",
+			"container",
+			"from", "--address", alpineImage,
+			"with-new-file", "--path", "/test-dir/file.txt", "--contents", "dir-content",
+			"with-new-file", "--path", "/test-file.txt", "--contents", "file-content",
+			"publish", "--address", imageRef,
+		)).
+		Sync(ctx)
+	require.NoError(t, err)
+
+	// Prune to force re-fetch from registry
+	_, err = clientCtr().
+		With(daggerNonNestedExec("core", "engine", "local-cache", "prune")).
+		Sync(ctx)
+	require.NoError(t, err)
+
+	out, err := clientCtr().
+		With(daggerNonNestedExec("-c",
+			"container | from "+imageRef+" | directory /test-dir | entries",
+		)).
+		Stdout(ctx)
+	require.NoError(t, err)
+	require.Contains(t, out, "file.txt")
+
+	out, err = clientCtr().
+		With(daggerNonNestedExec("-c",
+			"container | from "+imageRef+" | file /test-file.txt | contents",
+		)).
+		Stdout(ctx)
+	require.NoError(t, err)
+	require.Equal(t, "file-content", strings.TrimSpace(out))
+}
+
 func (ContainerSuite) TestImageRef(ctx context.Context, t *testctx.T) {
 	t.Run("should test query returning imageRef", func(ctx context.Context, t *testctx.T) {
 		res, err := testutil.Query[struct {
@@ -4811,7 +4883,7 @@ func (ContainerSuite) TestSymlink(ctx context.Context, t *testctx.T) {
 
 		// make sure the other mount wasn't changed
 		_, err = ctr.File("/mnt-to-other-dir/my-symlink").Sync(ctx)
-		require.ErrorContains(t, err, "no such file or directory")
+		require.ErrorContains(t, err, "/mnt-to-other-dir/my-symlink: no such file or directory")
 
 		content, err := ctr.File("/mnt/my-symlink").Contents(ctx)
 		require.NoError(t, err)
@@ -5115,7 +5187,7 @@ func (ContainerSuite) TestLoadSaveNone(ctx context.Context, t *testctx.T) {
 
 	out, err = dockerc.WithExec([]string{"docker", "inspect", imageName}, dagger.ContainerWithExecOpts{Expect: dagger.ReturnTypeFailure}).Stderr(ctx)
 	require.NoError(t, err)
-	require.Contains(t, out, "No such object")
+	require.Contains(t, strings.ToLower(out), "no such object")
 
 	out, err = alt.WithExec([]string{
 		"dagger", "shell", "-c",
@@ -5160,7 +5232,7 @@ func (m *Test) Try(ctx context.Context) error {
 
 	out, err = dockerc.WithExec([]string{"docker", "inspect", "foobar:latest"}, dagger.ContainerWithExecOpts{Expect: dagger.ReturnTypeFailure}).Stderr(ctx)
 	require.NoError(t, err)
-	require.Contains(t, out, "No such object")
+	require.Contains(t, strings.ToLower(out), "no such object")
 }
 
 func (ContainerSuite) TestExists(ctx context.Context, t *testctx.T) {
@@ -5172,6 +5244,57 @@ func (ContainerSuite) TestExists(ctx context.Context, t *testctx.T) {
 	exists, err := ctr.Exists(ctx, "subdir/data")
 	require.NoError(t, err)
 	require.Equal(t, true, exists)
+}
+
+func (ContainerSuite) TestStat(ctx context.Context, t *testctx.T) {
+	c := connect(ctx, t)
+	ctr := c.Container().
+		From(alpineImage).
+		WithWorkdir("/sub").
+		WithNewFile("subdir/data", "contents")
+	stat := ctr.Stat("subdir/data")
+
+	fileType, err := stat.FileType(ctx)
+	require.NoError(t, err)
+	require.Equal(t, dagger.FileTypeRegularType, fileType)
+
+	fileSize, err := stat.Size(ctx)
+	require.NoError(t, err)
+	require.Equal(t, 8, fileSize)
+}
+
+func (ContainerSuite) TestStatWithMountedDir(ctx context.Context, t *testctx.T) {
+	c := connect(ctx, t)
+	d := c.Directory().WithNewFile("the-file", "the data")
+	ctr := c.Container().
+		From(alpineImage).
+		WithMountedDirectory("/mnt", d)
+	stat := ctr.Stat("/mnt/the-file")
+
+	fileType, err := stat.FileType(ctx)
+	require.NoError(t, err)
+	require.Equal(t, dagger.FileTypeRegularType, fileType)
+
+	fileSize, err := stat.Size(ctx)
+	require.NoError(t, err)
+	require.Equal(t, 8, fileSize)
+}
+
+func (ContainerSuite) TestStatWithMountedFile(ctx context.Context, t *testctx.T) {
+	c := connect(ctx, t)
+	f := c.Directory().WithNewFile("the-file", "the data").File("the-file")
+	ctr := c.Container().
+		From(alpineImage).
+		WithMountedFile("/mnt-file", f)
+	stat := ctr.Stat("/mnt-file")
+
+	fileType, err := stat.FileType(ctx)
+	require.NoError(t, err)
+	require.Equal(t, dagger.FileTypeRegularType, fileType)
+
+	fileSize, err := stat.Size(ctx)
+	require.NoError(t, err)
+	require.Equal(t, 8, fileSize)
 }
 
 func (ContainerSuite) TestWithoutFileOnMountedFile(ctx context.Context, t *testctx.T) {
@@ -5232,4 +5355,111 @@ func (ContainerSuite) TestWithHostMount(ctx context.Context, t *testctx.T) {
 	output, err := ctr.Stdout(ctx)
 	require.NoError(t, err)
 	require.Contains(t, output, "newfile")
+}
+
+func (ContainerSuite) TestFileCaching(ctx context.Context, t *testctx.T) {
+	theTest := func(ctx context.Context, t *testctx.T, fileSelector func(*dagger.Client, string) *dagger.File) {
+		t.Helper()
+
+		dir := t.TempDir()
+		fileData := identity.NewID()
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "rand1"), []byte(fileData), 0o600))
+
+		// This tests three back-to-back runs, using different clients, to test that caching works.
+		// The first and second run should be the same (i.e. the second should be cached), then the third test
+		// should be different (i.e. not cached)
+
+		fn := func() (string, string, error) {
+			c := connect(ctx, t)
+			defer c.Close()
+
+			// This is used to test selecting a file different way, e.g. c.Host().File() vs c.Host().Directory().File()
+			// has no effect on the expected caching behavior
+			f := fileSelector(c, dir)
+
+			out, err := c.Container().
+				From(alpineImage).
+				WithFile("the-file", f).
+				WithExec([]string{"sh", "-c", "cat the-file && echo -n : && head -c 99 /dev/random | base64 -w0"}).
+				Stdout(ctx)
+			if err != nil {
+				return "", "", err
+			}
+
+			fileData, randData, ok := strings.Cut(out, ":")
+			if !ok {
+				return "", "", fmt.Errorf("failed to cut %s", out)
+			}
+			require.Len(t, randData, 132) // test that 99 chars were randomly produced, this accounts for 4/3 times base64 bloat
+			return fileData, randData, nil
+		}
+
+		fileData1, randData1, err := fn()
+		require.NoError(t, err)
+		require.Equal(t, fileData, fileData1)
+
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "this-is-not-used"), []byte(identity.NewID()), 0o600))
+
+		fileData2, randData2, err := fn()
+		require.NoError(t, err)
+		require.Equal(t, fileData, fileData2)
+		require.Equal(t, randData1, randData2, "command was re-executed when it should have been cached")
+
+		// change the used file, to ensure it busts the cache
+		newFileData := identity.NewID()
+		require.NotEqual(t, fileData, newFileData)
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "rand1"), []byte(newFileData), 0o600))
+
+		fileData3, randData3, err := fn()
+		require.NoError(t, err)
+		require.NotEqual(t, randData1, randData3, "execution was cached when it should have been re-run")
+		require.Equal(t, newFileData, fileData3)
+	}
+
+	t.Run("use file directly", func(ctx context.Context, t *testctx.T) {
+		theTest(ctx, t, func(c *dagger.Client, dir string) *dagger.File {
+			return c.Host().File(filepath.Join(dir, "rand1"))
+		})
+	})
+	t.Run("use file via directory", func(ctx context.Context, t *testctx.T) {
+		theTest(ctx, t, func(c *dagger.Client, dir string) *dagger.File {
+			return c.Host().Directory(dir).File("rand1")
+		})
+	})
+	t.Run("use file via filter", func(ctx context.Context, t *testctx.T) {
+		theTest(ctx, t, func(c *dagger.Client, dir string) *dagger.File {
+			return c.Host().Directory(dir).Filter(dagger.DirectoryFilterOpts{
+				Exclude: []string{"this-shouldnt-change-anything"},
+			}).File("rand1")
+		})
+	})
+}
+
+func (ContainerSuite) TestContainerCaching(ctx context.Context, t *testctx.T) {
+	c := connect(ctx, t)
+
+	ctr := c.Container().From(alpineImage).WithNewFile("file", "data")
+
+	var err error
+	testRefs := make([]string, 2)
+	pushedRefs := make([]string, 2)
+	for i := 0; i < 2; i++ {
+		testRefs[i] = registryRef("container-caching")
+		pushedRefs[i], err = ctr.Publish(ctx, testRefs[i])
+		require.NoError(t, err)
+	}
+
+	require.NotEqual(t, testRefs[0], testRefs[1])
+	require.NotEqual(t, pushedRefs[0], pushedRefs[1])
+
+	output := make([]string, 2)
+	for i := 0; i < 2; i++ {
+		output[i], err = c.Container().From(testRefs[i]).
+			WithExec([]string{"sh", "-c", "head -c 99 /dev/random | base64 -w0"}).
+			Stdout(ctx)
+		require.NoError(t, err)
+		require.Len(t, output[i], 132) // test that 99 chars were randomly produced, this accounts for 4/3 times base64 bloat
+	}
+
+	require.Equal(t, output[0], output[1], "container exec was not cached")
 }

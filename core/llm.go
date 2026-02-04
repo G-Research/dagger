@@ -422,7 +422,7 @@ func NewLLMRouter(ctx context.Context, srv *dagql.Server) (_ *LLMRouter, rerr er
 		return uriOrPlaintext, nil
 	}
 	ctx, span := Tracer(ctx).Start(ctx, "load LLM router config", telemetry.Internal(), telemetry.Encapsulate())
-	defer telemetry.End(span, func() error { return rerr })
+	defer telemetry.EndWithCause(span, &rerr)
 	env := make(map[string]string)
 	// Load .env from current directory, if it exists
 	if envFile, err := loadSecret(ctx, "file://.env"); err == nil {
@@ -587,6 +587,25 @@ func (llm *LLM) WithPromptFile(ctx context.Context, file *File) (*LLM, error) {
 		return nil, err
 	}
 	return llm.WithPrompt(string(contents)), nil
+}
+
+// WithoutMessageHistory removes all messages, leaving only the system prompts
+func (llm *LLM) WithoutMessageHistory() *LLM {
+	llm = llm.Clone()
+	llm.messages = slices.DeleteFunc(llm.messages, func(msg *ModelMessage) bool {
+		return msg.Role != "system"
+	})
+	return llm
+}
+
+// WithoutSystemPrompts removes all system prompts from the history, leaving
+// only the default system prompt
+func (llm *LLM) WithoutSystemPrompts() *LLM {
+	llm = llm.Clone()
+	llm.messages = slices.DeleteFunc(llm.messages, func(msg *ModelMessage) bool {
+		return msg.Role == "system"
+	})
+	return llm
 }
 
 // Append a system prompt message to the history
@@ -853,7 +872,7 @@ func (llm *LLM) loop(ctx context.Context) error {
 				attribute.String(telemetry.LLMRoleAttr, telemetry.LLMRoleAssistant),
 			))
 			res, sendErr = client.SendQuery(ctx, messagesToSend, tools)
-			telemetry.End(span, func() error { return sendErr })
+			telemetry.EndWithCause(span, &sendErr)
 			if sendErr != nil {
 				var finished *ModelFinishedError
 				if errors.As(sendErr, &finished) {

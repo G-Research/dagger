@@ -13,6 +13,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strconv"
 	"strings"
@@ -32,6 +33,7 @@ import (
 	"github.com/dagger/dagger/internal/buildkit/solver/pb"
 	"github.com/dagger/dagger/internal/buildkit/util/bklog"
 	bknetwork "github.com/dagger/dagger/internal/buildkit/util/network"
+	"github.com/dagger/dagger/internal/buildkit/util/overlay"
 	"github.com/dagger/dagger/util/cleanups"
 	"github.com/docker/docker/pkg/idtools"
 	"github.com/google/uuid"
@@ -42,6 +44,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
+	"golang.org/x/sync/errgroup"
 	"golang.org/x/sys/unix"
 
 	"dagger.io/dagger/telemetry"
@@ -65,14 +68,15 @@ const (
 
 	DaggerSessionPortEnv  = "DAGGER_SESSION_PORT"
 	DaggerSessionTokenEnv = "DAGGER_SESSION_TOKEN"
+	DaggerEngineNumCPUEnv = "DAGGER_ENGINE_NUM_CPU"
 
 	// this is set by buildkit, we cannot change
 	BuildkitSessionIDHeader = "x-docker-expose-session-uuid"
 
 	BuildkitQemuEmulatorMountPoint = "/dev/.buildkit_qemu_emulator"
 
-	cgroupSampleInterval     = 3 * time.Second
-	finalCgroupSampleTimeout = 3 * time.Second
+	cgroupSampleInterval     = 5 * time.Second
+	finalCgroupSampleTimeout = 5 * time.Second
 
 	defaultHostname = "dagger"
 )
@@ -99,13 +103,14 @@ type execState struct {
 	spec             *specs.Spec
 	networkNamespace bknetwork.Namespace
 	rootfsPath       string
+	nonRootMounts    []mount.Mount
 	uid              uint32
 	gid              uint32
 	sgids            []uint32
 	resolvConfPath   string
 	hostsFilePath    string
 	exitCodePath     string
-	metaMount        *specs.Mount
+	metaMountDirPath string
 	origEnvMap       map[string]string
 
 	startedOnce *sync.Once
@@ -429,6 +434,7 @@ func (w *Worker) filterEnvs(_ context.Context, state *execState) error {
 	return nil
 }
 
+//nolint:gocyclo
 func (w *Worker) setupRootfs(ctx context.Context, state *execState) error {
 	var err error
 	state.rootfsPath, err = os.MkdirTemp("", "rootfs")
@@ -439,6 +445,12 @@ func (w *Worker) setupRootfs(ctx context.Context, state *execState) error {
 		return os.RemoveAll(state.rootfsPath)
 	})
 	state.spec.Root.Path = state.rootfsPath
+	if state.rootMount.Selector != "" {
+		state.spec.Root.Path, err = fs.RootPath(state.rootfsPath, state.rootMount.Selector)
+		if err != nil {
+			return fmt.Errorf("root mount %s points to invalid root path: %w", state.rootMount.Selector, err)
+		}
+	}
 
 	rootMountable, err := state.rootMount.Src.Mount(ctx, false)
 	if err != nil {
@@ -451,29 +463,30 @@ func (w *Worker) setupRootfs(ctx context.Context, state *execState) error {
 	if releaseRootMount != nil {
 		state.cleanups.Add("release rootfs mount", releaseRootMount)
 	}
-	// TODO: is this robust? the one for submounts is very complicated
-	if state.rootMount.Selector != "" {
-		for i, mnt := range rootMnts {
-			mnt.Source, err = fs.RootPath(mnt.Source, state.rootMount.Selector)
-			if err != nil {
-				return fmt.Errorf("root mount %s points to invalid source: %w", state.rootMount.Selector, err)
-			}
-			rootMnts[i] = mnt
-		}
-	}
 	if err := mount.All(rootMnts, state.rootfsPath); err != nil {
 		return fmt.Errorf("mount rootfs: %w", err)
 	}
+
+	overlayIncompatDirs := overlay.VolatileIncompatDirs(rootMnts)
+
 	state.cleanups.Add("unmount rootfs", func() error {
-		return mount.Unmount(state.rootfsPath, 0)
+		if err := mount.Unmount(state.rootfsPath, 0); err != nil {
+			return err
+		}
+		for _, dir := range overlayIncompatDirs {
+			if err := os.RemoveAll(dir); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 
-	var nonRootMounts []mount.Mount
 	var filteredMounts []specs.Mount
+	var metaMount *specs.Mount
 	for _, mnt := range state.spec.Mounts {
 		switch {
 		case mnt.Destination == MetaMountDestPath:
-			state.metaMount = &mnt
+			metaMount = &mnt
 
 		case mnt.Destination == BuildkitQemuEmulatorMountPoint:
 			// buildkit puts the qemu emulator under /dev, which we aren't mounting now, so just
@@ -488,7 +501,7 @@ func (w *Worker) setupRootfs(ctx context.Context, state *execState) error {
 			// bind, overlay, etc. mounts will be done to the rootfs now rather than by runc.
 			// This is to support read/write ops on them from the executor, such as filesync
 			// for nested execs, stdout/err redirection, CA configuration, etc.
-			nonRootMounts = append(nonRootMounts, mount.Mount{
+			state.nonRootMounts = append(state.nonRootMounts, mount.Mount{
 				Type:    mnt.Type,
 				Source:  mnt.Source,
 				Target:  mnt.Destination,
@@ -498,6 +511,33 @@ func (w *Worker) setupRootfs(ctx context.Context, state *execState) error {
 	}
 	state.spec.Mounts = filteredMounts
 
+	if metaMount != nil {
+		switch metaMount.Type {
+		case "bind", "rbind":
+			state.metaMountDirPath = metaMount.Source
+		default:
+			mntPath, err := os.MkdirTemp("", "meta-mount")
+			if err != nil {
+				return fmt.Errorf("create meta mount temp dir: %w", err)
+			}
+			state.cleanups.Add("remove meta mount temp dir", func() error {
+				return os.RemoveAll(mntPath)
+			})
+			mnts := []mount.Mount{{
+				Type:    metaMount.Type,
+				Source:  metaMount.Source,
+				Options: metaMount.Options,
+			}}
+			if err := mount.All(mnts, mntPath); err != nil {
+				return fmt.Errorf("mount meta mount: %w", err)
+			}
+			state.cleanups.Add("unmount meta mount", func() error {
+				return mount.UnmountMounts(mnts, mntPath, 0)
+			})
+			state.metaMountDirPath = mntPath
+		}
+	}
+
 	state.cleanups.Add("cleanup rootfs stubs", cleanups.Infallible(executor.MountStubsCleaner(
 		ctx,
 		state.rootfsPath,
@@ -505,8 +545,8 @@ func (w *Worker) setupRootfs(ctx context.Context, state *execState) error {
 		state.procInfo.Meta.RemoveMountStubsRecursive,
 	)))
 
-	for _, mnt := range nonRootMounts {
-		dstPath, err := fs.RootPath(state.rootfsPath, mnt.Target)
+	for _, mnt := range state.nonRootMounts {
+		dstPath, err := fs.RootPath(state.spec.Root.Path, mnt.Target)
 		if err != nil {
 			return fmt.Errorf("mount %s points to invalid target: %w", mnt.Target, err)
 		}
@@ -547,11 +587,21 @@ func (w *Worker) setupRootfs(ctx context.Context, state *execState) error {
 			}
 		}
 
-		if err := mnt.Mount(state.rootfsPath); err != nil {
+		if err := mnt.Mount(state.spec.Root.Path); err != nil {
 			return fmt.Errorf("mount to rootfs %s: %w", mnt.Target, err)
 		}
+		overlayIncompatDir := overlay.VolatileIncompatDir(mnt)
+
 		state.cleanups.Add("unmount from rootfs "+mnt.Target, func() error {
-			return mount.Unmount(dstPath, unix.MNT_DETACH)
+			if err := mount.Unmount(dstPath, 0); err != nil {
+				return err
+			}
+			if overlayIncompatDir != "" {
+				if err := os.RemoveAll(overlayIncompatDir); err != nil {
+					return err
+				}
+			}
+			return nil
 		})
 	}
 
@@ -580,8 +630,8 @@ func (w *Worker) setUserGroup(_ context.Context, state *execState) error {
 }
 
 func (w *Worker) setExitCodePath(_ context.Context, state *execState) error {
-	if state.metaMount != nil {
-		state.exitCodePath = filepath.Join(state.metaMount.Source, MetaMountExitCodePath)
+	if state.metaMountDirPath != "" {
+		state.exitCodePath = filepath.Join(state.metaMountDirPath, MetaMountExitCodePath)
 	}
 	return nil
 }
@@ -592,11 +642,11 @@ func (w *Worker) setupStdio(_ context.Context, state *execState) error {
 		// no more stdio setup needed
 		return nil
 	}
-	if state.metaMount == nil {
+	if state.metaMountDirPath == "" {
 		return nil
 	}
 
-	combinedOutputPath := filepath.Join(state.metaMount.Source, MetaMountCombinedOutputPath)
+	combinedOutputPath := filepath.Join(state.metaMountDirPath, MetaMountCombinedOutputPath)
 	combinedOutputFile, err := os.OpenFile(combinedOutputPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
 	if err != nil {
 		return fmt.Errorf("open combined output file: %w", err)
@@ -607,7 +657,7 @@ func (w *Worker) setupStdio(_ context.Context, state *execState) error {
 	if state.procInfo.Stdout != nil {
 		stdoutWriters = append(stdoutWriters, state.procInfo.Stdout)
 	}
-	stdoutPath := filepath.Join(state.metaMount.Source, MetaMountStdoutPath)
+	stdoutPath := filepath.Join(state.metaMountDirPath, MetaMountStdoutPath)
 	stdoutFile, err := os.OpenFile(stdoutPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
 	if err != nil {
 		return fmt.Errorf("open stdout file: %w", err)
@@ -620,7 +670,7 @@ func (w *Worker) setupStdio(_ context.Context, state *execState) error {
 	if state.procInfo.Stderr != nil {
 		stderrWriters = append(stderrWriters, state.procInfo.Stderr)
 	}
-	stderrPath := filepath.Join(state.metaMount.Source, MetaMountStderrPath)
+	stderrPath := filepath.Join(state.metaMountDirPath, MetaMountStderrPath)
 	stderrFile, err := os.OpenFile(stderrPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
 	if err != nil {
 		return fmt.Errorf("open stderr file: %w", err)
@@ -957,7 +1007,7 @@ func (w *Worker) setupNestedClient(ctx context.Context, state *execState) (rerr 
 		return nil
 	}
 
-	clientIDPath := filepath.Join(state.metaMount.Source, MetaMountClientIDPath)
+	clientIDPath := filepath.Join(state.metaMountDirPath, MetaMountClientIDPath)
 	if err := os.WriteFile(clientIDPath, []byte(w.execMD.ClientID), 0o600); err != nil {
 		return fmt.Errorf("failed to write client id %s to %s: %w", w.execMD.ClientID, clientIDPath, err)
 	}
@@ -1017,6 +1067,7 @@ func (w *Worker) setupNestedClient(ctx context.Context, state *execState) (rerr 
 		return fmt.Errorf("unexpected listener address type: %T", httpListener.Addr())
 	}
 	state.spec.Process.Env = append(state.spec.Process.Env, DaggerSessionPortEnv+"="+strconv.Itoa(tcpAddr.Port))
+	state.spec.Process.Env = append(state.spec.Process.Env, DaggerEngineNumCPUEnv+"="+strconv.Itoa(runtime.NumCPU()))
 
 	http2Srv := &http2.Server{}
 	httpSrv := &http.Server{
@@ -1122,6 +1173,7 @@ func (w *Worker) installCACerts(ctx context.Context, state *execState) error {
 	return nil
 }
 
+//nolint:gocyclo
 func (w *Worker) runContainer(ctx context.Context, state *execState) (rerr error) {
 	bundle := filepath.Join(w.executorRoot, state.id)
 	if err := os.Mkdir(bundle, 0o711); err != nil {
@@ -1146,18 +1198,20 @@ func (w *Worker) runContainer(ctx context.Context, state *execState) (rerr error
 	lg := bklog.G(ctx).
 		WithField("id", state.id).
 		WithField("args", state.spec.Process.Args)
-	if w.execMD != nil && w.execMD.CallerClientID != "" {
-		lg = lg.WithField("caller_client_id", w.execMD.CallerClientID)
+	if w.execMD != nil {
 		if w.execMD.CallID != nil {
 			lg = lg.WithField("call_id", w.execMD.CallID.Digest())
+		}
+		if w.execMD.CallerClientID != "" {
+			lg = lg.WithField("caller_client_id", w.execMD.CallerClientID)
 		}
 		if w.execMD.ClientID != "" {
 			lg = lg.WithField("nested_client_id", w.execMD.ClientID)
 		}
 	}
-	lg.Debug("starting container")
+	lg.Info("starting container")
 	defer func() {
-		lg.WithError(rerr).Debug("container done")
+		lg.WithError(rerr).Info("container done")
 	}()
 
 	trace.SpanFromContext(ctx).AddEvent("Container created")
@@ -1234,12 +1288,115 @@ func (w *Worker) runContainer(ctx context.Context, state *execState) (rerr error
 	killer := newRunProcKiller(w.runc, state.id)
 
 	runcCall := func(ctx context.Context, started chan<- int, io runc.IO, pidfile string) error {
-		_, err := w.runc.Run(ctx, state.id, bundle, &runc.CreateOpts{
-			Started:   started,
-			IO:        io,
-			ExtraArgs: []string{"--keep"},
+		/*
+			We need to avoid the following type of race condition, which can result in invalid overlapping overlay mounts:
+			1. Engine creates random (unrelated to this exec) overlay mount like upperdir=B,lowerdir=A
+			2. We hit this code and start runc, which gets to the point where it has unshared its mount namespace but
+			   not yet pivot_root'd. In this state, since mount namespaces are forks of their parent, the overlay mount
+				 from (1) is visible in the runc processes mount namespace.
+			3. Engine unmounts the overlay from (1), but that does NOT unmount it from the runc process's mount namespace
+			4. Engine creates a new overlay mount like upperdir=C,lowerdir=B:A (i.e. upperdir from (1) is now lowerdir).
+				 This mount is invalid and technically hitting "undefined behavior" since B is still an upperdir in mounts
+				 that exist on the system.
+
+			We avoid this by starting the runc process in a clean mount namespace that was created during engine init before
+			any mounts existed, guaranteeing none are leaked into it. We setns to that clean mount namespace and then unshare
+			again to guarantee the namespace for the runc process is fully isolated. OpenTree+MoveMount are then used to
+			bind the mounts actually needed by the container into that isolated namespace so that runc can see them.
+		*/
+		rootfsFD, err := unix.OpenTree(unix.AT_FDCWD, state.rootfsPath, unix.OPEN_TREE_CLONE|unix.OPEN_TREE_CLOEXEC|unix.AT_RECURSIVE)
+		var isOldKernel bool
+		switch {
+		case errors.Is(err, unix.ENOSYS):
+			// truly ancient kernels like 4.14 are still used in places like AWS CodeBuild, so just accept the problem with overlay leaks
+			// in those obscure cases rather than erroring out.
+			isOldKernel = true
+		case err != nil:
+			return fmt.Errorf("open rootfs path %s: %w", state.rootfsPath, err)
+		}
+
+		var rootfsFile *os.File
+		var nsPath string
+		var nsPathFile *os.File
+		if !isOldKernel {
+			rootfsFile = os.NewFile(uintptr(rootfsFD), "rootfs")
+			defer rootfsFile.Close()
+
+			// CNI network namespaces are actually bind mounts of the namespace file, so we gotta move this into the mount ns for runc too
+			if state.networkNamespace != nil {
+				var tmpSpec specs.Spec
+				if err := state.networkNamespace.Set(&tmpSpec); err != nil {
+					return fmt.Errorf("set network namespace: %w", err)
+				}
+				if tmpSpec.Linux != nil {
+					for _, ns := range tmpSpec.Linux.Namespaces {
+						if ns.Type == specs.NetworkNamespace {
+							nsPath = ns.Path
+							break
+						}
+					}
+				}
+			}
+			if nsPath != "" {
+				nsPathFD, err := unix.OpenTree(unix.AT_FDCWD, nsPath, unix.OPEN_TREE_CLONE|unix.OPEN_TREE_CLOEXEC)
+				if err != nil {
+					return fmt.Errorf("open network namespace path %s: %w", nsPath, err)
+				}
+				nsPathFile = os.NewFile(uintptr(nsPathFD), "netns")
+				defer nsPathFile.Close()
+			}
+		}
+
+		var eg errgroup.Group
+		eg.Go(func() error {
+			if !isOldKernel {
+				runtime.LockOSThread()
+
+				// gotta CLONE_FS first to avoid EINVAL when setns'ing to another mount namespace
+				if err := unix.Unshare(unix.CLONE_FS); err != nil {
+					return fmt.Errorf("unshare fs attrs: %w", err)
+				}
+				// switch to the clean mount namespace free of leaks from other unrelated engine mounts
+				if err := unix.Setns(int(w.cleanMntNS.Fd()), unix.CLONE_NEWNS); err != nil {
+					return fmt.Errorf("setns clean mount namespace: %w", err)
+				}
+				// do a final unshare, forking from the clean mount namespace to get a final fully isolated mount namespace for runc
+				if err := unix.Unshare(unix.CLONE_NEWNS); err != nil {
+					return fmt.Errorf("unshare new mount namespace: %w", err)
+				}
+
+				defer func() {
+					// best effort try to setns back to the host mount namespace so the go runtime can re-use this thread rather than
+					// burning it off
+					err := unix.Setns(int(w.hostMntNS.Fd()), unix.CLONE_NEWNS)
+					if err != nil {
+						slog.Error("failed to setns host mount namespace after container run", "err", err)
+					} else {
+						runtime.UnlockOSThread()
+					}
+				}()
+
+				if err := unix.MoveMount(int(rootfsFile.Fd()), "", unix.AT_FDCWD, state.rootfsPath, unix.MOVE_MOUNT_F_EMPTY_PATH); err != nil {
+					return fmt.Errorf("move mount rootfs %s: %w", state.rootfsPath, err)
+				}
+				rootfsFile.Close()
+
+				if nsPathFile != nil {
+					if err := unix.MoveMount(int(nsPathFile.Fd()), "", unix.AT_FDCWD, nsPath, unix.MOVE_MOUNT_F_EMPTY_PATH); err != nil {
+						return fmt.Errorf("move mount network namespace %s: %w", nsPath, err)
+					}
+					nsPathFile.Close()
+				}
+			}
+
+			_, err = w.runc.Run(ctx, state.id, bundle, &runc.CreateOpts{
+				Started:   started,
+				IO:        io,
+				ExtraArgs: []string{"--keep"},
+			})
+			return err
 		})
-		return err
+		return eg.Wait()
 	}
 
 	return exitError(ctx, state.exitCodePath, w.callWithIO(ctx, state.procInfo, startedCallback, killer, runcCall), state.procInfo.Meta.ValidExitCodes)

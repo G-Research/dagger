@@ -52,10 +52,11 @@ var shellCmd = &cobra.Command{
 
 			err := handler.RunAll(ctx, args)
 
-			// Don't bother printing the error message if the TUI is enabled.
+			// Wrap exit status in ExitError so the TUI preserves the exit code
+			// and doesn't print a redundant error message.
 			var es interp.ExitStatus
 			if handler.tty && errors.As(err, &es) {
-				return ExitError{Code: int(es)}
+				return idtui.ExitError{Code: int(es), Original: err}
 			}
 
 			return err
@@ -334,7 +335,7 @@ func (h *shellCallHandler) runInteractive(ctx context.Context) error {
 
 	// give ourselves a blank slate by zooming into a passthrough span
 	ctx, shellSpan := Tracer().Start(ctx, "shell", telemetry.Passthrough())
-	defer telemetry.End(shellSpan, func() error { return nil })
+	defer shellSpan.End()
 	Frontend.SetPrimary(dagui.SpanID{SpanID: shellSpan.SpanContext().SpanID()})
 	slog.SetDefault(slog.SpanLogger(ctx, InstrumentationLibrary))
 
@@ -398,13 +399,15 @@ func (h *shellCallHandler) Handle(ctx context.Context, line string) (rerr error)
 		trace.WithAttributes(
 			attribute.String(telemetry.ContentTypeAttr, h.mode.ContentType()),
 		))
-	defer telemetry.End(span, func() error {
+	var telemetryErr error
+	defer telemetry.EndWithCause(span, &telemetryErr)
+	defer func() {
 		if errors.Is(rerr, context.Canceled) {
 			span.SetAttributes(attribute.Bool(telemetry.CanceledAttr, true))
-			return nil
+		} else {
+			telemetryErr = rerr
 		}
-		return rerr
-	})
+	}()
 
 	// redirect stdio to the current span
 	stdio := telemetry.SpanStdio(ctx, InstrumentationLibrary)
@@ -545,7 +548,11 @@ func (h *shellCallHandler) llm(ctx context.Context) (*LLMSession, error) {
 	return h.llmSession, h.llmErr
 }
 
-func (h *shellCallHandler) KeyBindings() []key.Binding {
+func (h *shellCallHandler) KeyBindings(out idtui.TermOutput) []key.Binding {
+	autoCompactHelp := "auto-compact"
+	if h.llmSession != nil && h.llmSession.ShouldAutocompact() {
+		autoCompactHelp = out.String(autoCompactHelp).Foreground(termenv.ANSIGreen).String()
+	}
 	return []key.Binding{
 		key.NewBinding(
 			key.WithKeys("!"),
@@ -562,21 +569,34 @@ func (h *shellCallHandler) KeyBindings() []key.Binding {
 			key.WithHelp("ctrl+u", "upload changes"),
 			idtui.KeyEnabled(h.mode == modePrompt),
 		),
+		key.NewBinding(
+			key.WithKeys("ctrl+x"),
+			key.WithHelp("ctrl+x", autoCompactHelp),
+			idtui.KeyEnabled(h.llmSession != nil),
+		),
 	}
 }
 
-func (h *shellCallHandler) ReactToInput(ctx context.Context, msg tea.KeyMsg) tea.Cmd {
+func (h *shellCallHandler) ReactToInput(ctx context.Context, msg tea.KeyMsg, editing bool, editline *editline.Model) tea.Cmd {
 	switch msg.String() {
 	case ">":
-		h.mode = modePrompt
-		return func() tea.Msg {
-			h.llm(ctx) // initialize LLM
-			return idtui.UpdatePromptMsg{}
+		if editline.AtStart() {
+			h.mode = modePrompt
+			return func() tea.Msg {
+				h.llm(ctx) // initialize LLM
+				return idtui.UpdatePromptMsg{}
+			}
 		}
 	case "!":
-		h.mode = modeShell
-		return func() tea.Msg {
-			return idtui.UpdatePromptMsg{}
+		if editline.AtStart() {
+			h.mode = modeShell
+			return func() tea.Msg {
+				return idtui.UpdatePromptMsg{}
+			}
+		}
+	case "ctrl+x":
+		if h.llmSession != nil {
+			h.llmSession.ToggleAutocompact()
 		}
 	case "ctrl+s":
 		if h.llmSession != nil {

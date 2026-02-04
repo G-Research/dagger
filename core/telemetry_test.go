@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"net/http"
+	"os"
 	"testing"
 
 	"github.com/containerd/containerd/v2/core/content"
@@ -11,6 +12,7 @@ import (
 	"github.com/dagger/dagger/dagql/call"
 	"github.com/dagger/dagger/engine"
 	"github.com/dagger/dagger/engine/buildkit"
+	engineclient "github.com/dagger/dagger/engine/client"
 	"github.com/dagger/dagger/engine/clientdb"
 	"github.com/dagger/dagger/engine/filesync"
 	"github.com/dagger/dagger/engine/server/resource"
@@ -25,15 +27,22 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
-type mockServer struct{}
+type mockServer struct {
+	moduleSource   *ModuleSource
+	functionCall   *FunctionCall
+	clientMetadata *engine.ClientMetadata
+}
 
 func (ms *mockServer) ServeModule(ctx context.Context, mod *Module, includeDependencies bool) error {
 	return nil
 }
 
 func (ms *mockServer) CurrentModule(context.Context) (*Module, error) {
+	if ms.moduleSource == nil {
+		return nil, nil
+	}
 	c := call.New().Append(&ast.Type{}, "caller1")
-	rs, err := dagql.NewResultForID(&ModuleSource{}, c)
+	rs, err := dagql.NewResultForID(ms.moduleSource, c)
 	if err != nil {
 		panic(err)
 	}
@@ -47,8 +56,12 @@ func (ms *mockServer) CurrentModule(context.Context) (*Module, error) {
 	}, nil
 }
 
-func (ms *mockServer) CurrentFunctionCall(context.Context) (*FunctionCall, error) {
+func (ms *mockServer) ModuleParent(context.Context) (*Module, error) {
 	return nil, nil
+}
+
+func (ms *mockServer) CurrentFunctionCall(context.Context) (*FunctionCall, error) {
+	return ms.functionCall, nil
 }
 
 func (ms *mockServer) CurrentServedDeps(context.Context) (*ModDeps, error) {
@@ -56,6 +69,9 @@ func (ms *mockServer) CurrentServedDeps(context.Context) (*ModDeps, error) {
 }
 
 func (ms *mockServer) MainClientCallerMetadata(context.Context) (*engine.ClientMetadata, error) {
+	if ms.clientMetadata != nil {
+		return ms.clientMetadata, nil
+	}
 	return &engine.ClientMetadata{}, nil
 }
 
@@ -95,14 +111,20 @@ func (ms *mockServer) BuildkitSession() *bksession.Manager         { return nil 
 func (ms *mockServer) Locker() *locker.Locker                      { return nil }
 func (ms *mockServer) SecretSalt() []byte                          { return nil }
 func (ms *mockServer) FileSyncer() *filesync.FileSyncer            { return nil }
-func (ms *mockServer) ClientTelemetry(ctc context.Context, sessID, clientID string) (*clientdb.Queries, func() error, error) {
-	return nil, nil, nil
+func (ms *mockServer) ClientTelemetry(ctc context.Context, sessID, clientID string) (*clientdb.DB, error) {
+	return nil, nil
 }
 func (ms *mockServer) EngineName() string { return "mockEngine" }
 func (ms *mockServer) Clients() []string  { return []string{} }
 func (ms *mockServer) RegisterSSHFSVolume(context.Context, string, digest.Digest, digest.Digest) (*Volume, error) {
 	return nil, nil
 }
+
+func (ms *mockServer) CloudEngineClient(context.Context, string, string, []string) (*engineclient.Client, bool, error) {
+	return nil, false, nil
+}
+
+func (ms *mockServer) CleanMountNS() *os.File { return nil }
 
 func TestParseCallerCalleeRefs(t *testing.T) {
 	mID := call.New().Append(&ast.Type{}, "callee1")
@@ -112,8 +134,29 @@ func TestParseCallerCalleeRefs(t *testing.T) {
 			"versioned_git_ssh",
 			"git@github.com:dagger/dagger-test-modules/versioned@main", "0cabe03cc0a9079e738c92b2c589d81fd560011f",
 		)))
-	_, calleeRef := parseCallerCalleeRefs(t.Context(), &Query{Server: &mockServer{}}, pcID)
 
+	// Set up mock server with Git source for the caller
+	mockSrv := &mockServer{
+		moduleSource: &ModuleSource{
+			Kind: ModuleSourceKindGit,
+			Git: &GitModuleSource{
+				CloneRef: "git@github.com:dagger/dagger-test-modules/caller",
+				Version:  "v1.0.0",
+			},
+		},
+		functionCall: &FunctionCall{
+			Name: "callerFunction",
+		},
+	}
+
+	callerRef, calleeRef := parseCallerCalleeRefs(t.Context(), &Query{Server: mockSrv}, pcID)
+
+	require.NotNil(t, callerRef)
+	require.Equal(t, "github.com/dagger/dagger-test-modules/caller", callerRef.ref)
+	require.Equal(t, "v1.0.0", callerRef.version)
+	require.Equal(t, "callerFunction", callerRef.functionName)
+
+	require.NotNil(t, calleeRef)
 	require.Equal(t, "github.com/dagger/dagger-test-modules/versioned", calleeRef.ref)
 	require.Equal(t, "0cabe03cc0a9079e738c92b2c589d81fd560011f", calleeRef.version)
 	require.Equal(t, "VersionedGitSSH.hello", calleeRef.functionName)

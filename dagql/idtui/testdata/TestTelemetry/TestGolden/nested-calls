@@ -6,13 +6,13 @@ level-2/
 
 Expected stderr:
 
-▼ connect X.Xs
+✔ connect X.Xs
 ├╴✔ starting engine X.Xs
-├╴▼ connecting to engine X.Xs
+├╴✔ connecting to engine X.Xs
 │ ┃ XX:XX:XX INF connected name=xxxxxxxxxxxxx.xxxxxxxxxxxxx.dagger.local client-version=vX.X.X-xxxxxxxxxxxx-xxxxxxxxxxxx server-version=vX.X.X-xxxxxxxxxxxx-xxxxxxxxxxxx
 ╰╴✔ starting session X.Xs
  
-▼ load module: ./viztest X.Xs
+✔ load module: ./viztest X.Xs
 ├╴✔ finding module configuration X.Xs
 ├╴✔ initializing module X.Xs
 ├╴✔ inspecting module metadata X.Xs
@@ -21,7 +21,7 @@ Expected stderr:
 ✔ parsing command line arguments X.Xs
 
 ✔ viztest: Viztest! X.Xs
-▼ .nestedCalls: [String!]! X.Xs
+✔ .nestedCalls: [String!]! X.Xs
 ├╴$ file(name: "file", contents: "hey"): File! X.Xs CACHED
 │
 ├╴$ Directory.withFile(
@@ -60,7 +60,7 @@ Expected stderr:
 │   ┆ ): Directory!
 │   ): Container! X.Xs CACHED
 ├╴✔ .rootfs: Directory! X.Xs
-╰╴✔ .entries: [String!]! X.Xs
+╰╴$ .entries: [String!]! X.Xs CACHED
 
 
 Setup tracing at https://dagger.cloud/traces/setup. To hide set DAGGER_NO_NAG=1

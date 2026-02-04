@@ -13,9 +13,7 @@ import (
 	"github.com/dagger/dagger/internal/cloud"
 )
 
-var (
-	TLSHandshakeTimeout = 15 * time.Second
-)
+var TLSHandshakeTimeout = 15 * time.Second
 
 func init() {
 	register("dagger-cloud", &daggerCloudDriver{})
@@ -24,11 +22,11 @@ func init() {
 // daggerCloudDriver creates and manages a Cloud Engine, then connects to it
 type daggerCloudDriver struct{}
 
-type daggerCloudConnector struct {
+type DaggerCloudConnector struct {
 	EngineSpec cloud.EngineSpec
 }
 
-func (dc *daggerCloudConnector) Connect(ctx context.Context) (net.Conn, error) {
+func (dc *DaggerCloudConnector) Connect(ctx context.Context) (net.Conn, error) {
 	serverAddr := dc.EngineSpec.URL
 
 	// Extract hostname for SNI
@@ -71,14 +69,21 @@ func (dc *daggerCloudConnector) Connect(ctx context.Context) (net.Conn, error) {
 	return tlsConn, nil
 }
 
+func (dc *DaggerCloudConnector) EngineID() string {
+	return dc.EngineSpec.InstanceID
+}
+
 func (d *daggerCloudDriver) Available(ctx context.Context) (bool, error) {
 	return true, nil // assume always available
 }
 
 func (d *daggerCloudDriver) Provision(ctx context.Context, _ *url.URL, opts *DriverOpts) (Connector, error) {
-	client, err := cloud.NewClient(ctx)
-	if err != nil {
+	if opts.CloudAuth == nil {
 		return nil, errors.New("please run `dagger login <org>` first or configure a DAGGER_CLOUD_TOKEN")
+	}
+	client, err := cloud.NewClient(ctx, opts.CloudAuth)
+	if err != nil {
+		return nil, err
 	}
 
 	var (
@@ -91,7 +96,12 @@ func (d *daggerCloudDriver) Provision(ctx context.Context, _ *url.URL, opts *Dri
 		execCmd = opts.ExecCmd
 	}
 
-	engineSpec, err := client.Engine(ctx, cloud.EngineRequest{Module: module, Function: function, ExecCmd: execCmd, ClientID: opts.ClientID})
+	engineSpec, err := client.Engine(ctx, cloud.EngineRequest{
+		Module:   module,
+		Function: function,
+		ExecCmd:  execCmd,
+		ClientID: opts.ClientID,
+	})
 	if err != nil {
 		if errors.Is(err, cloud.ErrNoOrg) {
 			return nil, errors.New("please associate this Engine with an org by running `dagger login <org>")
@@ -99,7 +109,7 @@ func (d *daggerCloudDriver) Provision(ctx context.Context, _ *url.URL, opts *Dri
 		return nil, err
 	}
 
-	return &daggerCloudConnector{EngineSpec: *engineSpec}, nil
+	return &DaggerCloudConnector{EngineSpec: *engineSpec}, nil
 }
 
 func (d *daggerCloudDriver) ImageLoader(ctx context.Context) imageload.Backend {

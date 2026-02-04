@@ -11,7 +11,6 @@ import (
 	"sync"
 
 	"dagger.io/dagger/telemetry"
-	bkgw "github.com/dagger/dagger/internal/buildkit/frontend/gateway/client"
 	"github.com/dagger/dagger/internal/buildkit/identity"
 	bksession "github.com/dagger/dagger/internal/buildkit/session"
 	bksolver "github.com/dagger/dagger/internal/buildkit/solver"
@@ -21,8 +20,6 @@ import (
 	"github.com/dagger/dagger/util/gitutil"
 	"github.com/dagger/dagger/util/hashutil"
 	"github.com/opencontainers/go-digest"
-	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/dagger/dagger/analytics"
@@ -359,13 +356,22 @@ func (ud *UserDefault) Value(ctx context.Context) (any, error) {
 	if !ud.IsObject() {
 		return ud.UserDefaultPrimitive.Value()
 	}
+	query, err := CurrentQuery(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("get current query: %w", err)
+	}
+	mainClient, err := query.NonModuleParentClientMetadata(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("access main client: %w", err)
+	}
+	mainCtx := engine.ContextWithClientMetadata(ctx, mainClient)
 	// Resolve object from user-supplied "address"
-	srv := dagql.CurrentDagqlServer(ctx)
+	srv := dagql.CurrentDagqlServer(mainCtx)
 	// "Secret" -> "secret", "GitRef" -> "gitRef", etc
 	typename := ud.Arg.TypeDef.ToType().Name()
 	typename = strings.ToLower(typename[0:1]) + typename[1:]
-	var result dagql.AnyResult
-	if err := srv.Select(ctx, srv.Root(), &result,
+	var result dagql.AnyObjectResult
+	if err := srv.Select(mainCtx, srv.Root(), &result,
 		dagql.Selector{
 			Field: "address",
 			Args: []dagql.NamedInput{{
@@ -376,13 +382,28 @@ func (ud *UserDefault) Value(ctx context.Context) (any, error) {
 		dagql.Selector{
 			Field: strings.ToLower(typename),
 		},
-		dagql.Selector{
-			Field: "id",
-		},
 	); err != nil {
 		return nil, ud.errorf(err, "resolve object (%q)", typename)
 	}
-	return result.Unwrap(), nil
+
+	if secret, ok := dagql.UnwrapAs[dagql.ObjectResult[*Secret]](result); ok {
+		secretStore, err := query.Secrets(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get secret store: %w", err)
+		}
+		if err := secretStore.AddSecret(secret); err != nil {
+			return nil, fmt.Errorf("failed to add secret: %w", err)
+		}
+	}
+
+	id, err := result.Select(mainCtx, srv, dagql.Selector{
+		Field: "id",
+	})
+	if err != nil {
+		return nil, ud.errorf(err, "get object ID")
+	}
+
+	return id.Unwrap(), nil
 }
 
 func (ud *UserDefault) DagqlID(ctx context.Context) (dagql.IDType, error) {
@@ -563,11 +584,22 @@ func (fn *ModuleFunction) CacheConfigForCall(
 		}
 
 		for _, arg := range ctxArgVals {
-			dgstInputs = append(dgstInputs, arg.name, arg.val.ID().Digest().String())
+			id := arg.val.ID()
+			// prefer content digest if available
+			dgst := id.ContentDigest()
+			if dgst == "" {
+				dgst = id.Digest()
+			}
+			dgstInputs = append(dgstInputs, arg.name, dgst.String())
 		}
 		for _, arg := range userDefaultVals {
 			if arg != nil {
-				dgstInputs = append(dgstInputs, arg.name, arg.val.ID().Digest().String())
+				id := arg.val.ID()
+				dgst := id.ContentDigest()
+				if dgst == "" {
+					dgst = id.Digest()
+				}
+				dgstInputs = append(dgstInputs, arg.name, dgst.String())
 			}
 		}
 	}
@@ -584,7 +616,11 @@ func (fn *ModuleFunction) CacheConfigForCall(
 	return cacheCfgResp, nil
 }
 
-func (fn *ModuleFunction) loadFunctionRuntime(ctx context.Context) (runtime dagql.ObjectResult[*Container], err error) {
+func (fn *ModuleFunction) loadFunctionRuntime(ctx context.Context) (runtime dagql.ObjectResult[*Container], rerr error) {
+	// hide all this internal plumbing making up the call
+	ctx, hideSpan := Tracer(ctx).Start(ctx, "load sdk runtime", telemetry.Internal())
+	defer telemetry.EndWithCause(hideSpan, &rerr)
+
 	mod := fn.mod
 	srv := dagql.CurrentDagqlServer(ctx)
 
@@ -704,13 +740,16 @@ func (fn *ModuleFunction) Call(ctx context.Context, opts *CallOpts) (t dagql.Any
 
 	srv := dagql.CurrentDagqlServer(ctx)
 
-	runtime, err := fn.loadFunctionRuntime(ctx)
+	// hide all this internal plumbing making up the call
+	hideCtx := dagql.WithSkip(ctx)
+
+	runtime, err := fn.loadFunctionRuntime(hideCtx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load runtime: %w", err)
 	}
 
 	var metaDir dagql.ObjectResult[*Directory]
-	err = srv.Select(ctx, srv.Root(), &metaDir,
+	err = srv.Select(hideCtx, srv.Root(), &metaDir,
 		dagql.Selector{
 			Field: "directory",
 		},
@@ -720,7 +759,7 @@ func (fn *ModuleFunction) Call(ctx context.Context, opts *CallOpts) (t dagql.Any
 	}
 
 	var ctr dagql.ObjectResult[*Container]
-	err = srv.Select(ctx, runtime, &ctr,
+	err = srv.Select(hideCtx, runtime, &ctr,
 		dagql.Selector{
 			Field: "withMountedDirectory",
 			Args: []dagql.NamedInput{
@@ -733,9 +772,7 @@ func (fn *ModuleFunction) Call(ctx context.Context, opts *CallOpts) (t dagql.Any
 		return nil, fmt.Errorf("exec function: %w", err)
 	}
 
-	execCtx := ctx
-	execCtx = dagql.WithSkip(execCtx) // this span shouldn't be shown (it's entirely useless)
-	err = srv.Select(execCtx, ctr, &ctr,
+	err = srv.Select(hideCtx, ctr, &ctr,
 		dagql.Selector{
 			Field: "withExec",
 			Args: []dagql.NamedInput{
@@ -772,31 +809,7 @@ func (fn *ModuleFunction) Call(ctx context.Context, opts *CallOpts) (t dagql.Any
 			if err != nil {
 				return nil, fmt.Errorf("load error instance: %w", err)
 			}
-			dagErr := errInst.Self().Clone()
-			originCtx := trace.SpanContextFromContext(
-				telemetry.Propagator.Extract(
-					context.Background(),
-					telemetry.AnyMapCarrier(dagErr.Extensions()),
-				),
-			)
-			if !originCtx.IsValid() {
-				// If the Error doesn't already have an origin, inject the current trace
-				// context as its origin.
-				tm := propagation.MapCarrier{}
-				telemetry.Propagator.Inject(ctx, tm)
-				for _, key := range tm.Keys() {
-					val := tm.Get(key)
-					valJSON, err := json.Marshal(val)
-					if err != nil {
-						return nil, fmt.Errorf("marshal value: %w", err)
-					}
-					dagErr.Values = append(dagErr.Values, &ErrorValue{
-						Name:  key,
-						Value: JSON(valJSON),
-					})
-				}
-			}
-			return nil, dagErr
+			return nil, errInst.Self()
 		}
 		if fn.metadata.OriginalName == "" {
 			return nil, fmt.Errorf("call constructor: %w", err)
@@ -810,18 +823,13 @@ func (fn *ModuleFunction) Call(ctx context.Context, opts *CallOpts) (t dagql.Any
 		return nil, fmt.Errorf("get function output directory: %w", err)
 	}
 
-	result, err := ctrOutputDir.Evaluate(ctx)
+	modMetaFile, err := ctrOutputDir.File(ctx, modMetaOutputPath)
 	if err != nil {
-		return nil, fmt.Errorf("evaluate function: %w", err)
-	}
-	if result == nil {
-		return nil, fmt.Errorf("function returned nil result")
+		return nil, fmt.Errorf("failed to get mod meta file: %w", err)
 	}
 
 	// Read the output of the function
-	outputBytes, err := result.Ref.ReadFile(ctx, bkgw.ReadRequest{
-		Filename: modMetaOutputPath,
-	})
+	outputBytes, err := modMetaFile.Contents(ctx, nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("read function output file: %w", err)
 	}
@@ -966,10 +974,37 @@ func moduleAnalyticsProps(mod *Module, prefix string, props map[string]string) {
 	}
 }
 
-// loadContextualArg loads a contextual argument from the module context directory.
+// loadContainerFromAddress loads a Container from a given address using the Address API.
+func loadContainerFromAddress(ctx context.Context, dag *dagql.Server, address string) (dagql.IDType, error) {
+	var addr dagql.ObjectResult[*Address]
+	err := dag.Select(ctx, dag.Root(), &addr,
+		dagql.Selector{
+			Field: "address",
+			Args: []dagql.NamedInput{
+				{Name: "value", Value: dagql.String(address)},
+			},
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("load address %q for container default: %w", address, err)
+	}
+
+	var ctr dagql.ObjectResult[*Container]
+	err = dag.Select(ctx, addr, &ctr,
+		dagql.Selector{Field: "container"},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("load container from address %q: %w", address, err)
+	}
+
+	return dagql.NewID[*Container](ctr.ID()), nil
+}
+
+// loadContextualArg loads a contextual argument from the module context directory or address.
 //
 // For Directory, it will load the directory from the module context directory.
-// For file, it will loa the directory containing the file and then query the file ID from this directory.
+// For File, it will load the directory containing the file and then query the file ID from this directory.
+// For Container, it will load from the given address (e.g. "alpine:latest").
 //
 // This functions returns the ID of the loaded object.
 func (fn *ModuleFunction) loadContextualArg(
@@ -984,32 +1019,134 @@ func (fn *ModuleFunction) loadContextualArg(
 		return nil, fmt.Errorf("dagql server is nil but required for contextual argument %q", arg.OriginalName)
 	}
 
+	// Handle Container types with DefaultAddress
+	if arg.DefaultAddress != "" {
+		if arg.TypeDef.AsObject.Value.Name != "Container" {
+			return nil, fmt.Errorf("defaultAddress can only be used with Container type, not %s", arg.TypeDef.AsObject.Value.Name)
+		}
+		return loadContainerFromAddress(ctx, dag, arg.DefaultAddress)
+	}
+
 	if arg.DefaultPath == "" {
 		return nil, fmt.Errorf("argument %q is not a contextual argument", arg.OriginalName)
 	}
 
 	switch arg.TypeDef.AsObject.Value.Name {
 	case "Directory":
-		dir, err := fn.mod.ContextSource.Value.Self().LoadContextDir(ctx, dag, arg.DefaultPath, CopyFilter{
-			Exclude: arg.Ignore,
-		})
+		contentCacheKey := fn.mod.ContentDigestCacheKey()
+		var dir dagql.ObjectResult[*Directory]
+		err := dag.Select(ctx, dag.Root(), &dir,
+			dagql.Selector{
+				Field: "_contextDirectory",
+				Args: []dagql.NamedInput{
+					{
+						Name:  "path",
+						Value: dagql.String(arg.DefaultPath),
+					},
+					{
+						Name:  "exclude",
+						Value: dagql.ArrayInput[dagql.String](dagql.NewStringArray(arg.Ignore...)),
+					},
+					{
+						Name:  "module",
+						Value: dagql.String(fn.mod.ContextSource.Value.Self().AsString()),
+					},
+					{
+						Name:  "digest",
+						Value: dagql.String(contentCacheKey.CallKey),
+					},
+				},
+			},
+		)
 		if err != nil {
 			return nil, fmt.Errorf("load contextual directory %q: %w", arg.DefaultPath, err)
 		}
 		return dagql.NewID[*Directory](dir.ID()), nil
 
 	case "File":
-		file, err := fn.mod.ContextSource.Value.Self().LoadContextFile(ctx, dag, arg.DefaultPath)
+		contentCacheKey := fn.mod.ContentDigestCacheKey()
+		var f dagql.ObjectResult[*File]
+		err := dag.Select(ctx, dag.Root(), &f,
+			dagql.Selector{
+				Field: "_contextFile",
+				Args: []dagql.NamedInput{
+					{
+						Name:  "path",
+						Value: dagql.String(arg.DefaultPath),
+					},
+					{
+						Name:  "module",
+						Value: dagql.String(fn.mod.ContextSource.Value.Self().AsString()),
+					},
+					{
+						Name:  "digest",
+						Value: dagql.String(contentCacheKey.CallKey),
+					},
+				},
+			},
+		)
 		if err != nil {
 			return nil, fmt.Errorf("load contextual file %q: %w", arg.DefaultPath, err)
 		}
-		return dagql.NewID[*File](file.ID()), nil
+		return dagql.NewID[*File](f.ID()), nil
 
 	case "GitRepository", "GitRef":
-		var git dagql.ObjectResult[*GitRepository]
-
+		// only local sources and git repos sourced from local dirs need special handling
+		// to prevent errant reloads, other module types are reproducible and can be called directly
+		isLocalMod := fn.mod.ContextSource.Value.Self().Kind == ModuleSourceKindLocal
 		cleanedPath := filepath.Clean(strings.Trim(arg.DefaultPath, "/"))
-		if cleanedPath == "." || cleanedPath == ".git" {
+		isLocalGit := cleanedPath == "." || cleanedPath == ".git"
+		if isLocalMod && isLocalGit {
+			contentCacheKey := fn.mod.ContentDigestCacheKey()
+			switch arg.TypeDef.AsObject.Value.Name {
+			case "GitRepository":
+				var f dagql.ObjectResult[*GitRepository]
+				err := dag.Select(ctx, dag.Root(), &f,
+					dagql.Selector{
+						Field: "_contextGitRepository",
+						Args: []dagql.NamedInput{
+							{
+								Name:  "module",
+								Value: dagql.String(fn.mod.ContextSource.Value.Self().AsString()),
+							},
+							{
+								Name:  "digest",
+								Value: dagql.String(contentCacheKey.CallKey),
+							},
+						},
+					},
+				)
+				if err != nil {
+					return nil, fmt.Errorf("load contextual git repository %q: %w", arg.DefaultPath, err)
+				}
+				return dagql.NewID[*GitRepository](f.ID()), nil
+
+			case "GitRef":
+				var f dagql.ObjectResult[*GitRef]
+				err := dag.Select(ctx, dag.Root(), &f,
+					dagql.Selector{
+						Field: "_contextGitRef",
+						Args: []dagql.NamedInput{
+							{
+								Name:  "module",
+								Value: dagql.String(fn.mod.ContextSource.Value.Self().AsString()),
+							},
+							{
+								Name:  "digest",
+								Value: dagql.String(contentCacheKey.CallKey),
+							},
+						},
+					},
+				)
+				if err != nil {
+					return nil, fmt.Errorf("load contextual git ref %q: %w", arg.DefaultPath, err)
+				}
+				return dagql.NewID[*GitRef](f.ID()), nil
+			}
+		}
+
+		var git dagql.ObjectResult[*GitRepository]
+		if isLocalGit {
 			// handle getting the git repo from the current module context
 			var err error
 			git, err = fn.mod.ContextSource.Value.Self().LoadContextGit(ctx, dag)

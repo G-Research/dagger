@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/base64"
 	"errors"
 	"io"
@@ -12,8 +13,8 @@ import (
 	"time"
 
 	"dagger.io/dagger"
-	fscopy "github.com/dagger/dagger/engine/filesync/copy"
 	"github.com/dagger/dagger/internal/buildkit/identity"
+	fscopy "github.com/dagger/dagger/internal/fsutil/copy"
 	"github.com/dagger/dagger/internal/testutil"
 	"github.com/dagger/testctx"
 	"github.com/stretchr/testify/require"
@@ -1604,4 +1605,216 @@ func (Test) Fn(ctx context.Context) error {
 
 	err := eg.Wait()
 	require.NoError(t, err)
+}
+
+func (ModuleSuite) TestPrivateGitRepoArgCaching(ctx context.Context, t *testctx.T) {
+	// Call a function with a directory arg sourced from a private git repo that uses
+	// an auth token. Do this from two different clients with different tokens for the
+	// same repo. Ensure that even though the git repo is cached between the two, we
+	// don't hit errors about missing auth tokens.
+
+	modDir := t.TempDir()
+
+	initCmd := hostDaggerCommand(ctx, t, modDir, "init", "--source=.", "--name=test", "--sdk=go")
+	initOutput, err := initCmd.CombinedOutput()
+	require.NoError(t, err, string(initOutput))
+
+	err = os.WriteFile(filepath.Join(modDir, "main.go"), []byte(`package main
+import (
+	"context"
+
+	"dagger/test/internal/dagger"
+)
+
+type Test struct {}
+
+func (m *Test) Fn(ctx context.Context, dir *dagger.Directory, rand string) ([]string, error) {
+	return dir.Entries(ctx)
+}
+`), 0644)
+	require.NoError(t, err)
+
+	tc := getVCSTestCase(t, "https://gitlab.com/dagger-modules/private/test/more/dagger-test-modules-private.git")
+
+	gitConfigDir1 := t.TempDir()
+	gitConfigFile1 := filepath.Join(gitConfigDir1, "config")
+	err = os.WriteFile(
+		gitConfigFile1,
+		[]byte(makeGitCredentials("https://"+tc.expectedHost, "git", decodedGitToken(tc.encodedToken))),
+		0644,
+	)
+	require.NoError(t, err)
+	c1 := connect(ctx, t, dagger.WithEnvironmentVariable("GIT_CONFIG_GLOBAL", gitConfigFile1))
+
+	err = c1.ModuleSource(modDir).AsModule().Serve(ctx)
+	require.NoError(t, err)
+
+	gitRepoID1, err := c1.Address(tc.gitTestRepoRef).Directory().ID(ctx)
+	require.NoError(t, err)
+
+	rand1 := rand.Text()
+	res1, err := testutil.QueryWithClient[struct {
+		Test struct {
+			Fn []string
+		}
+	}](c1, t, `{test{fn(dir: "`+string(gitRepoID1)+`", rand: "`+rand1+`")}}`, nil)
+	require.NoError(t, err)
+
+	gitConfigDir2 := t.TempDir()
+	gitConfigFile2 := filepath.Join(gitConfigDir2, "config")
+	err = os.WriteFile(
+		gitConfigFile2,
+		[]byte(makeGitCredentials("https://"+tc.expectedHost, "git", decodedGitToken(tc.encodedToken2))),
+		0644,
+	)
+	require.NoError(t, err)
+	c2 := connect(ctx, t, dagger.WithEnvironmentVariable("GIT_CONFIG_GLOBAL", gitConfigFile2))
+
+	err = c2.ModuleSource(modDir).AsModule().Serve(ctx)
+	require.NoError(t, err)
+
+	gitRepoID2, err := c2.Address(tc.gitTestRepoRef).Directory().ID(ctx)
+	require.NoError(t, err)
+
+	rand2 := rand.Text()
+	res2, err := testutil.QueryWithClient[struct {
+		Test struct {
+			Fn []string
+		}
+	}](c2, t, `{test{fn(dir: "`+string(gitRepoID2)+`", rand: "`+rand2+`")}}`, nil)
+	require.NoError(t, err)
+
+	require.Equal(t, res1.Test.Fn, res2.Test.Fn)
+}
+
+func (InterfaceSuite) TestCrossSessionInterfaceCaching(ctx context.Context, t *testctx.T) {
+	modDir := t.TempDir()
+
+	driveDir := filepath.Join(modDir, "drive")
+	err := os.MkdirAll(driveDir, 0755)
+	require.NoError(t, err)
+
+	rollsDir := filepath.Join(modDir, "rolls-royce")
+	err = os.MkdirAll(rollsDir, 0755)
+	require.NoError(t, err)
+
+	// Use unique suffix to avoid hitting stale cache from previous test runs
+	uniqueSuffix := identity.NewID()
+
+	initDriveCmd := hostDaggerCommand(ctx, t, driveDir, "init", "--source=.", "--name=drive", "--sdk=go")
+	initDriveOutput, err := initDriveCmd.CombinedOutput()
+	require.NoError(t, err, string(initDriveOutput))
+	err = os.WriteFile(filepath.Join(driveDir, "main.go"), []byte(`package main
+
+import "context"
+
+// unique: `+uniqueSuffix+`
+
+type Drive struct {
+	Car Car
+}
+
+func New(car Car) *Drive {
+	return &Drive{Car: car}
+}
+
+func (d *Drive) DriveIt(ctx context.Context) error {
+	return d.Car.Drive(ctx)
+}
+
+type Car interface {
+	DaggerObject
+	Drive(ctx context.Context) error
+}
+`), 0644)
+	require.NoError(t, err)
+
+	initRollsCmd := hostDaggerCommand(ctx, t, rollsDir, "init", "--source=.", "--name=rolls-royce", "--sdk=go")
+	initRollsOutput, err := initRollsCmd.CombinedOutput()
+	require.NoError(t, err, string(initRollsOutput))
+
+	err = os.WriteFile(filepath.Join(rollsDir, "main.go"), []byte(`package main
+
+import (
+	"context"
+	"fmt"
+)
+
+// unique: `+uniqueSuffix+`
+
+type RollsRoyce struct{}
+
+func (r *RollsRoyce) Drive(ctx context.Context) error {
+	fmt.Println("I'm a rolls royce")
+	return nil
+}
+`), 0644)
+	require.NoError(t, err)
+
+	initCmd := hostDaggerCommand(ctx, t, modDir, "init", "--source=.", "--name=test", "--sdk=go")
+	initOutput, err := initCmd.CombinedOutput()
+	require.NoError(t, err, string(initOutput))
+
+	installDriveMainCmd := hostDaggerCommand(ctx, t, modDir, "install", driveDir)
+	installDriveMainOutput, err := installDriveMainCmd.CombinedOutput()
+	require.NoError(t, err, string(installDriveMainOutput))
+
+	installRollsCmd := hostDaggerCommand(ctx, t, modDir, "install", rollsDir)
+	installRollsOutput, err := installRollsCmd.CombinedOutput()
+	require.NoError(t, err, string(installRollsOutput))
+
+	err = os.WriteFile(filepath.Join(modDir, "main.go"), []byte(`package main
+
+import (
+	"context"
+)
+
+// unique: `+uniqueSuffix+`
+
+type Test struct{}
+
+func (m *Test) DriveRollsRoyce(ctx context.Context) error {
+	return dag.Drive(dag.RollsRoyce().AsDriveCar()).DriveIt(ctx)
+}
+`), 0644)
+	require.NoError(t, err)
+
+	callCmd1 := hostDaggerCommand(ctx, t, modDir, "call", "drive-rolls-royce")
+	callOutput1, err := callCmd1.CombinedOutput()
+	require.NoError(t, err, string(callOutput1))
+
+	callCmd2 := hostDaggerCommand(ctx, t, modDir, "call", "drive-rolls-royce")
+	callOutput2, err := callCmd2.CombinedOutput()
+	require.NoError(t, err, string(callOutput2))
+}
+
+func (DirectorySuite) TestContentHashedDirectoryFile(ctx context.Context, t *testctx.T) {
+	// create two dirs with identical contents, but at different subpaths
+
+	rando := rand.Text()
+
+	rootA := t.TempDir()
+	fileA := filepath.Join(rootA, "subdirA", rando)
+	require.NoError(t, os.MkdirAll(filepath.Dir(fileA), 0755))
+	require.NoError(t, os.WriteFile(fileA, []byte(rando), 0644))
+
+	rootB := t.TempDir()
+	fileB := filepath.Join(rootB, "subdirB", rando)
+	require.NoError(t, os.MkdirAll(filepath.Dir(fileB), 0755))
+	require.NoError(t, os.WriteFile(fileB, []byte(rando), 0644))
+
+	c1 := connect(ctx, t)
+	c2 := connect(ctx, t)
+
+	// populate engine with cache entry from dir A
+	_, err := c1.Host().Directory(rootA).Directory("subdirA").Entries(ctx)
+	require.NoError(t, err)
+
+	// Try to load the subdir from B and read the file, it should succeed.
+	// The error case the engine needs to avoid is:
+	// 1. cache hit between rootB/subdirB + rootA/subdirA, using rootA/subdirA because it came first
+	// 2. try to read "subdirB/rando" from rootA, which doesn't exist
+	contents, err := c2.Host().Directory(rootB).Directory("subdirB").File(rando).Contents(ctx)
+	require.NoError(t, err)
+	require.Equal(t, rando, contents)
 }

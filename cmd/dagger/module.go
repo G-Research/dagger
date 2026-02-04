@@ -8,13 +8,18 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/dagger/dagger/util/gitutil"
+	"github.com/dagger/dagger/util/parallel"
 	"github.com/go-git/go-git/v5"
+	"github.com/juju/ansiterm/tabwriter"
+	"github.com/muesli/termenv"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/semaphore"
 
 	"dagger.io/dagger"
 	"dagger.io/dagger/telemetry"
@@ -57,7 +62,8 @@ var (
 
 	force bool
 
-	autoApply bool
+	autoApply    bool
+	eagerRuntime bool
 )
 
 const (
@@ -102,6 +108,8 @@ func getCompatVersion() string {
 	return compatVersion
 }
 
+// moduleAddFlags adds common module-related flags to a command.
+// If optional is true, it also adds the --no-mod flag and marks --mod and --no-mod as mutually exclusive.
 func moduleAddFlags(cmd *cobra.Command, flags *pflag.FlagSet, optional bool) {
 	flags.StringVarP(&moduleURL, "mod", "m", "", "Module reference to load, either a local path or a remote git repo (defaults to current directory)")
 	if optional {
@@ -114,6 +122,9 @@ func moduleAddFlags(cmd *cobra.Command, flags *pflag.FlagSet, optional bool) {
 		defaultAllowLLM = strings.Split(allowLLMEnv, ",")
 	}
 	flags.StringSliceVar(&allowedLLMModules, "allow-llm", defaultAllowLLM, "List of URLs of remote modules allowed to access LLM APIs, or 'all' to bypass restrictions for the entire session")
+
+	// Add the eager module loading flag to disable lazy load on runtime.
+	flags.BoolVar(&eagerRuntime, "eager-runtime", false, "load module runtime eagerly")
 }
 
 func init() {
@@ -127,6 +138,7 @@ func init() {
 
 	moduleAddFlags(shellCmd, shellCmd.PersistentFlags(), true)
 	shellAddFlags(shellCmd)
+	moduleAddFlags(checksCmd, checksCmd.PersistentFlags(), false)
 	moduleAddFlags(rootCmd, rootCmd.Flags(), true)
 	shellAddFlags(rootCmd)
 
@@ -635,7 +647,7 @@ This command is idempotent: you can run it at any time, any number of times. It 
 			if developRecursive {
 				ctx, span := Tracer().Start(ctx, "load module: "+modRef, telemetry.Encapsulate())
 				err := collectLocalModulesRecursive(ctx, modSrc, modSrcs)
-				telemetry.End(span, func() error { return err })
+				telemetry.EndWithCause(span, &err)
 				if err != nil {
 					return err
 				}
@@ -644,9 +656,10 @@ This command is idempotent: you can run it at any time, any number of times. It 
 			}
 
 			ctx, span := Tracer().Start(ctx, "develop")
-			defer telemetry.End(span, func() error { return err })
+			defer telemetry.EndWithCause(span, &err)
 
 			eg, ctx := errgroup.WithContext(ctx)
+			sem := semaphore.NewWeighted(int64(engineClient.NumCPU()))
 			for srcRootPath, modSrc := range modSrcs {
 				name := strings.TrimPrefix(srcRootPath, baseSrcRootPath)
 				name = strings.TrimPrefix(name, "/")
@@ -655,7 +668,11 @@ This command is idempotent: you can run it at any time, any number of times. It 
 				}
 				ctx, span := Tracer().Start(ctx, "develop "+name, telemetry.Encapsulate())
 				eg.Go(func() (err error) {
-					defer telemetry.End(span, func() error { return err })
+					if err := sem.Acquire(ctx, 1); err != nil {
+						return err
+					}
+					defer sem.Release(1)
+					defer telemetry.EndWithCause(span, &err)
 
 					if engineVersion := getCompatVersion(); engineVersion != "" {
 						modSrc = modSrc.WithEngineVersion(engineVersion)
@@ -915,6 +932,49 @@ var toolchainUninstallCmd = &cobra.Command{
 	},
 }
 
+func loadToolchainInfo(ctx context.Context, dag *dagger.Client, modSrc *dagger.ModuleSource) ([]toolchainInfo, error) {
+	var info []toolchainInfo
+	err := parallel.Run(ctx, "fetch toolchain information", func(ctx context.Context) error {
+		alreadyExists, err := modSrc.ConfigExists(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to check if module already exists: %w", err)
+		}
+		if !alreadyExists {
+			return fmt.Errorf("module must be fully initialized")
+		}
+		toolchains, err := modSrc.Toolchains(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to get toolchains: %w", err)
+		}
+		if len(toolchains) == 0 {
+			return nil
+		}
+		info = make([]toolchainInfo, len(toolchains))
+		jobs := parallel.New().WithInternal(true).WithReveal(false)
+		for i, toolchain := range toolchains {
+			jobs = jobs.WithJob("", func(ctx context.Context) error {
+				toolchainDef, err := inspectModule(ctx, dag, &toolchain)
+				if err != nil {
+					return fmt.Errorf("inspect toolchain: %w", err)
+				}
+				info[i].name = toolchainDef.Name
+				info[i].description = toolchainDef.Description
+				return nil
+			})
+		}
+		return jobs.Run(ctx)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return info, nil
+}
+
+type toolchainInfo struct {
+	name        string
+	description string
+}
+
 var toolchainListCmd = &cobra.Command{
 	Use:     "list [options]",
 	Short:   "List all toolchains",
@@ -925,7 +985,6 @@ var toolchainListCmd = &cobra.Command{
 		ctx := cmd.Context()
 		return withEngine(ctx, client.Params{}, func(ctx context.Context, engineClient *client.Client) (err error) {
 			dag := engineClient.Dagger()
-
 			modRef, err := getModuleSourceRefWithDefault()
 			if err != nil {
 				return err
@@ -934,43 +993,24 @@ var toolchainListCmd = &cobra.Command{
 				// We can only list toolchains from a local module
 				RequireKind: dagger.ModuleSourceKindLocalSource,
 			})
-
-			alreadyExists, err := modSrc.ConfigExists(ctx)
+			toolchains, err := loadToolchainInfo(ctx, dag, modSrc)
 			if err != nil {
-				return fmt.Errorf("failed to check if module already exists: %w", err)
+				return err
 			}
-			if !alreadyExists {
-				return fmt.Errorf("module must be fully initialized")
-			}
-
-			toolchains, err := modSrc.Toolchains(ctx)
-			if err != nil {
-				return fmt.Errorf("failed to get toolchains: %w", err)
-			}
-
-			if len(toolchains) == 0 {
-				fmt.Fprintf(cmd.OutOrStdout(), "No toolchains found\n")
-				return nil
-			}
-
-			// Print header
-			fmt.Fprintf(cmd.OutOrStdout(), "Name\tDescription\n")
-
-			// Print each toolchain
+			tw := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 3, ' ', tabwriter.DiscardEmptyColumns)
+			fmt.Fprintf(tw, "%s\t%s\n",
+				termenv.String("Name").Bold(),
+				termenv.String("Description").Bold(),
+			)
+			sort.Slice(toolchains, func(i, j int) bool {
+				return toolchains[i].name < toolchains[j].name
+			})
 			for _, toolchain := range toolchains {
-				mod := toolchain.AsModule()
-				name, err := mod.Name(ctx)
-				if err != nil {
-					return fmt.Errorf("failed to get toolchain name: %w", err)
-				}
-				description, err := mod.Description(ctx)
-				if err != nil {
-					return fmt.Errorf("failed to get toolchain description: %w", err)
-				}
-				fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\n", name, description)
+				fmt.Fprintf(tw, "%s\t%s\n",
+					toolchain.name,
+					shortDescription(toolchain.description))
 			}
-
-			return nil
+			return tw.Flush()
 		})
 	},
 }

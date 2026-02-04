@@ -28,6 +28,9 @@ type SessionCache struct {
 	isClosed bool
 
 	seenKeys sync.Map
+
+	// noCacheNext keeps track of keys for which the next cache attempt should bypass the cache.
+	noCacheNext sync.Map
 }
 
 func NewSessionCache(
@@ -46,7 +49,7 @@ type CacheCallOpts struct {
 	Telemetry TelemetryFunc
 }
 
-type TelemetryFunc func(context.Context) (context.Context, func(AnyResult, bool, error))
+type TelemetryFunc func(context.Context) (context.Context, func(AnyResult, bool, *error))
 
 func (o CacheCallOpts) SetCacheCallOpt(opts *CacheCallOpts) {
 	*opts = o
@@ -101,11 +104,15 @@ type seenKeysCtxKey struct{}
 // Additionally, it explicitly sets the internal flag to false, to prevent
 // Server.Select from marking its spans internal.
 func WithRepeatedTelemetry(ctx context.Context) context.Context {
-	return context.WithValue(
+	return WithNonInternalTelemetry(
 		context.WithValue(ctx, seenKeysCtxKey{}, &sync.Map{}),
-		internalKey{},
-		false,
 	)
+}
+
+// WithNonInternalTelemetry marks telemetry within the context as non-internal,
+// so that Server.Select does not mark its spans internal.
+func WithNonInternalTelemetry(ctx context.Context) context.Context {
+	return context.WithValue(ctx, internalKey{}, false)
 }
 
 func telemetryKeys(ctx context.Context) *sync.Map {
@@ -153,14 +160,40 @@ func (c *SessionCache) GetOrInitializeWithCallbacks(
 				val = res.Result()
 				cached = res.HitCache()
 			}
-			done(val, cached, err)
+			done(val, cached, &err)
 		}()
 		ctx = telemetryCtx
 	}
 
+	// If this callKey previously failed, force the next attempt to be DoNotCache
+	// to bypass any potentially stale cached error.
+	forcedDoNotCache := false
+	if _, ok := c.noCacheNext.Load(key.CallKey); ok && !key.DoNotCache {
+		key.DoNotCache = true
+		forcedDoNotCache = true
+	}
+
 	res, err = c.cache.GetOrInitializeWithCallbacks(ctx, key, fn)
 	if err != nil {
+		// mark that the next attempt should run with DoNotCache
+		c.noCacheNext.Store(key.CallKey, struct{}{})
 		return nil, err
+	}
+
+	// success: we're in a good state now, allow normal caching again
+	c.noCacheNext.Delete(key.CallKey)
+
+	// If we forced DoNotCache due to a prior failure, we need to re-insert the successful
+	// result into the underlying cache under the original key so subsequent calls find it.
+	// The call above used a random storage key (due to DoNotCache=true), so the result
+	// won't be found by future lookups using the original key.
+	if forcedDoNotCache {
+		key.DoNotCache = false
+		cachedRes, cacheErr := c.cache.GetOrInitializeValue(ctx, key, res.Result())
+		if cacheErr == nil {
+			res = cachedRes
+		}
+		// If caching fails, we still return the successful result, just won't be cached
 	}
 
 	c.mu.Lock()
@@ -173,7 +206,7 @@ func (c *SessionCache) GetOrInitializeWithCallbacks(
 		return nil, err
 	}
 
-	if !key.DoNotCache {
+	if !key.DoNotCache || forcedDoNotCache {
 		c.results = append(c.results, res)
 	}
 

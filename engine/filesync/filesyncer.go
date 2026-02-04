@@ -17,8 +17,8 @@ import (
 	"github.com/dagger/dagger/internal/buildkit/session/filesync"
 	"github.com/dagger/dagger/internal/buildkit/snapshot"
 	"github.com/dagger/dagger/internal/buildkit/util/bklog"
+	fstypes "github.com/dagger/dagger/internal/fsutil/types"
 	"github.com/moby/locker"
-	fstypes "github.com/tonistiigi/fsutil/types"
 
 	"dagger.io/dagger/telemetry"
 	"github.com/dagger/dagger/engine"
@@ -92,7 +92,7 @@ func (ls *FileSyncer) Snapshot(ctx context.Context, session session.Group, sm *s
 
 func (ls *FileSyncer) snapshot(ctx context.Context, session session.Group, caller session.Caller, clientPath string, opts SnapshotOpts) (_ bkcache.ImmutableRef, rerr error) {
 	ctx, span := Tracer(ctx).Start(ctx, "filesync")
-	defer telemetry.End(span, func() error { return rerr })
+	defer telemetry.EndWithCause(span, &rerr)
 
 	// We need the full abs path since the cache ref we sync into holds every dir from this client's root.
 	// We also need to evaluate all symlinks so we only create the actual parent dirs and not any symlinks as dirs.
@@ -160,7 +160,8 @@ func (ls *FileSyncer) sync(
 
 	// now sync in the clientPath dir
 	remote := newRemoteFS(caller, drive+clientPath, opts.IncludePatterns, opts.ExcludePatterns, opts.GitIgnore)
-	local, err := newLocalFS(ref.sharedState, clientPath, opts.IncludePatterns, opts.ExcludePatterns, opts.GitIgnore, opts.RelativePath)
+	// local mirror should not apply gitignore; remote stats carry ignore metadata.
+	local, err := newLocalFS(ref.sharedState, clientPath, opts.IncludePatterns, opts.ExcludePatterns, opts.RelativePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create local fs: %w", err)
 	}
@@ -192,17 +193,13 @@ func (ls *FileSyncer) syncParentDirs(
 	include := strings.TrimPrefix(strings.TrimSuffix(clientPath, "/"), "/")
 	includes := []string{include}
 	excludes := []string{include + "/*"}
-	if opts.GitIgnore {
-		excludes = append(excludes, "!"+include+"/**/.gitignore", include+"/**/.git")
-	}
-
 	root := "/"
 	if drive != "" {
 		root = drive + "/"
 	}
 
 	remote := newRemoteFS(caller, root, includes, excludes, false)
-	local, err := newLocalFS(ref.sharedState, "/", includes, excludes, false, opts.RelativePath)
+	local, err := newLocalFS(ref.sharedState, "/", includes, excludes, opts.RelativePath)
 	if err != nil {
 		return fmt.Errorf("failed to create local fs: %w", err)
 	}

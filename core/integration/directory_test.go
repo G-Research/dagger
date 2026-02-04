@@ -878,6 +878,16 @@ func (DirectorySuite) TestDiff(ctx context.Context, t *testctx.T) {
 		require.Equal(t, ents, []string{"file2"})
 	})
 
+	t.Run("lower scratch", func(ctx context.Context, t *testctx.T) {
+		c := connect(ctx, t)
+		upper := c.Directory().WithNewFile("file", "content")
+		lower := c.Directory()
+
+		ents, err := lower.Diff(upper).Entries(ctx)
+		require.NoError(t, err)
+		require.Equal(t, ents, []string{"file"})
+	})
+
 	/*
 		This triggers a nil panic in Buildkit!
 
@@ -985,7 +995,7 @@ func (DirectorySuite) TestWithFileExceedingLength(ctx context.Context, t *testct
 			directory {
 				withNewFile(path: "dir/bhhivbryticrxrjssjtflvkxjsqyltawpjexixdfnzoxpoxtdheuhvqalteblsqspfeblfaayvrxejknhpezrxtwxmqzaxgtjdupwnwyosqbvypdwroozcyplzhdxrrvhpskmocmgtdnoeaecbyvpovpwdwpytdxwwedueyaxytxsnnnsfpfjtnlkrxwxtcikcocnkobvdxdqpbafqhmidqbrnhxlxqynesyijgkfepokrnsfqneixfvgsdy.txt", contents: "some-content") {
 					file(path: "dir/bhhivbryticrxrjssjtflvkxjsqyltawpjexixdfnzoxpoxtdheuhvqalteblsqspfeblfaayvrxejknhpezrxtwxmqzaxgtjdupwnwyosqbvypdwroozcyplzhdxrrvhpskmocmgtdnoeaecbyvpovpwdwpytdxwwedueyaxytxsnnnsfpfjtnlkrxwxtcikcocnkobvdxdqpbafqhmidqbrnhxlxqynesyijgkfepokrnsfqneixfvgsdy.txt") {
-						id
+						sync
 					}
 				}
 			}
@@ -994,55 +1004,130 @@ func (DirectorySuite) TestWithFileExceedingLength(ctx context.Context, t *testct
 	requireErrOut(t, err, "File name length exceeds the maximum supported 255 characters")
 }
 
-func (DirectorySuite) TestDirectMerge(ctx context.Context, t *testctx.T) {
-	c := connect(ctx, t)
-
-	getDirAndInodes := func(t *testctx.T, fileNames ...string) (*dagger.Directory, []string) {
+func (DirectorySuite) TestHardlinkCopy(ctx context.Context, t *testctx.T) {
+	getDirInodes := func(c *dagger.Client, t *testctx.T, dir *dagger.Directory, fileNames ...string) []string {
 		t.Helper()
 		ctr := c.Container().From(alpineImage).
-			WithMountedDirectory("/src", c.Directory()).
+			WithMountedDirectory("/src", dir).
 			WithWorkdir("/src")
 
 		var inodes []string
 		for _, fileName := range fileNames {
-			ctr = ctr.WithExec([]string{
-				"sh", "-e", "-x", "-c",
-				"touch " + fileName + " && stat -c '%i' " + fileName,
-			})
-			out, err := ctr.Stdout(ctx)
+			out, err := ctr.WithExec([]string{
+				"stat", "-c", "%i", fileName,
+			}).Stdout(t.Context())
 			require.NoError(t, err)
 			inodes = append(inodes, strings.TrimSpace(out))
 		}
-		return ctr.Directory("/src"), inodes
+		return inodes
 	}
 
-	// verify optimized hardlink based merge-op is used by verifying inodes are preserved
-	// across WithDirectory calls
-	mergeDir := c.Directory()
-	fileGroups := [][]string{
-		{"abc", "xyz"},
-		{"123", "456", "789"},
-		{"foo"},
-		{"bar"},
-	}
-	fileNameToInode := map[string]string{}
-	for _, fileNames := range fileGroups {
-		newDir, inodes := getDirAndInodes(t, fileNames...)
-		for i, fileName := range fileNames {
-			fileNameToInode[fileName] = inodes[i]
-		}
-		mergeDir = mergeDir.WithDirectory("/", newDir)
-	}
+	getFileInode := func(c *dagger.Client, t *testctx.T, f *dagger.File) string {
+		t.Helper()
+		ctr := c.Container().From(alpineImage).
+			WithMountedFile("/src/file", f).
+			WithWorkdir("/src")
 
-	ctr := c.Container().From(alpineImage).
-		WithMountedDirectory("/mnt", mergeDir).
-		WithWorkdir("/mnt")
-
-	for fileName, inode := range fileNameToInode {
-		out, err := ctr.WithExec([]string{"stat", "-c", "%i", fileName}).Stdout(ctx)
+		out, err := ctr.WithExec([]string{
+			"stat", "-c", "%i", "file",
+		}).Stdout(t.Context())
 		require.NoError(t, err)
-		require.Equal(t, inode, strings.TrimSpace(out), "file %s should have inode %s", fileName, inode)
+		return strings.TrimSpace(out)
 	}
+
+	t.Run("with directory", func(ctx context.Context, t *testctx.T) {
+		c := connect(ctx, t)
+
+		dirA := c.Directory().
+			WithNewFile("fileA1", "contentA1").
+			WithNewFile("fileA2", "contentA2").
+			WithNewFile("common/f", "f").
+			WithNewFile("common/a", "a")
+		aRootInodes := getDirInodes(c, t, dirA, "fileA1", "fileA2")
+		aCommonInodes := getDirInodes(c, t, dirA, "common/a")
+
+		dirB := c.Directory().
+			WithNewFile("fileB1", "contentB1").
+			WithNewFile("fileB2", "contentB2").
+			WithNewFile("subdir/fileB3", "contentB3").
+			WithNewFile("extra/subdir/fileB4", "contentB4").
+			WithNewFile("common/f", "f").
+			WithNewFile("common/b", "b")
+		bRootInodes := getDirInodes(c, t, dirB, "fileB1", "fileB2")
+		bSubdirInodes := getDirInodes(c, t, dirB, "subdir/fileB3")
+		bExtraSubdirInodes := getDirInodes(c, t, dirB, "extra/subdir/fileB4")
+		bCommonInodes := getDirInodes(c, t, dirB, "common/b")
+		bCommonFInodes := getDirInodes(c, t, dirB, "common/f")
+
+		dirC := c.Directory().
+			WithNewFile("fileC1", "contentC1").
+			WithNewFile("fileC2", "contentC2").
+			WithNewFile("subdir/fileC3", "contentC3")
+		cRootInodes := getDirInodes(c, t, dirC, "fileC1", "fileC2")
+		cSubdirInodes := getDirInodes(c, t, dirC, "subdir/fileC3")
+
+		combinedDir := dirA.
+			WithDirectory("/", dirB).
+			WithDirectory("another/subdir", dirC)
+		combinedRootInodes := getDirInodes(c, t, combinedDir,
+			"fileA1", "fileA2",
+			"fileB1", "fileB2",
+		)
+		combinedCommonInodes := getDirInodes(c, t, combinedDir,
+			"common/a", "common/b",
+		)
+		combinedFInodes := getDirInodes(c, t, combinedDir,
+			"common/f",
+		)
+		combinedSubdirInodes := getDirInodes(c, t, combinedDir,
+			"subdir/fileB3",
+		)
+		combinedExtraSubdirInodes := getDirInodes(c, t, combinedDir,
+			"extra/subdir/fileB4",
+		)
+		combinedCSubdirInodes := getDirInodes(c, t, combinedDir,
+			"another/subdir/fileC1",
+			"another/subdir/fileC2",
+			"another/subdir/subdir/fileC3",
+		)
+
+		require.EqualValues(t, aRootInodes, combinedRootInodes[:2], "dirA root inodes should be preserved")
+		require.EqualValues(t, bRootInodes, combinedRootInodes[2:4], "dirB root inodes should be preserved")
+		require.EqualValues(t, aCommonInodes, combinedCommonInodes[:1], "dirA common inodes should be preserved")
+		require.EqualValues(t, bCommonInodes, combinedCommonInodes[1:2], "dirB common inodes should be preserved")
+		require.EqualValues(t, bCommonFInodes, combinedFInodes, "dirB common/f inode should be preserved")
+		require.EqualValues(t, bSubdirInodes, combinedSubdirInodes, "dirB subdir inodes should be preserved")
+		require.EqualValues(t, bExtraSubdirInodes, combinedExtraSubdirInodes, "dirB extra/subdir inodes should be preserved")
+		require.EqualValues(t, cRootInodes, combinedCSubdirInodes[:2], "dirC root inodes should be preserved")
+		require.EqualValues(t, cSubdirInodes, combinedCSubdirInodes[2:3], "dirC subdir inodes should be preserved")
+	})
+
+	t.Run("with file", func(ctx context.Context, t *testctx.T) {
+		c := connect(ctx, t)
+
+		dirA := c.Directory().
+			WithNewFile("fileA1", "contentA1")
+		aInodes := getDirInodes(c, t, dirA, "fileA1")
+
+		f1 := c.File("f1", "contentF1")
+		f1Inode := getFileInode(c, t, f1)
+
+		f2 := c.File("f2", "contentF2")
+		f2Inode := getFileInode(c, t, f2)
+
+		combinedDir := dirA.
+			WithFile("fileFromF1", f1).
+			WithFile("subdir/fileFromF2", f2)
+		combinedInodes := getDirInodes(c, t, combinedDir,
+			"fileA1",
+			"fileFromF1",
+			"subdir/fileFromF2",
+		)
+
+		require.EqualValues(t, aInodes, combinedInodes[:1], "dirA inodes should be preserved")
+		require.Equal(t, f1Inode, combinedInodes[1], "f1 inode should be preserved")
+		require.Equal(t, f2Inode, combinedInodes[2], "f2 inode should be preserved")
+	})
 }
 
 func (DirectorySuite) TestFallbackMerge(ctx context.Context, t *testctx.T) {
@@ -1078,11 +1163,11 @@ func (DirectorySuite) TestSync(ctx context.Context, t *testctx.T) {
 	t.Run("triggers error", func(ctx context.Context, t *testctx.T) {
 		_, err := c.Directory().Directory("/foo").Sync(ctx)
 		require.Error(t, err)
-		requireErrOut(t, err, "no such file or directory")
+		requireErrOut(t, err, "foo: no such file or directory")
 
 		_, err = c.Container().From(alpineImage).Directory("/bar").Sync(ctx)
 		require.Error(t, err)
-		requireErrOut(t, err, "no such file or directory")
+		requireErrOut(t, err, "bar: no such file or directory")
 	})
 
 	t.Run("allows chaining", func(ctx context.Context, t *testctx.T) {
@@ -1226,7 +1311,7 @@ func (DirectorySuite) TestGlob(ctx context.Context, t *testctx.T) {
 
 	t.Run("directory doesn't exist", func(ctx context.Context, t *testctx.T) {
 		_, err := c.Directory().Directory("foo").Glob(ctx, "**/*")
-		requireErrOut(t, err, "no such file or directory")
+		requireErrOut(t, err, "foo: no such file or directory")
 	})
 }
 
@@ -1287,7 +1372,12 @@ func (DirectorySuite) TestDirectoryName(ctx context.Context, t *testctx.T) {
 
 	t.Run("not found directory", func(ctx context.Context, t *testctx.T) {
 		_, err := c.Directory().Directory("foo").Name(ctx)
-		requireErrOut(t, err, "no such file or directory")
+		requireErrOut(t, err, "foo: no such file or directory")
+	})
+
+	t.Run("not found file displays full path in error", func(ctx context.Context, t *testctx.T) {
+		_, err := c.Directory().Directory("keep/../this").Name(ctx)
+		requireErrOut(t, err, "keep/../this: no such file or directory")
 	})
 
 	t.Run("structured directory", func(ctx context.Context, t *testctx.T) {
@@ -2459,7 +2549,7 @@ func (DirectorySuite) TestSymlink(ctx context.Context, t *testctx.T) {
 			Sync(ctx)
 
 		require.Error(t, err)
-		require.Regexp(t, "symlink newtarget /var/lib/dagger/worker/cachemounts/.*/symlink: file exists", err.Error())
+		require.Regexp(t, "symlink newtarget /.*/symlink: file exists", err.Error())
 	})
 }
 
@@ -2559,6 +2649,72 @@ func (DirectorySuite) TestExists(ctx context.Context, t *testctx.T) {
 			require.Equal(t, tc.Expected, exists)
 		})
 	}
+}
+
+func (DirectorySuite) TestStat(ctx context.Context, t *testctx.T) {
+	t.Run("file-exists", func(ctx context.Context, t *testctx.T) {
+		c := connect(ctx, t)
+		stat := c.Directory().
+			WithNewFile("f", "data", dagger.DirectoryWithNewFileOpts{Permissions: 0o444}).
+			Stat("f")
+
+		name, err := stat.Name(ctx)
+		require.NoError(t, err)
+		require.Equal(t, "f", name)
+
+		size, err := stat.Size(ctx)
+		require.NoError(t, err)
+		require.Equal(t, 4, size)
+
+		fileType, err := stat.FileType(ctx)
+		require.NoError(t, err)
+		require.Equal(t, dagger.FileTypeRegularType, fileType)
+
+		permissions, err := stat.Permissions(ctx)
+		require.NoError(t, err)
+		require.Equal(t, 0o444, permissions)
+	})
+	t.Run("file-dir-exists", func(ctx context.Context, t *testctx.T) {
+		c := connect(ctx, t)
+		stat := c.Directory().
+			WithNewDirectory("d", dagger.DirectoryWithNewDirectoryOpts{Permissions: 0o750}).
+			Stat("d")
+
+		name, err := stat.Name(ctx)
+		require.NoError(t, err)
+		require.Equal(t, "d", name)
+
+		size, err := stat.Size(ctx)
+		require.NoError(t, err)
+		require.Equal(t, 4096, size)
+
+		fileType, err := stat.FileType(ctx)
+		require.NoError(t, err)
+		require.Equal(t, dagger.FileTypeDirectoryType, fileType)
+
+		permissions, err := stat.Permissions(ctx)
+		require.NoError(t, err)
+		require.Equal(t, 0o750, permissions)
+	})
+	t.Run("empty-path-fails", func(ctx context.Context, t *testctx.T) {
+		c := connect(ctx, t)
+		stat := c.Directory().Stat("")
+
+		_, err := stat.Name(ctx)
+		require.ErrorContains(t, err, ": no such file or directory")
+	})
+}
+
+func (DirectorySuite) TestExistsUsingAbsoluteSymlink(ctx context.Context, t *testctx.T) {
+	c := connect(ctx, t)
+	ok, err := c.Directory().
+		WithNewFile("/some-file", "some-content").
+		WithSymlink("/some-file", "/symlink-to-some-file").
+		Exists(ctx, "symlink-to-some-file", dagger.DirectoryExistsOpts{
+			ExpectedType: dagger.ExistsTypeRegularType,
+		})
+	require.NoError(t, err)
+	require.True(t, ok)
 }
 
 func (DirectorySuite) TestDirCaching(ctx context.Context, t *testctx.T) {

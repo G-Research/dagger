@@ -9,9 +9,9 @@ import (
 	codegenintrospection "github.com/dagger/dagger/cmd/codegen/introspection"
 	"github.com/dagger/dagger/core"
 	"github.com/dagger/dagger/dagql"
+	"github.com/dagger/dagger/dagql/call"
 	"github.com/dagger/dagger/dagql/introspection"
 	"github.com/dagger/dagger/engine"
-	"github.com/dagger/dagger/engine/sources/blob"
 )
 
 type querySchema struct {
@@ -88,19 +88,11 @@ func (s *querySchema) version(_ context.Context, _ *core.Query, args struct{}) (
 	return engine.Version, nil
 }
 
-type schemaJSONArgs struct {
-	HiddenTypes []string `default:"[]"`
-}
-
-func (s *querySchema) schemaJSONFile(
-	ctx context.Context,
-	parent dagql.ObjectResult[*core.Query],
-	args schemaJSONArgs,
-) (inst dagql.Result[*core.File], rerr error) {
-	dagqlSchema := introspection.WrapSchema(s.srv.Schema())
+func getSchemaJSON(hiddenTypes []string, view call.View, srv *dagql.Server) ([]byte, error) {
+	dagqlSchema := introspection.WrapSchema(srv.SchemaForView(view))
 
 	introspectionResponse := codegenintrospection.Response{
-		SchemaVersion: string(s.srv.View),
+		SchemaVersion: string(view),
 		Schema:        &codegenintrospection.Schema{},
 	}
 	if queryName := dagqlSchema.QueryType().Name(); queryName != nil {
@@ -117,45 +109,69 @@ func (s *querySchema) schemaJSONFile(
 		introspectionResponse.Schema.ScrubType(typed.Type().Name())
 		introspectionResponse.Schema.ScrubType(dagql.IDTypeNameFor(typed))
 	}
-	for _, rawType := range args.HiddenTypes {
+	for _, rawType := range hiddenTypes {
 		introspectionResponse.Schema.ScrubType(rawType)
 		introspectionResponse.Schema.ScrubType(dagql.IDTypeNameForRawType(rawType))
 	}
 
 	moduleSchemaJSON, err := json.Marshal(introspectionResponse)
 	if err != nil {
-		return inst, fmt.Errorf("failed to marshal introspection JSON: %w", err)
+		return nil, fmt.Errorf("failed to marshal introspection JSON: %w", err)
 	}
+	return moduleSchemaJSON, nil
+}
 
+type schemaJSONArgs struct {
+	HiddenTypes []string `default:"[]"`
+	Schema      string   `internal:"true" default:"" name:"schema"`
+	RawDagOpInternalArgs
+}
+
+func (s *querySchema) schemaJSONFile(
+	ctx context.Context,
+	parent dagql.ObjectResult[*core.Query],
+	args schemaJSONArgs,
+) (inst dagql.ObjectResult[*core.File], rerr error) {
 	const schemaJSONFilename = "schema.json"
 	const perm fs.FileMode = 0644
 
-	f, err := core.NewFileWithContents(ctx, schemaJSONFilename, moduleSchemaJSON, perm, nil, parent.Self().Platform())
+	if args.InDagOp() {
+		f, err := core.NewFileWithContents(ctx, schemaJSONFilename, []byte(args.Schema), perm, nil, parent.Self().Platform())
+		if err != nil {
+			return inst, err
+		}
+
+		return dagql.NewObjectResultForCurrentID(ctx, s.srv, f)
+	}
+
+	moduleSchemaJSON, err := getSchemaJSON(args.HiddenTypes, s.srv.View, s.srv)
 	if err != nil {
 		return inst, err
 	}
-	bk, err := parent.Self().Buildkit(ctx)
-	if err != nil {
-		return inst, fmt.Errorf("failed to get buildkit client: %w", err)
-	}
-	dgst, err := core.GetContentHashFromDef(ctx, bk, f.LLB, "/")
-	if err != nil {
-		return inst, fmt.Errorf("failed to get content hash: %w", err)
-	}
+	args.Schema = string(moduleSchemaJSON)
 
-	// LLB marshalling takes up too much memory when file ops have a ton of contents, so we still go through
-	// the blob source for now simply to avoid that.
-	f, err = core.NewFileSt(ctx, blob.LLB(dgst), f.File, f.Platform, f.Services)
+	newID := dagql.CurrentID(ctx).
+		WithArgument(call.NewArgument(
+			"schema",
+			call.NewLiteralString(args.Schema),
+			false,
+		))
+	ctxDagOp := dagql.ContextWithID(ctx, newID)
+
+	f, effectID, err := DagOpFile(ctxDagOp, s.srv, parent.Self(), args, nil, WithStaticPath[*core.Query, schemaJSONArgs](schemaJSONFilename))
 	if err != nil {
 		return inst, err
 	}
 
-	fileInst, err := dagql.NewResultForCurrentID(ctx, f)
-	if err != nil {
+	if _, err := f.Evaluate(ctx); err != nil {
 		return inst, err
 	}
 
-	return fileInst.WithDigest(dgst), nil
+	curID := dagql.CurrentID(ctx)
+	if effectID != "" {
+		curID = curID.AppendEffectIDs(effectID)
+	}
+	return dagql.NewObjectResultForID(f, s.srv, curID)
 }
 
 func dagqlToCodegenType(dagqlType *introspection.Type) *codegenintrospection.Type {
@@ -253,10 +269,7 @@ func dagqlToCodegenField(dagqlField *introspection.Field) *codegenintrospection.
 	}
 
 	f.IsDeprecated = dagqlField.IsDeprecated()
-
-	if reason := dagqlField.DeprecationReason(); reason != nil {
-		f.DeprecationReason = *reason
-	}
+	f.DeprecationReason = dagqlField.DeprecationReason()
 
 	dagqlDirectives := dagqlField.Directives()
 	f.Directives = make(codegenintrospection.Directives, 0, len(dagqlDirectives))
@@ -278,6 +291,9 @@ func dagqlToCodegenInputValue(dagqlInputValue *introspection.InputValue) codegen
 
 	v.TypeRef = dagqlToCodegenTypeRef(dagqlInputValue.Type_)
 
+	v.DeprecationReason = dagqlInputValue.DeprecationReason()
+	v.IsDeprecated = dagqlInputValue.IsDeprecated()
+
 	dagqlDirectives := dagqlInputValue.Directives()
 	v.Directives = make(codegenintrospection.Directives, 0, len(dagqlDirectives))
 	for _, dagqlDirective := range dagqlDirectives {
@@ -295,10 +311,7 @@ func dagqlToCodegenEnumValue(dagqlInputValue *introspection.EnumValue) codegenin
 	v.Description = dagqlInputValue.Description()
 
 	v.IsDeprecated = dagqlInputValue.IsDeprecated()
-
-	if reason := dagqlInputValue.DeprecationReason(); reason != nil {
-		v.DeprecationReason = *reason
-	}
+	v.DeprecationReason = dagqlInputValue.DeprecationReason()
 
 	dagqlDirectives := dagqlInputValue.Directives()
 	v.Directives = make(codegenintrospection.Directives, 0, len(dagqlDirectives))

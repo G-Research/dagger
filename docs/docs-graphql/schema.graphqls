@@ -1,3 +1,9 @@
+"""Indicates that this function is a check."""
+directive @check on FIELD_DEFINITION
+
+"""Indicates that the argument defaults to a container address."""
+directive @defaultAddress(address: String!) on ARGUMENT_DEFINITION
+
 """Indicates that the argument defaults to a contextual path."""
 directive @defaultPath(path: String!) on ARGUMENT_DEFINITION
 
@@ -70,6 +76,12 @@ type Binding {
   """Retrieve the binding value, as type Changeset"""
   asChangeset: Changeset!
 
+  """Retrieve the binding value, as type Check"""
+  asCheck: Check!
+
+  """Retrieve the binding value, as type CheckGroup"""
+  asCheckGroup: CheckGroup!
+
   """Retrieve the binding value, as type Cloud"""
   asCloud: Cloud!
 
@@ -120,6 +132,9 @@ type Binding {
 
   """Retrieve the binding value, as type Socket"""
   asSocket: Socket!
+
+  """Retrieve the binding value, as type Stat"""
+  asStat: Stat
 
   """Returns the binding's string value"""
   asString: String
@@ -226,12 +241,130 @@ type Changeset {
 
   """Force evaluation in the engine."""
   sync: ChangesetID!
+
+  """
+  Add changes to an existing changeset
+
+  By default the operation will fail in case of conflicts, for instance a file
+  modified in both changesets. The behavior can be adjusted using onConflict
+  argument
+  """
+  withChangeset(
+    """Changes to merge into the actual changeset"""
+    changes: ChangesetID!
+
+    """What to do on a merge conflict"""
+    onConflict: ChangesetMergeConflict = FAIL
+  ): Changeset!
+
+  """
+  Add changes from multiple changesets using git octopus merge strategy
+
+  This is more efficient than chaining multiple withChangeset calls when merging many changesets.
+
+  Only FAIL and FAIL_EARLY conflict strategies are supported (octopus merge cannot use -X ours/theirs).
+  """
+  withChangesets(
+    """List of changesets to merge into the actual changeset"""
+    changes: [ChangesetID!]!
+
+    """What to do on a merge conflict"""
+    onConflict: ChangesetsMergeConflict = FAIL
+  ): Changeset!
 }
 
 """
 The `ChangesetID` scalar type represents an identifier for an object of type Changeset.
 """
 scalar ChangesetID
+
+"""Strategy to use when merging changesets with conflicting changes."""
+enum ChangesetMergeConflict {
+  """Fail before attempting merge if file-level conflicts are detected"""
+  FAIL_EARLY
+
+  """Attempt the merge and fail if git merge fails due to conflicts"""
+  FAIL
+
+  """
+  Let git create conflict markers in files. For modify/delete conflicts, keeps
+  the modified version. Fails on binary conflicts.
+  """
+  LEAVE_CONFLICT_MARKERS
+
+  """
+  The conflict is resolved by applying the version of the calling changeset
+  """
+  PREFER_OURS
+
+  """
+  The conflict is resolved by applying the version of the other changeset
+  """
+  PREFER_THEIRS
+}
+
+"""
+Strategy to use when merging multiple changesets with git octopus merge.
+"""
+enum ChangesetsMergeConflict {
+  """
+  Fail before attempting merge if file-level conflicts are detected between any changesets
+  """
+  FAIL_EARLY
+
+  """Attempt the octopus merge and fail if git merge fails due to conflicts"""
+  FAIL
+}
+
+type Check {
+  """Whether the check completed"""
+  completed: Boolean!
+
+  """The description of the check"""
+  description: String!
+
+  """A unique identifier for this Check."""
+  id: CheckID!
+
+  """Return the fully qualified name of the check"""
+  name: String!
+
+  """Whether the check passed"""
+  passed: Boolean!
+
+  """The path of the check within its module"""
+  path: [String!]!
+
+  """An emoji representing the result of the check"""
+  resultEmoji: String!
+
+  """Execute the check"""
+  run: Check!
+}
+
+type CheckGroup {
+  """A unique identifier for this CheckGroup."""
+  id: CheckGroupID!
+
+  """Return a list of individual checks and their details"""
+  list: [Check!]!
+
+  """Generate a markdown report"""
+  report: File!
+
+  """Execute all selected checks"""
+  run: CheckGroup!
+}
+
+"""
+The `CheckGroupID` scalar type represents an identifier for an object of type CheckGroup.
+"""
+scalar CheckGroupID
+
+"""
+The `CheckID` scalar type represents an identifier for an object of type Check.
+"""
+scalar CheckID
 
 """Dagger Cloud configuration and state"""
 type Cloud {
@@ -596,6 +729,15 @@ type Container {
   """
   rootfs: Directory!
 
+  """Return file status"""
+  stat(
+    """Path to check (e.g., "/file.txt")."""
+    path: String!
+
+    """If specified, do not follow symlinks."""
+    doNotFollowSymlinks: Boolean = false
+  ): Stat
+
   """
   The buffered standard error stream of the last executed command
 
@@ -697,7 +839,7 @@ type Container {
   """Retrieves the user to be set for all commands."""
   user: String!
 
-  """Retrieves this container plus the given OCI anotation."""
+  """Retrieves this container plus the given OCI annotation."""
   withAnnotation(
     """The name of the annotation."""
     name: String!
@@ -786,6 +928,12 @@ type Container {
     is reset, since entrypoint and default args are often tightly coupled.
     """
     keepDefaultArgs: Boolean = false
+  ): Container!
+
+  """Export environment variables from an env-file to the container."""
+  withEnvFileVariables(
+    """Identifier of the envfile"""
+    source: EnvFileID!
   ): Container!
 
   """Set a new environment variable in the container."""
@@ -1431,6 +1579,14 @@ scalar ContainerID
 
 """Reflective module API provided to functions at runtime."""
 type CurrentModule {
+  """The dependencies of the module."""
+  dependencies: [Module!]!
+
+  """
+  The generated files and directories made on top of the module source's context directory.
+  """
+  generatedContextDirectory: Directory!
+
   """A unique identifier for this CurrentModule."""
   id: CurrentModuleID!
 
@@ -1715,6 +1871,15 @@ type Directory {
     """Limit the number of results to return"""
     limit: Int
   ): [SearchResult!]!
+
+  """Return file status"""
+  stat(
+    """Path to stat (e.g., "/file.txt")."""
+    path: String!
+
+    """If specified, do not follow symlinks."""
+    doNotFollowSymlinks: Boolean = false
+  ): Stat
 
   """Force evaluation in the engine."""
   sync: DirectoryID!
@@ -2052,6 +2217,9 @@ scalar EnumTypeDefID
 
 """A definition of a value in a custom enum defined in a Module."""
 type EnumValueTypeDef {
+  """The reason this enum member is deprecated, if any."""
+  deprecated: String
+
   """A doc string for the enum member, if any."""
   description: String!
 
@@ -2074,6 +2242,20 @@ The `EnumValueTypeDefID` scalar type represents an identifier for an object of t
 scalar EnumValueTypeDefID
 
 type Env {
+  """
+  Return the check with the given name from the installed modules. Must match exactly one check.
+  """
+  check(
+    """The name of the check to retrieve"""
+    name: String!
+  ): Check! @experimental(reason: "Checks API is highly experimental and may be removed or replaced entirely.")
+
+  """Return all checks defined by the installed modules"""
+  checks(
+    """Only include checks matching the specified patterns"""
+    include: [String!]
+  ): CheckGroup! @experimental(reason: "Checks API is highly experimental and may be removed or replaced entirely.")
+
   """A unique identifier for this Env."""
   id: EnvID!
 
@@ -2145,6 +2327,48 @@ type Env {
 
   """Declare a desired Changeset output to be assigned in the environment"""
   withChangesetOutput(
+    """The name of the binding"""
+    name: String!
+
+    """A description of the desired value of the binding"""
+    description: String!
+  ): Env!
+
+  """Create or update a binding of type CheckGroup in the environment"""
+  withCheckGroupInput(
+    """The name of the binding"""
+    name: String!
+
+    """The CheckGroup value to assign to the binding"""
+    value: CheckGroupID!
+
+    """The purpose of the input"""
+    description: String!
+  ): Env!
+
+  """Declare a desired CheckGroup output to be assigned in the environment"""
+  withCheckGroupOutput(
+    """The name of the binding"""
+    name: String!
+
+    """A description of the desired value of the binding"""
+    description: String!
+  ): Env!
+
+  """Create or update a binding of type Check in the environment"""
+  withCheckInput(
+    """The name of the binding"""
+    name: String!
+
+    """The Check value to assign to the binding"""
+    value: CheckID!
+
+    """The purpose of the input"""
+    description: String!
+  ): Env!
+
+  """Declare a desired Check output to be assigned in the environment"""
+  withCheckOutput(
     """The name of the binding"""
     name: String!
 
@@ -2351,11 +2575,18 @@ type Env {
   ): Env!
 
   """
+  Sets the main module for this environment (the project being worked on)
+
+  Contextual path arguments will be populated using the environment's workspace.
+  """
+  withMainModule(module: ModuleID!): Env!
+
+  """
   Installs a module into the environment, exposing its functions to the model
 
   Contextual path arguments will be populated using the environment's workspace.
   """
-  withModule(module: ModuleID!): Env!
+  withModule(module: ModuleID!): Env! @deprecated(reason: "Use withMainModule instead")
 
   """
   Create or update a binding of type ModuleConfigClient in the environment
@@ -2528,6 +2759,27 @@ type Env {
 
   """Declare a desired Socket output to be assigned in the environment"""
   withSocketOutput(
+    """The name of the binding"""
+    name: String!
+
+    """A description of the desired value of the binding"""
+    description: String!
+  ): Env!
+
+  """Create or update a binding of type Stat in the environment"""
+  withStatInput(
+    """The name of the binding"""
+    name: String!
+
+    """The Stat value to assign to the binding"""
+    value: StatID!
+
+    """The purpose of the input"""
+    description: String!
+  ): Env!
+
+  """Declare a desired Stat output to be assigned in the environment"""
+  withStatOutput(
     """The name of the binding"""
     name: String!
 
@@ -2738,6 +2990,9 @@ A field on an object has a static value, as opposed to a function on an object
 whose value is computed by invoking code (and can accept arguments).
 """
 type FieldTypeDef {
+  """The reason this enum member is deprecated, if any."""
+  deprecated: String
+
   """A doc string for the field, if any."""
   description: String!
 
@@ -2766,6 +3021,9 @@ type File {
     """Replace "${VAR}" or "$VAR" with the value of other vars"""
     expand: Boolean
   ): EnvFile!
+
+  """Parse the file contents as JSON."""
+  asJSON: JSONValue!
 
   """Change the owner of the file recursively."""
   chown(
@@ -2859,6 +3117,9 @@ type File {
   """Retrieves the size of the file, in bytes."""
   size: Int!
 
+  """Return file status"""
+  stat: Stat
+
   """Force evaluation in the engine."""
   sync: FileID!
 
@@ -2911,6 +3172,30 @@ The `FileID` scalar type represents an identifier for an object of type File.
 """
 scalar FileID
 
+"""File type."""
+enum FileType {
+  """unknown file type"""
+  UNKNOWN
+
+  """regular file type"""
+  REGULAR
+
+  """directory file type"""
+  DIRECTORY
+
+  """symlink file type"""
+  SYMLINK
+
+  """regular file type"""
+  REGULAR_TYPE
+
+  """directory file type"""
+  DIRECTORY_TYPE
+
+  """symlink file type"""
+  SYMLINK_TYPE
+}
+
 """
 Function represents a resolver provided by a Module.
 
@@ -2919,6 +3204,9 @@ A function always evaluates against a parent object and is given a set of named 
 type Function {
   """Arguments accepted by the function, if any."""
   args: [FunctionArg!]!
+
+  """The reason this function is deprecated, if any."""
+  deprecated: String
 
   """A doc string for the function, if any."""
   description: String!
@@ -2961,6 +3249,11 @@ type Function {
 
     """The source map for the argument definition."""
     sourceMap: SourceMapID
+
+    """If deprecated, the reason or migration path."""
+    deprecated: String
+
+    defaultAddress: String = ""
   ): Function!
 
   """Returns the function updated to use the provided cache policy."""
@@ -2972,6 +3265,15 @@ type Function {
     The TTL for the cache policy, if applicable. Provided as a duration string, e.g. "5m", "1h30s".
     """
     timeToLive: String
+  ): Function!
+
+  """Returns the function with a flag indicating it's a check."""
+  withCheck: Function!
+
+  """Returns the function with the provided deprecation reason."""
+  withDeprecated(
+    """Reason or migration path describing the deprecation."""
+    reason: String
   ): Function!
 
   """Returns the function with the given doc string."""
@@ -2994,6 +3296,12 @@ This is a specification for an argument at function definition time, not an argu
 """
 type FunctionArg {
   """
+  Only applies to arguments of type Container. If the argument is not set, load
+  it from the given address (e.g. alpine:latest)
+  """
+  defaultAddress: String!
+
+  """
   Only applies to arguments of type File or Directory. If the argument is not
   set, load it from the given path in the context directory
   """
@@ -3003,6 +3311,9 @@ type FunctionArg {
   A default value to use for this argument when not explicitly set by the caller, if any.
   """
   defaultValue: JSON!
+
+  """The reason this function is deprecated, if any."""
+  deprecated: String
 
   """A doc string for the argument, if any."""
   description: String!
@@ -3589,6 +3900,12 @@ type LLM {
 
   """Disable the default system prompt"""
   withoutDefaultSystemPrompt: LLM!
+
+  """Clear the message history, leaving only the system prompts"""
+  withoutMessageHistory: LLM!
+
+  """Clear the system prompts, leaving only the default system prompt"""
+  withoutSystemPrompts: LLM!
 }
 
 """
@@ -3649,6 +3966,20 @@ scalar ListTypeDefID
 
 """A Dagger module."""
 type Module {
+  """
+  Return the check defined by the module with the given name. Must match to exactly one check.
+  """
+  check(
+    """The name of the check to retrieve"""
+    name: String!
+  ): Check! @experimental(reason: "This API is highly experimental and may be removed or replaced entirely.")
+
+  """Return all checks defined by the module"""
+  checks(
+    """Only include checks matching the specified patterns"""
+    include: [String!]
+  ): CheckGroup! @experimental(reason: "This API is highly experimental and may be removed or replaced entirely.")
+
   """The dependencies of the module."""
   dependencies: [Module!]!
 
@@ -4047,6 +4378,9 @@ type ObjectTypeDef {
   """The function used to construct new instances of this object, if any"""
   constructor: Function
 
+  """The reason this enum member is deprecated, if any."""
+  deprecated: String
+
   """The doc string for the object, if any."""
   description: String!
 
@@ -4329,6 +4663,12 @@ type Query {
   """Load a Changeset from its ID."""
   loadChangesetFromID(id: ChangesetID!): Changeset!
 
+  """Load a Check from its ID."""
+  loadCheckFromID(id: CheckID!): Check!
+
+  """Load a CheckGroup from its ID."""
+  loadCheckGroupFromID(id: CheckGroupID!): CheckGroup!
+
   """Load a Cloud from its ID."""
   loadCloudFromID(id: CloudID!): Cloud!
 
@@ -4464,6 +4804,9 @@ type Query {
   """Load a SourceMap from its ID."""
   loadSourceMapFromID(id: SourceMapID!): SourceMap!
 
+  """Load a Stat from its ID."""
+  loadStatFromID(id: StatID!): Stat
+
   """Load a Terminal from its ID."""
   loadTerminalFromID(id: TerminalID!): Terminal!
 
@@ -4575,15 +4918,20 @@ enum ReturnType {
   """A successful execution (exit code 0)"""
   SUCCESS
 
-  """A failed execution (exit codes 1-127)"""
+  """A failed execution (exit codes 1-127 and 192-255)"""
   FAILURE
 
-  """Any execution (exit codes 0-127)"""
+  """Any execution (exit codes 0-127 and 192-255)"""
   ANY
 }
 
 """The SDK config of the module."""
 type SDKConfig {
+  """
+  Whether to start the SDK runtime in debug mode with an interactive terminal.
+  """
+  debug: Boolean!
+
   """A unique identifier for this SDKConfig."""
   id: SDKConfigID!
 
@@ -4800,6 +5148,29 @@ The `SourceMapID` scalar type represents an identifier for an object of type Sou
 """
 scalar SourceMapID
 
+"""A file or directory status object."""
+type Stat {
+  """file type"""
+  fileType: FileType
+
+  """A unique identifier for this Stat."""
+  id: StatID!
+
+  """file name"""
+  name: String!
+
+  """permission bits"""
+  permissions: Int!
+
+  """file size"""
+  size: Int!
+}
+
+"""
+The `StatID` scalar type represents an identifier for an object of type Stat.
+"""
+scalar StatID
+
 """An interactive terminal that clients can connect to."""
 type Terminal {
   """A unique identifier for this Terminal."""
@@ -4897,6 +5268,9 @@ type TypeDef {
 
     """The source map for the enum member definition."""
     sourceMap: SourceMapID
+
+    """If deprecated, the reason or migration path."""
+    deprecated: String
   ): TypeDef!
 
   """
@@ -4911,6 +5285,9 @@ type TypeDef {
 
     """The source map for the enum value definition."""
     sourceMap: SourceMapID
+
+    """If deprecated, the reason or migration path."""
+    deprecated: String
   ): TypeDef! @deprecated(reason: "Use `withEnumMember` instead")
 
   """
@@ -4928,6 +5305,9 @@ type TypeDef {
 
     """The source map for the field definition."""
     sourceMap: SourceMapID
+
+    """If deprecated, the reason or migration path."""
+    deprecated: String
   ): TypeDef!
 
   """
@@ -4953,7 +5333,7 @@ type TypeDef {
   only to refer to an object. This is how functions are able to return their own
   object, or any other circular reference.
   """
-  withObject(name: String!, description: String = "", sourceMap: SourceMapID): TypeDef!
+  withObject(name: String!, description: String = "", sourceMap: SourceMapID, deprecated: String): TypeDef!
 
   """Sets whether this type can be set to null."""
   withOptional(optional: Boolean!): TypeDef!

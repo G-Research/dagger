@@ -27,7 +27,9 @@ from dagger.mod._types import APIName, FieldDefinition, FunctionDefinition, Pyth
 from dagger.mod._utils import (
     get_alt_constructor,
     get_alt_name,
+    get_default_address,
     get_default_path,
+    get_deprecated,
     get_doc,
     get_ignore,
     is_nullable,
@@ -35,6 +37,8 @@ from dagger.mod._utils import (
     list_of,
     normalize_name,
 )
+
+CHECK_DEF_KEY: str = "__dagger_check__"
 
 logger = logging.getLogger(__package__)
 
@@ -88,6 +92,17 @@ class Function(Generic[P, R]):
         """Return the description for the callable to invoke."""
         return self.meta.doc if self.meta.doc is not None else get_doc(self.wrapped)
 
+    @property
+    def deprecated(self) -> str | None:
+        """Return the deprecation message for the callable, if any."""
+        return self.meta.deprecated
+
+    @property
+    def check(self) -> bool:
+        """Indicates whether the function is configured as a check."""
+        # Check both the metadata and the attribute to support either decorator order
+        return self.meta.check or getattr(self.wrapped, CHECK_DEF_KEY, False)
+
     @cached_property
     def cache_policy(self):
         return self.meta.cache
@@ -95,6 +110,15 @@ class Function(Generic[P, R]):
     @cached_property
     def type_hints(self):
         return get_type_hints(self.wrapped)
+
+    @cached_property
+    def type_hints_with_extras(self):
+        """Type hints with Annotated metadata preserved.
+
+        Used for extracting metadata like DefaultPath, Doc, Name, etc.
+        from parameters when `from __future__ import annotations` is used.
+        """
+        return get_type_hints(self.wrapped, include_extras=True)
 
     @cached_property
     def signature(self):
@@ -135,14 +159,24 @@ class Function(Generic[P, R]):
         if isinstance(annotation, dataclasses.InitVar):
             annotation: Any = annotation.type
 
+        # Get the annotated type (with Annotated preserved) for metadata extraction.
+        # This is needed when `from __future__ import annotations` is used,
+        # which causes param.annotation to be a string instead of a type.
+        try:
+            annotated_type = self.type_hints_with_extras[param.name]
+        except KeyError:
+            annotated_type = param.annotation
+
         return Parameter(
-            name=get_alt_name(param.annotation) or normalize_name(param.name),
+            name=get_alt_name(annotated_type) or normalize_name(param.name),
             signature=param,
             resolved_type=annotation,
             is_nullable=is_nullable(TypeHint(annotation)),
-            doc=get_doc(param.annotation),
-            ignore=get_ignore(param.annotation),
-            default_path=get_default_path(param.annotation),
+            doc=get_doc(annotated_type),
+            ignore=get_ignore(annotated_type),
+            default_path=get_default_path(annotated_type),
+            default_address=get_default_address(annotated_type),
+            deprecated=get_deprecated(annotated_type),
             conv=self.converter,
         )
 
@@ -235,6 +269,7 @@ class Constructor(Function[P, R]):
 class ObjectType(Generic[T]):
     cls: type[T]
     interface: bool = False
+    deprecated: str | None = None
     fields: dict[APIName, Field] = dataclasses.field(default_factory=dict)
     functions: dict[APIName, Function] = dataclasses.field(default_factory=dict)
 

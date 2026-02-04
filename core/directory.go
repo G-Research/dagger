@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -16,24 +15,26 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/containerd/containerd/v2/core/mount"
 	containerdfs "github.com/containerd/continuity/fs"
-	fscopy "github.com/dagger/dagger/engine/filesync/copy"
 	bkcache "github.com/dagger/dagger/internal/buildkit/cache"
 	bkclient "github.com/dagger/dagger/internal/buildkit/client"
 	"github.com/dagger/dagger/internal/buildkit/client/llb"
 	bkgw "github.com/dagger/dagger/internal/buildkit/frontend/gateway/client"
 	"github.com/dagger/dagger/internal/buildkit/snapshot"
 	"github.com/dagger/dagger/internal/buildkit/solver/pb"
+	fscopy "github.com/dagger/dagger/internal/fsutil/copy"
 	"github.com/dagger/dagger/util/patternmatcher"
 	"github.com/dustin/go-humanize"
-	fstypes "github.com/tonistiigi/fsutil/types"
 	"github.com/vektah/gqlparser/v2/ast"
 	"go.opentelemetry.io/otel/trace"
+	"golang.org/x/sys/unix"
 
 	"dagger.io/dagger/telemetry"
 	"github.com/dagger/dagger/dagql"
 	"github.com/dagger/dagger/dagql/call"
 	"github.com/dagger/dagger/engine/buildkit"
+	"github.com/dagger/dagger/engine/slog"
 )
 
 // Directory is a content-addressed directory.
@@ -70,27 +71,6 @@ func (dir *Directory) IsRootDir() bool {
 	return dir.Dir == "" || dir.Dir == "/"
 }
 
-var _ HasPBDefinitions = (*Directory)(nil)
-
-func (dir *Directory) PBDefinitions(ctx context.Context) ([]*pb.Definition, error) {
-	var defs []*pb.Definition
-	if dir.LLB != nil {
-		defs = append(defs, dir.LLB)
-	}
-	for _, bnd := range dir.Services {
-		ctr := bnd.Service.Self().Container
-		if ctr == nil {
-			continue
-		}
-		ctrDefs, err := ctr.PBDefinitions(ctx)
-		if err != nil {
-			return nil, err
-		}
-		defs = append(defs, ctrDefs...)
-	}
-	return defs, nil
-}
-
 func NewDirectory(def *pb.Definition, dir string, platform Platform, services ServiceBindings) *Directory {
 	return &Directory{
 		LLB:      def,
@@ -102,6 +82,13 @@ func NewDirectory(def *pb.Definition, dir string, platform Platform, services Se
 
 func NewScratchDirectory(ctx context.Context, platform Platform) (*Directory, error) {
 	return NewDirectorySt(ctx, llb.Scratch(), "/", platform, nil)
+}
+
+func NewScratchDirectoryDagOp(ctx context.Context, platform Platform) (*Directory, error) {
+	return &Directory{
+		Dir:      "/",
+		Platform: platform,
+	}, nil
 }
 
 func NewDirectorySt(ctx context.Context, st llb.State, dir string, platform Platform, services ServiceBindings) (*Directory, error) {
@@ -159,6 +146,10 @@ func (dir *Directory) StateWithSourcePath() (llb.State, error) {
 
 	if dir.Dir == "/" {
 		return dirSt, nil
+	}
+
+	if dir.Dir == "" {
+		return llb.State{}, fmt.Errorf("got empty dir path, which shouldnt happen")
 	}
 
 	return llb.Scratch().File(
@@ -219,42 +210,6 @@ func (dir *Directory) Digest(ctx context.Context) (string, error) {
 	return digest.String(), nil
 }
 
-func (dir *Directory) Stat(ctx context.Context, bk *buildkit.Client, src string) (*fstypes.Stat, error) {
-	src = path.Join(dir.Dir, src)
-
-	res, err := bk.Solve(ctx, bkgw.SolveRequest{
-		Definition: dir.LLB,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to solve: %w", err)
-	}
-
-	ref, err := res.SingleRef()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get single ref: %w", err)
-	}
-	// empty directory, i.e. llb.Scratch()
-	if ref == nil {
-		if clean := path.Clean(src); clean == "." || clean == "/" {
-			// fake out a reasonable response
-			return &fstypes.Stat{
-				Path: src,
-				Mode: uint32(fs.ModeDir),
-			}, nil
-		}
-
-		return nil, fmt.Errorf("%s: %w", src, syscall.ENOENT)
-	}
-
-	st, err := ref.StatFile(ctx, bkgw.StatRequest{
-		Path: src,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return st, nil
-}
-
 func (dir *Directory) Entries(ctx context.Context, src string) ([]string, error) {
 	src = path.Join(dir.Dir, src)
 	paths := []string{}
@@ -283,7 +238,7 @@ func (dir *Directory) Entries(ctx context.Context, src string) ([]string, error)
 			if clean := path.Clean(src); clean == "." || clean == "/" {
 				return []string{}, nil
 			}
-			return nil, fmt.Errorf("%s: no such file or directory", src)
+			return nil, fmt.Errorf("%s: %w", src, os.ErrNotExist)
 		}
 		return nil, err
 	}
@@ -393,46 +348,6 @@ func (dir *Directory) WithNewFile(ctx context.Context, dest string, content []by
 		permissions = 0o644
 	}
 
-	// be sure to create the file under the working directory
-	dest = path.Join(dir.Dir, dest)
-
-	st, err := dir.State()
-	if err != nil {
-		return nil, err
-	}
-
-	parent, _ := path.Split(dest)
-	if parent != "" {
-		st = st.File(llb.Mkdir(parent, 0755, llb.WithParents(true)))
-	}
-
-	opts := []llb.MkfileOption{}
-	if ownership != nil {
-		opts = append(opts, ownership.Opt())
-	}
-
-	st = st.File(llb.Mkfile(dest, permissions, content, opts...))
-
-	err = dir.SetState(ctx, st)
-	if err != nil {
-		return nil, err
-	}
-
-	return dir, nil
-}
-
-func (dir *Directory) WithNewFileDagOp(ctx context.Context, dest string, content []byte, permissions fs.FileMode, ownership *Ownership) (*Directory, error) {
-	dir = dir.Clone()
-
-	err := validateFileName(dest)
-	if err != nil {
-		return nil, err
-	}
-
-	if permissions == 0 {
-		permissions = 0o644
-	}
-
 	return execInMount(ctx, dir, func(root string) error {
 		resolvedDest, err := containerdfs.RootPath(root, path.Join(dir.Dir, dest))
 		if err != nil {
@@ -506,7 +421,7 @@ func (dir *Directory) WithPatch(ctx context.Context, patch string) (*Directory, 
 	if err != nil {
 		return nil, err
 	}
-	err = MountRef(ctx, newRef, bkSessionGroup, func(root string) (rerr error) {
+	err = MountRef(ctx, newRef, bkSessionGroup, func(root string, _ *mount.Mount) (rerr error) {
 		resolvedDir, err := containerdfs.RootPath(root, dir.Dir)
 		if err != nil {
 			return err
@@ -535,7 +450,7 @@ func (dir *Directory) WithPatch(ctx context.Context, patch string) (*Directory, 
 	return dir, nil
 }
 
-func (dir *Directory) Search(ctx context.Context, opts SearchOpts, paths []string, globs []string) ([]*SearchResult, error) {
+func (dir *Directory) Search(ctx context.Context, opts SearchOpts, verbose bool, paths []string, globs []string) ([]*SearchResult, error) {
 	// Validate and normalize paths to prevent directory traversal attacks
 	for i, p := range paths {
 		// If absolute, make it relative to the directory
@@ -573,7 +488,7 @@ func (dir *Directory) Search(ctx context.Context, opts SearchOpts, paths []strin
 	}
 
 	results := []*SearchResult{}
-	err = MountRef(ctx, ref, bkSessionGroup, func(root string) error {
+	err = MountRef(ctx, ref, bkSessionGroup, func(root string, _ *mount.Mount) error {
 		resolvedDir, err := containerdfs.RootPath(root, dir.Dir)
 		if err != nil {
 			return err
@@ -599,7 +514,7 @@ func (dir *Directory) Search(ctx context.Context, opts SearchOpts, paths []strin
 		}
 		rg := exec.Command("rg", rgArgs...)
 		rg.Dir = resolvedDir
-		results, err = opts.RunRipgrep(ctx, rg)
+		results, err = opts.RunRipgrep(ctx, rg, verbose)
 		return err
 	})
 	if err != nil {
@@ -608,28 +523,47 @@ func (dir *Directory) Search(ctx context.Context, opts SearchOpts, paths []strin
 	return results, nil
 }
 
+// cleanDotsAndSlashes is similar to path.Clean; however it does not remove any directory names, e.g. "keep/../this//.//" will return "keep/../this".
+// This is needed for cases where a referenced directory is a symlink, e.g. consider keep linking to some/other/directory, then keep/../this,
+// would end up being some/other/directory/../this, which would end up as some/other/this
+func cleanDotsAndSlashes(path string) string {
+	cleaned := []string{}
+	for _, d := range filepath.SplitList(path) {
+		if d == "" || d == "." || d == "/" {
+			continue
+		}
+		cleaned = append(cleaned, d)
+	}
+	return filepath.Join(cleaned...)
+}
+
 func (dir *Directory) Directory(ctx context.Context, subdir string) (*Directory, error) {
+	if cleanDotsAndSlashes(subdir) == "" {
+		return dir, nil
+	}
+
 	dir = dir.Clone()
 
 	query, err := CurrentQuery(ctx)
 	if err != nil {
 		return nil, err
 	}
-	bk, err := query.Buildkit(ctx)
+
+	srv, err := query.Server.Server(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get buildkit client: %w", err)
+		return nil, err
 	}
 
 	dir.Dir = path.Join(dir.Dir, subdir)
 
 	// check that the directory actually exists so the user gets an error earlier
 	// rather than when the dir is used
-	info, err := dir.Stat(ctx, bk, ".")
+	info, err := dir.Stat(ctx, srv, ".", false)
 	if err != nil {
-		return nil, err
+		return nil, RestoreErrPath(err, subdir)
 	}
 
-	if !info.IsDir() {
+	if info.FileType != FileTypeDirectory {
 		return nil, notADirectoryError{fmt.Errorf("path %s is a file, not a directory", subdir)}
 	}
 
@@ -649,28 +583,71 @@ func (e notADirectoryError) Unwrap() error {
 }
 
 func (dir *Directory) File(ctx context.Context, file string) (*File, error) {
+	dir = dir.Clone()
+	filePath := path.Join(dir.Dir, file)
+
 	query, err := CurrentQuery(ctx)
 	if err != nil {
 		return nil, err
 	}
-	bk, err := query.Buildkit(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get buildkit client: %w", err)
-	}
 
-	err = validateFileName(file)
+	srv, err := query.Server.Server(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// check that the file actually exists so the user gets an error earlier
-	// rather than when the file is used
-	info, err := dir.Stat(ctx, bk, file)
+	stat, err := dir.Stat(ctx, srv, file, false)
+	if err != nil {
+		return nil, err
+	}
+	if stat.FileType == FileTypeDirectory {
+		return nil, notAFileError{fmt.Errorf("path %s is a directory, not a file", file)}
+	}
+
+	dirRef, err := getRefOrEvaluate(ctx, dir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get directory ref: %w", err)
+	}
+
+	return &File{
+		LLB:      dir.LLB,
+		Result:   dirRef,
+		File:     filePath,
+		Platform: dir.Platform,
+		Services: dir.Services,
+	}, nil
+}
+
+func (dir *Directory) FileLLB(ctx context.Context, parent dagql.ObjectResult[*Directory], file string) (*File, error) {
+	err := validateFileName(file)
 	if err != nil {
 		return nil, err
 	}
 
-	if info.IsDir() {
+	srv, err := CurrentDagqlServer(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get dagql server: %w", err)
+	}
+
+	internalSpanCtx, internalSpan := Tracer(ctx).Start(ctx, fmt.Sprintf("file %s", file),
+		telemetry.Internal(),
+	)
+	defer telemetry.EndWithCause(internalSpan, nil)
+
+	var fileStat *Stat
+	err = srv.Select(internalSpanCtx, parent, &fileStat,
+		dagql.Selector{
+			Field: "stat",
+			Args: []dagql.NamedInput{
+				{Name: "path", Value: dagql.String(file)},
+			},
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if fileStat.IsDir() {
 		return nil, notAFileError{fmt.Errorf("path %s is a directory, not a file", file)}
 	}
 
@@ -757,7 +734,7 @@ func (dir *Directory) WithDirectory(
 		// note this always occurs when creating the rebasedDir (to prevent infinite recursion)
 
 		if canDoDirectMerge && srcRef != nil {
-			dir.Result = srcRef
+			dir.Result = srcRef.Clone()
 			return dir, nil
 		}
 		newRef, err := query.BuildkitCache().New(ctx, nil, nil,
@@ -768,7 +745,7 @@ func (dir *Directory) WithDirectory(
 			return nil, fmt.Errorf("buildkitcache.New failed: %w", err)
 		}
 
-		err = MountRef(ctx, newRef, nil, func(copyDest string) error {
+		err = MountRef(ctx, newRef, nil, func(copyDest string, destMnt *mount.Mount) error {
 			resolvedCopyDest, err := containerdfs.RootPath(copyDest, destDir)
 			if err != nil {
 				return err
@@ -793,20 +770,40 @@ func (dir *Directory) WithDirectory(
 			if err != nil {
 				return fmt.Errorf("failed to mount source directory: %w", err)
 			}
-			lm := snapshot.LocalMounter(mounter)
-			srcPath, err := lm.Mount()
+			ms, unmountSrc, err := mounter.Mount()
+			if err != nil {
+				return fmt.Errorf("failed to mount source directory: %w", err)
+			}
+			defer unmountSrc()
+			if len(ms) == 0 {
+				return fmt.Errorf("no mounts returned for source directory")
+			}
+			srcMnt := ms[0]
+			lm := snapshot.LocalMounterWithMounts(ms)
+			mntedSrcPath, err := lm.Mount()
 			if err != nil {
 				return fmt.Errorf("failed to mount source directory: %w", err)
 			}
 			defer lm.Unmount()
-			resolvedSrcPath, err := containerdfs.RootPath(srcPath, src.Dir)
+			resolvedSrcPath, err := containerdfs.RootPath(mntedSrcPath, src.Dir)
 			if err != nil {
 				return err
+			}
+			srcResolver, err := pathResolverForMount(&srcMnt, mntedSrcPath)
+			if err != nil {
+				return fmt.Errorf("failed to create source path resolver: %w", err)
+			}
+			destResolver, err := pathResolverForMount(destMnt, copyDest)
+			if err != nil {
+				return fmt.Errorf("failed to create destination path resolver: %w", err)
 			}
 			var opts []fscopy.Opt
 			opts = append(opts, fscopy.WithCopyInfo(fscopy.CopyInfo{
 				AlwaysReplaceExistingDestPaths: true,
 				CopyDirContents:                true,
+				EnableHardlinkOptimization:     true,
+				SourcePathResolver:             srcResolver,
+				DestPathResolver:               destResolver,
 			}))
 			for _, pattern := range filter.Include {
 				opts = append(opts, fscopy.WithIncludePattern(pattern))
@@ -894,7 +891,33 @@ func (dir *Directory) WithDirectory(
 	return dir, nil
 }
 
-func copyFile(srcPath, dstPath string) (err error) {
+func copyFile(srcPath, dstPath string, tryHardlink bool) (err error) {
+	if tryHardlink {
+		_, err := os.Lstat(dstPath)
+		switch {
+		case err == nil:
+			// destination already exists, remove it
+			if removeErr := os.Remove(dstPath); removeErr != nil {
+				return fmt.Errorf("failed to remove existing destination file %s: %w", dstPath, removeErr)
+			}
+		case errors.Is(err, os.ErrNotExist):
+			// destination does not exist, proceed
+		default:
+			return fmt.Errorf("failed to stat destination file %s: %w", dstPath, err)
+		}
+
+		err = os.Link(srcPath, dstPath)
+		switch {
+		case err == nil:
+			return nil
+		case errors.Is(err, unix.EXDEV), errors.Is(err, unix.EMLINK):
+			// cross-device link or too many links, fall back to copy
+			slog.ExtraDebug("hardlink file failed, falling back to copy", "source", srcPath, "destination", dstPath, "error", err)
+		default:
+			return fmt.Errorf("failed to hard link file from %s to %s: %w", srcPath, dstPath, err)
+		}
+	}
+
 	srcStat, err := os.Stat(srcPath)
 	if err != nil {
 		return err
@@ -920,8 +943,7 @@ func copyFile(srcPath, dstPath string) (err error) {
 			dst.Close()
 		}
 	}()
-	_, err = io.Copy(dst, src)
-	if err != nil {
+	if err := fscopy.CopyFileContent(dst, src); err != nil {
 		return err
 	}
 	err = dst.Close()
@@ -981,53 +1003,103 @@ func (dir *Directory) WithFile(
 	if err != nil {
 		return nil, err
 	}
-	err = MountRef(ctx, newRef, bkSessionGroup, func(dirRoot string) error {
-		destPath, err := containerdfs.RootPath(dirRoot, destPath)
+
+	var realDestPath string
+	if err := MountRef(ctx, newRef, bkSessionGroup, func(root string, destMnt *mount.Mount) (rerr error) {
+		mntedDestPath, err := containerdfs.RootPath(root, destPath)
 		if err != nil {
 			return err
 		}
-		destIsDir, err := isDir(destPath)
+		destIsDir, err := isDir(mntedDestPath)
 		if err != nil {
 			return err
 		}
 		if destIsDir {
 			_, srcFilename := filepath.Split(src.File)
-			destPath = path.Join(destPath, srcFilename)
+			mntedDestPath = path.Join(mntedDestPath, srcFilename)
 		}
-		destPathDir, _ := filepath.Split(destPath)
+
+		destPathDir, _ := filepath.Split(mntedDestPath)
 		err = os.MkdirAll(filepath.Dir(destPathDir), 0755)
 		if err != nil {
 			return err
 		}
-		err = MountRef(ctx, srcCacheRef, bkSessionGroup, func(srcRoot string) error {
-			srcPath, err := containerdfs.RootPath(srcRoot, src.File)
-			if err != nil {
-				return err
-			}
-			return copyFile(srcPath, destPath)
-		})
+
+		resolvedDestRelPath, err := filepath.Rel(root, mntedDestPath)
 		if err != nil {
 			return err
 		}
-		if permissions != nil {
-			if err := os.Chmod(destPath, os.FileMode(*permissions)); err != nil {
-				return fmt.Errorf("failed to set chmod %s: err", destPath)
+		switch destMnt.Type {
+		case "bind", "rbind":
+			realDestPath = filepath.Join(destMnt.Source, resolvedDestRelPath)
+		case "overlay":
+			// touch the dest parent dir to trigger a copy-up of parent dirs
+			// we never try to keep directory modtimes consistent right now, so
+			// this is okay
+			if err := os.Chtimes(destPathDir, time.Now(), time.Now()); err != nil {
+				return fmt.Errorf("failed to touch overlay parent dir %s: %w", destPathDir, err)
 			}
-		}
-		if owner != "" {
-			ownership, err := parseDirectoryOwner(owner)
-			if err != nil {
-				return fmt.Errorf("failed to parse ownership %s: %w", owner, err)
+
+			var upperdir string
+			for _, opt := range destMnt.Options {
+				if strings.HasPrefix(opt, "upperdir=") {
+					upperdir = strings.TrimPrefix(opt, "upperdir=")
+					break
+				}
 			}
-			if err := os.Chown(destPath, ownership.UID, ownership.GID); err != nil {
-				return fmt.Errorf("failed to set chown %s: err", destPath)
+			if upperdir == "" {
+				return fmt.Errorf("overlay mount missing upperdir option")
 			}
+			realDestPath = filepath.Join(upperdir, resolvedDestRelPath)
+		default:
+			return fmt.Errorf("unsupported mount type for destination: %s", destMnt.Type)
 		}
 		return nil
-	})
+	}); err != nil {
+		return nil, err
+	}
+
+	var realSrcPath string
+	if err := MountRef(ctx, srcCacheRef, bkSessionGroup, func(root string, srcMnt *mount.Mount) (rerr error) {
+		srcPath, err := containerdfs.RootPath(root, src.File)
+		if err != nil {
+			return err
+		}
+		srcResolver, err := pathResolverForMount(srcMnt, root)
+		if err != nil {
+			return err
+		}
+		realSrcPath, err = srcResolver(srcPath)
+		if err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	tryHardlink := permissions == nil && owner == ""
+
+	err = copyFile(realSrcPath, realDestPath, tryHardlink)
 	if err != nil {
 		return nil, err
 	}
+
+	if permissions != nil {
+		if err := os.Chmod(realDestPath, os.FileMode(*permissions)); err != nil {
+			return nil, fmt.Errorf("failed to set chmod %s: err", destPath)
+		}
+	}
+	if owner != "" {
+		ownership, err := parseDirectoryOwner(owner)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse ownership %s: %w", owner, err)
+		}
+		if err := os.Chown(realDestPath, ownership.UID, ownership.GID); err != nil {
+			return nil, fmt.Errorf("failed to set chown %s: err", destPath)
+		}
+	}
+
 	snap, err := newRef.Commit(ctx)
 	if err != nil {
 		return nil, err
@@ -1101,46 +1173,8 @@ func (dir *Directory) WithNewDirectory(ctx context.Context, dest string, permiss
 		if err != nil {
 			return err
 		}
-		return os.MkdirAll(resolvedDir, permissions)
+		return TrimErrPathPrefix(os.MkdirAll(resolvedDir, permissions), root)
 	}, withSavedSnapshot("withNewDirectory %s", dest))
-}
-
-// DiffLLB is legacy and will be deleted once all ops are dagops
-func (dir *Directory) DiffLLB(ctx context.Context, other *Directory) (*Directory, error) {
-	dir = dir.Clone()
-
-	thisDirPath := dir.Dir
-	if thisDirPath == "" {
-		thisDirPath = "/"
-	}
-	otherDirPath := other.Dir
-	if otherDirPath == "" {
-		otherDirPath = "/"
-	}
-	if thisDirPath != otherDirPath {
-		// TODO(vito): work around with llb.Copy shenanigans?
-		return nil, fmt.Errorf("cannot diff with different relative paths: %q != %q", dir.Dir, other.Dir)
-	}
-
-	lowerSt, err := dir.State()
-	if err != nil {
-		return nil, err
-	}
-
-	upperSt, err := other.State()
-	if err != nil {
-		return nil, err
-	}
-
-	st := llb.
-		Diff(lowerSt, upperSt).
-		File(llb.Mkdir(dir.Dir, 0755, llb.WithParents(true)))
-	err = dir.SetState(ctx, st)
-	if err != nil {
-		return nil, err
-	}
-
-	return dir, nil
 }
 
 func (dir *Directory) Diff(ctx context.Context, other *Directory) (*Directory, error) {
@@ -1178,9 +1212,16 @@ func (dir *Directory) Diff(ctx context.Context, other *Directory) (*Directory, e
 	}
 
 	cache := query.BuildkitCache()
-	ref, err := cache.Diff(ctx, thisDirRef, otherDirRef, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to diff directories: %w", err)
+
+	var ref bkcache.ImmutableRef
+	if thisDirRef == nil {
+		// lower is nil, so the diff is just the upper ref
+		ref = otherDirRef
+	} else {
+		ref, err = cache.Diff(ctx, thisDirRef, otherDirRef, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to diff directories: %w", err)
+		}
 	}
 
 	newRef, err := cache.New(ctx, ref, bkSessionGroup, bkcache.WithRecordType(bkclient.UsageRecordTypeRegular),
@@ -1189,7 +1230,7 @@ func (dir *Directory) Diff(ctx context.Context, other *Directory) (*Directory, e
 		return nil, err
 	}
 
-	err = MountRef(ctx, newRef, bkSessionGroup, func(root string) error {
+	err = MountRef(ctx, newRef, bkSessionGroup, func(root string, _ *mount.Mount) error {
 		fullPath, err := RootPathWithoutFinalSymlink(root, dir.Dir)
 		if err != nil {
 			return err
@@ -1321,14 +1362,18 @@ func (dir *Directory) WithChanges(ctx context.Context, changes *Changeset) (*Dir
 	}
 	dir.Result = ref
 
-	// Remove all the paths in Changes.removedPaths using Without
-	if len(changes.RemovedPaths) > 0 {
+	paths, err := changes.ComputePaths(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("compute paths: %w", err)
+	}
+
+	if len(paths.Removed) > 0 {
 		srv, err := CurrentDagqlServer(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get dagql server: %w", err)
 		}
 
-		dir, _, err = dir.Without(ctx, srv, changes.RemovedPaths...)
+		dir, _, err = dir.Without(ctx, srv, paths.Removed...)
 		if err != nil {
 			return nil, fmt.Errorf("failed to remove paths: %w", err)
 		}
@@ -1381,59 +1426,111 @@ func (dir *Directory) Without(ctx context.Context, srv *dagql.Server, paths ...s
 }
 
 func (dir *Directory) Exists(ctx context.Context, srv *dagql.Server, targetPath string, targetType ExistsType, doNotFollowSymlinks bool) (bool, error) {
-	res, err := dir.Evaluate(ctx)
+	stat, err := dir.Stat(ctx, srv, targetPath, doNotFollowSymlinks || targetType == ExistsTypeSymlink)
 	if err != nil {
-		return false, err
-	}
-
-	ref, err := res.SingleRef()
-	if err != nil {
-		return false, err
-	}
-	if ref == nil {
-		return false, nil
-	}
-
-	immutableRef, err := ref.CacheRef(ctx)
-	if err != nil {
-		return false, err
-	}
-
-	osStatFunc := os.Stat
-	if targetType == ExistsTypeSymlink || doNotFollowSymlinks {
-		// symlink testing requires the Lstat call, which does NOT follow symlinks
-		osStatFunc = os.Lstat
-	}
-
-	var fileInfo os.FileInfo
-	err = MountRef(ctx, immutableRef, nil, func(root string) error {
-		fileInfo, err = osStatFunc(path.Join(root, dir.Dir, targetPath))
-		if errors.Is(err, os.ErrNotExist) {
-			return nil
+		if errors.Is(err, fs.ErrNotExist) {
+			return false, nil
 		}
-		return err
-	})
-	if err != nil {
 		return false, err
 	}
-	if fileInfo == nil {
-		return false, nil // ErrNotExist occurred
-	}
-
-	m := fileInfo.Mode()
 
 	switch targetType {
 	case ExistsTypeDirectory:
-		return m.IsDir(), nil
+		return stat.FileType == FileTypeDirectory, nil
 	case ExistsTypeRegular:
-		return m.IsRegular(), nil
+		return stat.FileType == FileTypeRegular, nil
 	case ExistsTypeSymlink:
-		return m&fs.ModeSymlink != 0, nil
+		return stat.FileType == FileTypeSymlink, nil
 	case "":
 		return true, nil
 	default:
 		return false, fmt.Errorf("invalid path type %s", targetType)
 	}
+}
+
+type Stat struct {
+	Size        int      `field:"true" doc:"file size"`
+	Name        string   `field:"true" doc:"file name"`
+	FileType    FileType `field:"true" doc:"file type"`
+	Permissions int      `field:"true" doc:"permission bits"`
+}
+
+func (*Stat) Type() *ast.Type {
+	return &ast.Type{
+		NamedType: "Stat",
+		NonNull:   false,
+	}
+}
+
+func (*Stat) TypeDescription() string {
+	return "A file or directory status object."
+}
+
+func (s *Stat) IsDir() bool {
+	return s != nil && s.FileType == FileTypeDirectory
+}
+
+func (s Stat) Clone() *Stat {
+	cp := s
+	return &cp
+}
+
+func (dir *Directory) Stat(ctx context.Context, srv *dagql.Server, targetPath string, doNotFollowSymlinks bool) (*Stat, error) {
+	if targetPath == "" {
+		return nil, &os.PathError{Op: "stat", Path: targetPath, Err: syscall.ENOENT}
+	}
+
+	immutableRef, err := getRefOrEvaluate(ctx, dir)
+	if err != nil {
+		return nil, err
+	}
+	if immutableRef == nil {
+		return nil, &os.PathError{Op: "stat", Path: targetPath, Err: syscall.ENOENT}
+	}
+
+	bkSessionGroup := requiresBuildkitSessionGroup(ctx)
+
+	osStatFunc := os.Stat
+	rootPathFunc := containerdfs.RootPath
+	if doNotFollowSymlinks {
+		// symlink testing requires the Lstat call, which does NOT follow symlinks
+		osStatFunc = os.Lstat
+		// similarly, containerdfs.RootPath can't be used, since it follows symlinks
+		rootPathFunc = RootPathWithoutFinalSymlink
+	}
+
+	var fileInfo os.FileInfo
+	err = MountRef(ctx, immutableRef, bkSessionGroup, func(root string, _ *mount.Mount) error {
+		resolvedPath, err := rootPathFunc(root, path.Join(dir.Dir, targetPath))
+		if err != nil {
+			return err
+		}
+		fileInfo, err = osStatFunc(resolvedPath)
+		return TrimErrPathPrefix(err, root)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	m := fileInfo.Mode()
+
+	stat := &Stat{
+		Size:        int(fileInfo.Size()),
+		Name:        fileInfo.Name(),
+		Permissions: int(fileInfo.Mode().Perm()),
+	}
+
+	if m.IsDir() {
+		stat.FileType = FileTypeDirectory
+	} else if m.IsRegular() {
+		stat.FileType = FileTypeRegular
+	} else if m&fs.ModeSymlink != 0 {
+		stat.FileType = FileTypeSymlink
+	} else {
+		stat.FileType = FileTypeUnknown
+	}
+
+	return stat, nil
 }
 
 func (dir *Directory) Export(ctx context.Context, destPath string, merge bool) (rerr error) {
@@ -1446,29 +1543,21 @@ func (dir *Directory) Export(ctx context.Context, destPath string, merge bool) (
 		return fmt.Errorf("failed to get buildkit client: %w", err)
 	}
 
-	var defPB *pb.Definition
-	if dir.Dir != "" && dir.Dir != "/" {
-		src, err := dir.State()
-		if err != nil {
-			return err
-		}
-		src = llb.Scratch().File(llb.Copy(src, dir.Dir, ".", &llb.CopyInfo{
-			CopyDirContentsOnly: true,
-		}))
+	ctx, span := Tracer(ctx).Start(ctx, fmt.Sprintf("export directory %s to host %s", dir.Dir, destPath))
+	defer telemetry.EndWithCause(span, &rerr)
 
-		def, err := src.Marshal(ctx, llb.Platform(dir.Platform.Spec()))
-		if err != nil {
-			return err
-		}
-		defPB = def.ToPB()
-	} else {
-		defPB = dir.LLB
+	root, closer, err := mountObj(ctx, dir)
+	if err != nil {
+		return fmt.Errorf("failed to mount directory: %w", err)
+	}
+	defer closer(false)
+
+	root, err = containerdfs.RootPath(root, dir.Dir)
+	if err != nil {
+		return err
 	}
 
-	ctx, span := Tracer(ctx).Start(ctx, fmt.Sprintf("export directory %s to host %s", dir.Dir, destPath))
-	defer telemetry.End(span, func() error { return rerr })
-
-	return bk.LocalDirExport(ctx, defPB, destPath, merge, nil)
+	return bk.LocalDirExport(ctx, root, destPath, merge, nil)
 }
 
 // Root removes any relative path from the directory.
@@ -1571,6 +1660,8 @@ func SupportsDirSlash(ctx context.Context) bool {
 	return Supports(ctx, "v0.17.0")
 }
 
+// TODO deprecate ExistsType in favor of FileType
+
 type ExistsType string
 
 var ExistsTypes = dagql.NewEnum[ExistsType]()
@@ -1623,4 +1714,63 @@ func (et *ExistsType) UnmarshalJSON(payload []byte) error {
 	}
 	*et = ExistsType(str)
 	return nil
+}
+
+type FileType string
+
+var FileTypes = dagql.NewEnum[FileType]()
+
+var (
+	FileTypeRegular   = FileTypes.RegisterView("REGULAR", enumView, "regular file type")
+	FileTypeDirectory = FileTypes.RegisterView("DIRECTORY", enumView, "directory file type")
+	FileTypeSymlink   = FileTypes.RegisterView("SYMLINK", enumView, "symlink file type")
+	FileTypeUnknown   = FileTypes.Register("UNKNOWN", "unknown file type")
+
+	_ = FileTypes.AliasView("REGULAR_TYPE", "REGULAR", enumView)
+	_ = FileTypes.AliasView("DIRECTORY_TYPE", "DIRECTORY", enumView)
+	_ = FileTypes.AliasView("SYMLINK_TYPE", "SYMLINK", enumView)
+)
+
+func (ft FileType) Type() *ast.Type {
+	return &ast.Type{
+		NamedType: "FileType",
+		NonNull:   false,
+	}
+}
+
+func (ft FileType) TypeDescription() string {
+	return "File type."
+}
+
+func (ft FileType) Decoder() dagql.InputDecoder {
+	return FileTypes
+}
+
+func (ft FileType) ToLiteral() call.Literal {
+	return FileTypes.Literal(ft)
+}
+
+func (ft FileType) MarshalJSON() ([]byte, error) {
+	return json.Marshal(string(ft))
+}
+
+func (ft *FileType) UnmarshalJSON(payload []byte) error {
+	var str string
+	if err := json.Unmarshal(payload, &str); err != nil {
+		return err
+	}
+	*ft = FileType(str)
+	return nil
+}
+
+func FileModeToFileType(m fs.FileMode) FileType {
+	if m.IsDir() {
+		return FileTypeDirectory
+	} else if m.IsRegular() {
+		return FileTypeRegular
+	} else if m&fs.ModeSymlink != 0 {
+		return FileTypeSymlink
+	} else {
+		return FileTypeUnknown
+	}
 }

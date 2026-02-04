@@ -168,6 +168,46 @@
 		},
 		{
 			"t": "C",
+			"n": "Dagger\\Check",
+			"p": "Dagger/Check.html",
+			"d": null,
+			"f": {
+				"n": "Dagger",
+				"p": "Dagger.html"
+			}
+		},
+		{
+			"t": "C",
+			"n": "Dagger\\CheckGroup",
+			"p": "Dagger/CheckGroup.html",
+			"d": null,
+			"f": {
+				"n": "Dagger",
+				"p": "Dagger.html"
+			}
+		},
+		{
+			"t": "C",
+			"n": "Dagger\\CheckGroupId",
+			"p": "Dagger/CheckGroupId.html",
+			"d": "<p>The <code>CheckGroupID</code> scalar type represents an identifier for an object of type CheckGroup.</p>",
+			"f": {
+				"n": "Dagger",
+				"p": "Dagger.html"
+			}
+		},
+		{
+			"t": "C",
+			"n": "Dagger\\CheckId",
+			"p": "Dagger/CheckId.html",
+			"d": "<p>The <code>CheckID</code> scalar type represents an identifier for an object of type Check.</p>",
+			"f": {
+				"n": "Dagger",
+				"p": "Dagger.html"
+			}
+		},
+		{
+			"t": "C",
 			"n": "Dagger\\Client",
 			"p": "Dagger/Client.html",
 			"d": "<p>The root of the DAG.</p>",
@@ -1208,6 +1248,26 @@
 		},
 		{
 			"t": "C",
+			"n": "Dagger\\Stat",
+			"p": "Dagger/Stat.html",
+			"d": "<p>A file or directory status object.</p>",
+			"f": {
+				"n": "Dagger",
+				"p": "Dagger.html"
+			}
+		},
+		{
+			"t": "C",
+			"n": "Dagger\\StatId",
+			"p": "Dagger/StatId.html",
+			"d": "<p>The <code>StatID</code> scalar type represents an identifier for an object of type Stat.</p>",
+			"f": {
+				"n": "Dagger",
+				"p": "Dagger.html"
+			}
+		},
+		{
+			"t": "C",
 			"n": "Dagger\\Terminal",
 			"p": "Dagger/Terminal.html",
 			"d": "<p>An interactive terminal that clients can connect to.</p>",
@@ -1385,6 +1445,18 @@
 		},
 		{
 			"t": "M",
+			"n": "Dagger\\Binding::asCheck",
+			"p": "Dagger/Binding.html#method_asCheck",
+			"d": "<p>Retrieve the binding value, as type Check</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Binding::asCheckGroup",
+			"p": "Dagger/Binding.html#method_asCheckGroup",
+			"d": "<p>Retrieve the binding value, as type CheckGroup</p>"
+		},
+		{
+			"t": "M",
 			"n": "Dagger\\Binding::asCloud",
 			"p": "Dagger/Binding.html#method_asCloud",
 			"d": "<p>Retrieve the binding value, as type Cloud</p>"
@@ -1484,6 +1556,12 @@
 			"n": "Dagger\\Binding::asSocket",
 			"p": "Dagger/Binding.html#method_asSocket",
 			"d": "<p>Retrieve the binding value, as type Socket</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Binding::asStat",
+			"p": "Dagger/Binding.html#method_asStat",
+			"d": "<p>Retrieve the binding value, as type Stat</p>"
 		},
 		{
 			"t": "M",
@@ -1604,6 +1682,90 @@
 			"n": "Dagger\\Changeset::sync",
 			"p": "Dagger/Changeset.html#method_sync",
 			"d": "<p>Force evaluation in the engine.</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Changeset::withChangeset",
+			"p": "Dagger/Changeset.html#method_withChangeset",
+			"d": "<p>Add changes to an existing changeset</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Changeset::withChangesets",
+			"p": "Dagger/Changeset.html#method_withChangesets",
+			"d": "<p>Add changes from multiple changesets using git octopus merge strategy</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Check::completed",
+			"p": "Dagger/Check.html#method_completed",
+			"d": "<p>Whether the check completed</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Check::description",
+			"p": "Dagger/Check.html#method_description",
+			"d": "<p>The description of the check</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Check::id",
+			"p": "Dagger/Check.html#method_id",
+			"d": "<p>A unique identifier for this Check.</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Check::name",
+			"p": "Dagger/Check.html#method_name",
+			"d": "<p>Return the fully qualified name of the check</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Check::passed",
+			"p": "Dagger/Check.html#method_passed",
+			"d": "<p>Whether the check passed</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Check::path",
+			"p": "Dagger/Check.html#method_path",
+			"d": "<p>The path of the check within its module</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Check::resultEmoji",
+			"p": "Dagger/Check.html#method_resultEmoji",
+			"d": "<p>An emoji representing the result of the check</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Check::run",
+			"p": "Dagger/Check.html#method_run",
+			"d": "<p>Execute the check</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\CheckGroup::id",
+			"p": "Dagger/CheckGroup.html#method_id",
+			"d": "<p>A unique identifier for this CheckGroup.</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\CheckGroup::list",
+			"p": "Dagger/CheckGroup.html#method_list",
+			"d": "<p>Return a list of individual checks and their details</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\CheckGroup::report",
+			"p": "Dagger/CheckGroup.html#method_report",
+			"d": "<p>Generate a markdown report</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\CheckGroup::run",
+			"p": "Dagger/CheckGroup.html#method_run",
+			"d": "<p>Execute all selected checks</p>"
 		},
 		{
 			"t": "M",
@@ -1760,6 +1922,18 @@
 			"n": "Dagger\\Client::loadChangesetFromID",
 			"p": "Dagger/Client.html#method_loadChangesetFromID",
 			"d": "<p>Load a Changeset from its ID.</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Client::loadCheckFromID",
+			"p": "Dagger/Client.html#method_loadCheckFromID",
+			"d": "<p>Load a Check from its ID.</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Client::loadCheckGroupFromID",
+			"p": "Dagger/Client.html#method_loadCheckGroupFromID",
+			"d": "<p>Load a CheckGroup from its ID.</p>"
 		},
 		{
 			"t": "M",
@@ -2030,6 +2204,12 @@
 			"n": "Dagger\\Client::loadSourceMapFromID",
 			"p": "Dagger/Client.html#method_loadSourceMapFromID",
 			"d": "<p>Load a SourceMap from its ID.</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Client::loadStatFromID",
+			"p": "Dagger/Client.html#method_loadStatFromID",
+			"d": "<p>Load a Stat from its ID.</p>"
 		},
 		{
 			"t": "M",
@@ -2375,6 +2555,12 @@
 		},
 		{
 			"t": "M",
+			"n": "Dagger\\Container::stat",
+			"p": "Dagger/Container.html#method_stat",
+			"d": "<p>Return file status</p>"
+		},
+		{
+			"t": "M",
 			"n": "Dagger\\Container::stderr",
 			"p": "Dagger/Container.html#method_stderr",
 			"d": "<p>The buffered standard error stream of the last executed command</p>"
@@ -2413,7 +2599,7 @@
 			"t": "M",
 			"n": "Dagger\\Container::withAnnotation",
 			"p": "Dagger/Container.html#method_withAnnotation",
-			"d": "<p>Retrieves this container plus the given OCI anotation.</p>"
+			"d": "<p>Retrieves this container plus the given OCI annotation.</p>"
 		},
 		{
 			"t": "M",
@@ -2438,6 +2624,12 @@
 			"n": "Dagger\\Container::withEntrypoint",
 			"p": "Dagger/Container.html#method_withEntrypoint",
 			"d": "<p>Set an OCI-style entrypoint. It will be included in the container's OCI configuration. Note, withExec ignores the entrypoint by default.</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Container::withEnvFileVariables",
+			"p": "Dagger/Container.html#method_withEnvFileVariables",
+			"d": "<p>Export environment variables from an env-file to the container.</p>"
 		},
 		{
 			"t": "M",
@@ -2675,6 +2867,18 @@
 		},
 		{
 			"t": "M",
+			"n": "Dagger\\CurrentModule::dependencies",
+			"p": "Dagger/CurrentModule.html#method_dependencies",
+			"d": "<p>The dependencies of the module.</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\CurrentModule::generatedContextDirectory",
+			"p": "Dagger/CurrentModule.html#method_generatedContextDirectory",
+			"d": "<p>The generated files and directories made on top of the module source's context directory.</p>"
+		},
+		{
+			"t": "M",
 			"n": "Dagger\\CurrentModule::id",
 			"p": "Dagger/CurrentModule.html#method_id",
 			"d": "<p>A unique identifier for this CurrentModule.</p>"
@@ -2828,6 +3032,12 @@
 			"n": "Dagger\\Directory::search",
 			"p": "Dagger/Directory.html#method_search",
 			"d": "<p>Searches for content matching the given regular expression or literal string.</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Directory::stat",
+			"p": "Dagger/Directory.html#method_stat",
+			"d": "<p>Return file status</p>"
 		},
 		{
 			"t": "M",
@@ -3095,6 +3305,12 @@
 		},
 		{
 			"t": "M",
+			"n": "Dagger\\EnumValueTypeDef::deprecated",
+			"p": "Dagger/EnumValueTypeDef.html#method_deprecated",
+			"d": "<p>The reason this enum member is deprecated, if any.</p>"
+		},
+		{
+			"t": "M",
 			"n": "Dagger\\EnumValueTypeDef::description",
 			"p": "Dagger/EnumValueTypeDef.html#method_description",
 			"d": "<p>A doc string for the enum member, if any.</p>"
@@ -3122,6 +3338,18 @@
 			"n": "Dagger\\EnumValueTypeDef::value",
 			"p": "Dagger/EnumValueTypeDef.html#method_value",
 			"d": "<p>The value of the enum member</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Env::check",
+			"p": "Dagger/Env.html#method_check",
+			"d": "<p>Return the check with the given name from the installed modules. Must match exactly one check.</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Env::checks",
+			"p": "Dagger/Env.html#method_checks",
+			"d": "<p>Return all checks defined by the installed modules</p>"
 		},
 		{
 			"t": "M",
@@ -3188,6 +3416,30 @@
 			"n": "Dagger\\Env::withChangesetOutput",
 			"p": "Dagger/Env.html#method_withChangesetOutput",
 			"d": "<p>Declare a desired Changeset output to be assigned in the environment</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Env::withCheckGroupInput",
+			"p": "Dagger/Env.html#method_withCheckGroupInput",
+			"d": "<p>Create or update a binding of type CheckGroup in the environment</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Env::withCheckGroupOutput",
+			"p": "Dagger/Env.html#method_withCheckGroupOutput",
+			"d": "<p>Declare a desired CheckGroup output to be assigned in the environment</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Env::withCheckInput",
+			"p": "Dagger/Env.html#method_withCheckInput",
+			"d": "<p>Create or update a binding of type Check in the environment</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Env::withCheckOutput",
+			"p": "Dagger/Env.html#method_withCheckOutput",
+			"d": "<p>Declare a desired Check output to be assigned in the environment</p>"
 		},
 		{
 			"t": "M",
@@ -3305,6 +3557,12 @@
 		},
 		{
 			"t": "M",
+			"n": "Dagger\\Env::withMainModule",
+			"p": "Dagger/Env.html#method_withMainModule",
+			"d": "<p>Sets the main module for this environment (the project being worked on)</p>"
+		},
+		{
+			"t": "M",
 			"n": "Dagger\\Env::withModule",
 			"p": "Dagger/Env.html#method_withModule",
 			"d": "<p>Installs a module into the environment, exposing its functions to the model</p>"
@@ -3404,6 +3662,18 @@
 			"n": "Dagger\\Env::withSocketOutput",
 			"p": "Dagger/Env.html#method_withSocketOutput",
 			"d": "<p>Declare a desired Socket output to be assigned in the environment</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Env::withStatInput",
+			"p": "Dagger/Env.html#method_withStatInput",
+			"d": "<p>Create or update a binding of type Stat in the environment</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Env::withStatOutput",
+			"p": "Dagger/Env.html#method_withStatOutput",
+			"d": "<p>Declare a desired Stat output to be assigned in the environment</p>"
 		},
 		{
 			"t": "M",
@@ -3557,6 +3827,12 @@
 		},
 		{
 			"t": "M",
+			"n": "Dagger\\FieldTypeDef::deprecated",
+			"p": "Dagger/FieldTypeDef.html#method_deprecated",
+			"d": "<p>The reason this enum member is deprecated, if any.</p>"
+		},
+		{
+			"t": "M",
 			"n": "Dagger\\FieldTypeDef::description",
 			"p": "Dagger/FieldTypeDef.html#method_description",
 			"d": "<p>A doc string for the field, if any.</p>"
@@ -3590,6 +3866,12 @@
 			"n": "Dagger\\File::asEnvFile",
 			"p": "Dagger/File.html#method_asEnvFile",
 			"d": "<p>Parse as an env file</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\File::asJSON",
+			"p": "Dagger/File.html#method_asJSON",
+			"d": "<p>Parse the file contents as JSON.</p>"
 		},
 		{
 			"t": "M",
@@ -3641,6 +3923,12 @@
 		},
 		{
 			"t": "M",
+			"n": "Dagger\\File::stat",
+			"p": "Dagger/File.html#method_stat",
+			"d": "<p>Return file status</p>"
+		},
+		{
+			"t": "M",
 			"n": "Dagger\\File::sync",
 			"p": "Dagger/File.html#method_sync",
 			"d": "<p>Force evaluation in the engine.</p>"
@@ -3665,6 +3953,12 @@
 		},
 		{
 			"t": "M",
+			"n": "Dagger\\FunctionArg::defaultAddress",
+			"p": "Dagger/FunctionArg.html#method_defaultAddress",
+			"d": "<p>Only applies to arguments of type Container. If the argument is not set, load it from the given address (e.g. alpine:latest)</p>"
+		},
+		{
+			"t": "M",
 			"n": "Dagger\\FunctionArg::defaultPath",
 			"p": "Dagger/FunctionArg.html#method_defaultPath",
 			"d": "<p>Only applies to arguments of type File or Directory. If the argument is not set, load it from the given path in the context directory</p>"
@@ -3674,6 +3968,12 @@
 			"n": "Dagger\\FunctionArg::defaultValue",
 			"p": "Dagger/FunctionArg.html#method_defaultValue",
 			"d": "<p>A default value to use for this argument when not explicitly set by the caller, if any.</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\FunctionArg::deprecated",
+			"p": "Dagger/FunctionArg.html#method_deprecated",
+			"d": "<p>The reason this function is deprecated, if any.</p>"
 		},
 		{
 			"t": "M",
@@ -3779,6 +4079,12 @@
 		},
 		{
 			"t": "M",
+			"n": "Dagger\\Function_::deprecated",
+			"p": "Dagger/Function_.html#method_deprecated",
+			"d": "<p>The reason this function is deprecated, if any.</p>"
+		},
+		{
+			"t": "M",
 			"n": "Dagger\\Function_::description",
 			"p": "Dagger/Function_.html#method_description",
 			"d": "<p>A doc string for the function, if any.</p>"
@@ -3818,6 +4124,18 @@
 			"n": "Dagger\\Function_::withCachePolicy",
 			"p": "Dagger/Function_.html#method_withCachePolicy",
 			"d": "<p>Returns the function updated to use the provided cache policy.</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Function_::withCheck",
+			"p": "Dagger/Function_.html#method_withCheck",
+			"d": "<p>Returns the function with a flag indicating it's a check.</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Function_::withDeprecated",
+			"p": "Dagger/Function_.html#method_withDeprecated",
+			"d": "<p>Returns the function with the provided deprecation reason.</p>"
 		},
 		{
 			"t": "M",
@@ -4289,6 +4607,18 @@
 		},
 		{
 			"t": "M",
+			"n": "Dagger\\LLM::withoutMessageHistory",
+			"p": "Dagger/LLM.html#method_withoutMessageHistory",
+			"d": "<p>Clear the message history, leaving only the system prompts</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\LLM::withoutSystemPrompts",
+			"p": "Dagger/LLM.html#method_withoutSystemPrompts",
+			"d": "<p>Clear the system prompts, leaving only the default system prompt</p>"
+		},
+		{
+			"t": "M",
 			"n": "Dagger\\LLMTokenUsage::cachedTokenReads",
 			"p": "Dagger/LLMTokenUsage.html#method_cachedTokenReads",
 			"d": null
@@ -4352,6 +4682,18 @@
 			"n": "Dagger\\ListTypeDef::id",
 			"p": "Dagger/ListTypeDef.html#method_id",
 			"d": "<p>A unique identifier for this ListTypeDef.</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Module::check",
+			"p": "Dagger/Module.html#method_check",
+			"d": "<p>Return the check defined by the module with the given name. Must match to exactly one check.</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Module::checks",
+			"p": "Dagger/Module.html#method_checks",
+			"d": "<p>Return all checks defined by the module</p>"
 		},
 		{
 			"t": "M",
@@ -4793,6 +5135,12 @@
 		},
 		{
 			"t": "M",
+			"n": "Dagger\\ObjectTypeDef::deprecated",
+			"p": "Dagger/ObjectTypeDef.html#method_deprecated",
+			"d": "<p>The reason this enum member is deprecated, if any.</p>"
+		},
+		{
+			"t": "M",
 			"n": "Dagger\\ObjectTypeDef::description",
 			"p": "Dagger/ObjectTypeDef.html#method_description",
 			"d": "<p>The doc string for the object, if any.</p>"
@@ -4874,6 +5222,12 @@
 			"n": "Dagger\\PortForward::__construct",
 			"p": "Dagger/PortForward.html#method___construct",
 			"d": null
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\SDKConfig::debug",
+			"p": "Dagger/SDKConfig.html#method_debug",
+			"d": "<p>Whether to start the SDK runtime in debug mode with an interactive terminal.</p>"
 		},
 		{
 			"t": "M",
@@ -5096,6 +5450,36 @@
 			"n": "Dagger\\SourceMap::url",
 			"p": "Dagger/SourceMap.html#method_url",
 			"d": "<p>The URL to the file, if any. This can be used to link to the source map in the browser.</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Stat::fileType",
+			"p": "Dagger/Stat.html#method_fileType",
+			"d": "<p>file type</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Stat::id",
+			"p": "Dagger/Stat.html#method_id",
+			"d": "<p>A unique identifier for this Stat.</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Stat::name",
+			"p": "Dagger/Stat.html#method_name",
+			"d": "<p>file name</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Stat::permissions",
+			"p": "Dagger/Stat.html#method_permissions",
+			"d": "<p>permission bits</p>"
+		},
+		{
+			"t": "M",
+			"n": "Dagger\\Stat::size",
+			"p": "Dagger/Stat.html#method_size",
+			"d": "<p>file size</p>"
 		},
 		{
 			"t": "M",

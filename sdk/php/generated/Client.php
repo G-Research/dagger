@@ -337,6 +337,26 @@ class Client extends Client\AbstractClient
     }
 
     /**
+     * Load a Check from its ID.
+     */
+    public function loadCheckFromID(CheckId|Check $id): Check
+    {
+        $innerQueryBuilder = new \Dagger\Client\QueryBuilder('loadCheckFromID');
+        $innerQueryBuilder->setArgument('id', $id);
+        return new \Dagger\Check($this->client, $this->queryBuilderChain->chain($innerQueryBuilder));
+    }
+
+    /**
+     * Load a CheckGroup from its ID.
+     */
+    public function loadCheckGroupFromID(CheckGroupId|CheckGroup $id): CheckGroup
+    {
+        $innerQueryBuilder = new \Dagger\Client\QueryBuilder('loadCheckGroupFromID');
+        $innerQueryBuilder->setArgument('id', $id);
+        return new \Dagger\CheckGroup($this->client, $this->queryBuilderChain->chain($innerQueryBuilder));
+    }
+
+    /**
      * Load a Cloud from its ID.
      */
     public function loadCloudFromID(CloudId|Cloud $id): Cloud
@@ -785,6 +805,16 @@ class Client extends Client\AbstractClient
         $innerQueryBuilder = new \Dagger\Client\QueryBuilder('loadSourceMapFromID');
         $innerQueryBuilder->setArgument('id', $id);
         return new \Dagger\SourceMap($this->client, $this->queryBuilderChain->chain($innerQueryBuilder));
+    }
+
+    /**
+     * Load a Stat from its ID.
+     */
+    public function loadStatFromID(StatId|Stat $id): Stat
+    {
+        $innerQueryBuilder = new \Dagger\Client\QueryBuilder('loadStatFromID');
+        $innerQueryBuilder->setArgument('id', $id);
+        return new \Dagger\Stat($this->client, $this->queryBuilderChain->chain($innerQueryBuilder));
     }
 
     /**

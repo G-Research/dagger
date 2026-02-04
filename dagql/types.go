@@ -97,6 +97,9 @@ type AnyResult interface {
 
 	// WithSafeToPersistCache returns a new AnyResult with the given safe-to-persist-cache flag.
 	WithSafeToPersistCache(safe bool) AnyResult
+
+	// Set the ID associated with the result while keeping the underlying wrapped result the same.
+	WithID(id *call.ID) AnyResult
 }
 
 // AnyObjectResult is an AnyResult that wraps a selectable value (i.e. a graph object)
@@ -873,11 +876,11 @@ func (i *ID[T]) UnmarshalJSON(p []byte) error {
 func (i ID[T]) Load(ctx context.Context, server *Server) (res ObjectResult[T], _ error) {
 	val, err := server.Load(ctx, i.id)
 	if err != nil {
-		return res, fmt.Errorf("load %s: %w", i.id.Display(), err)
+		return res, fmt.Errorf("load %s: %w", i.id.DisplaySelf(), err)
 	}
 	obj, ok := val.(ObjectResult[T])
 	if !ok {
-		return res, fmt.Errorf("load %s: expected %T, got %T", i.id.Display(), obj, val)
+		return res, fmt.Errorf("load %s: expected %T, got %T", i.id.DisplaySelf(), obj, val)
 	}
 	return obj, nil
 }

@@ -60,6 +60,7 @@ var (
 	verbose                  int
 	quiet, _                 = strconv.Atoi(os.Getenv("DAGGER_QUIET"))
 	reveal                   = os.Getenv("DAGGER_REVEAL") != ""
+	expandCompleted          = os.Getenv("DAGGER_EXPAND_COMPLETED") != ""
 	debugFlag                bool
 	progress                 string
 	interactive              bool
@@ -138,6 +139,7 @@ func init() {
 		runCmd,
 		watchCmd,
 		configCmd,
+		checksCmd,
 		moduleInitCmd,
 		moduleInstallCmd,
 		moduleUnInstallCmd,
@@ -386,7 +388,7 @@ func Resource(ctx context.Context) *resource.Resource {
 		semconv.ServiceName("dagger-cli"),
 		semconv.ServiceVersion(engine.Version),
 	}
-	for k, v := range enginetel.LoadDefaultLabels(workdir, engine.Version) {
+	for k, v := range enginetel.LoadDefaultLabels(workdir, engine.Version).AsMap() {
 		attrs = append(attrs, attribute.String(k, v))
 	}
 	res, err := resource.New(ctx,
@@ -403,31 +405,6 @@ func Resource(ctx context.Context) *resource.Resource {
 	return res
 }
 
-// ExitError is an error that indicates a command should exit with a specific
-// status code, without printing an error message, assuming a human readable
-// message has been printed already.
-//
-// It is basically a shortcut for `os.Exit` while giving the TUI a chance to
-// exit gracefully and flush output.
-type ExitError struct {
-	Code int
-
-	// An optional originating error, for any code paths that go looking for it,
-	// e.g. telemetry.End which looks for error origins.
-	Original error
-}
-
-var Fail = ExitError{Code: 1}
-
-func (e ExitError) Error() string {
-	// Not actually printed anywhere.
-	return fmt.Sprintf("exit code %d", e.Code)
-}
-
-func (e ExitError) Unwrap() error {
-	return e.Original
-}
-
 const InstrumentationLibrary = "dagger.io/cli"
 
 var opts dagui.FrontendOpts
@@ -440,12 +417,13 @@ func main() {
 	opts.Silent = silent                           // show no progress
 	opts.Debug = debugFlag                         // show everything
 	opts.RevealNoisySpans = reveal                 // disable 'reveal: true' mechanic (for tests)
+	opts.ExpandCompleted = expandCompleted         // leave things expanded as they complete
 	opts.OpenWeb = web
 	opts.NoExit = noExit
 	opts.DotOutputFilePath = dotOutputFilePath
 	opts.DotFocusField = dotFocusField
 	opts.DotShowInternal = dotShowInternal
-	opts.UsingCloudEngine = useCloudEngine || strings.HasPrefix(RunnerHost, "dagger-cloud://")
+	opts.UsingCloudEngine = useCloudEngine || strings.HasPrefix(RunnerHost, engine.CloudRunnerHostPrefix)
 	if progress == "auto" {
 		if env := os.Getenv("DAGGER_PROGRESS"); env != "" {
 			progress = env
@@ -496,7 +474,7 @@ func main() {
 
 	if err := rootCmd.ExecuteContext(ctx); err != nil {
 		stop()
-		var exit ExitError
+		var exit idtui.ExitError
 		switch {
 		case errors.As(err, &exit):
 			os.Exit(exit.Code)

@@ -420,7 +420,6 @@ func (EngineSuite) TestVersionCompat(ctx context.Context, t *testctx.T) {
 			clientCtr = clientCtr.
 				WithEnvVariable("_EXPERIMENTAL_DAGGER_VERSION", tc.clientVersion).
 				WithEnvVariable("_EXPERIMENTAL_DAGGER_MIN_VERSION", tc.engineMinVersion)
-
 			if tc.errs == nil {
 				clientCtr = clientCtr.
 					WithNewFile("/query.graphql", `{ version }`).
@@ -520,7 +519,11 @@ func (EngineSuite) TestModuleVersionCompat(ctx context.Context, t *testctx.T) {
 				devEngine := devEngineContainer(c, func(c *dagger.Container) *dagger.Container {
 					return c.
 						WithEnvVariable("_EXPERIMENTAL_DAGGER_VERSION", tc.engineVersion).
-						WithEnvVariable("_EXPERIMENTAL_DAGGER_MIN_VERSION", tc.moduleMinVersion)
+						WithEnvVariable("_EXPERIMENTAL_DAGGER_MIN_VERSION", tc.moduleMinVersion).
+						// Required to use the bundled go SDK instead of the remote one
+						// This avoid breaking that test because of a breaking change on
+						// the generated files.
+						WithEnvVariable("_EXPERIMENTAL_DAGGER_DEV_ENGINE", "1")
 				})
 				devEngineSvc = devEngineContainerAsService(devEngine)
 				engines[devEngineSvcKey] = devEngineSvc
@@ -794,4 +797,54 @@ func (EngineSuite) TestPrometheusMetrics(ctx context.Context, t *testctx.T) {
 
 	clientCancel()
 	require.NoError(t, eg.Wait(), "error from client exec")
+}
+
+func (EngineSuite) TestClientMetadataReuse(ctx context.Context, t *testctx.T) {
+	c1 := connect(ctx, t)
+	c2 := connect(ctx, t)
+
+	rando := rand.Text()
+
+	base1, err := c1.Container().
+		From(alpineImage).
+		WithEnvVariable("CACHEBUSTER", rando).
+		Sync(ctx)
+	require.NoError(t, err)
+	base2, err := c2.Container().
+		From(alpineImage).
+		WithEnvVariable("CACHEBUSTER", rando).
+		Sync(ctx)
+	require.NoError(t, err)
+
+	var eg errgroup.Group
+
+	// Run the same exec in both clients, but cancel the first one
+	// in the middle and close the client right away. The second exec
+	// should still successfully finish the exec.
+
+	var err1 error
+	eg.Go(func() error {
+		ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
+		defer cancel()
+		_, err1 = base1.
+			WithExec([]string{"sh", "-c", "sleep 30; echo hello"}).
+			Stdout(ctx)
+		if err1 == nil {
+			return fmt.Errorf("expected first exec to be canceled")
+		}
+		return c1.Close()
+	})
+
+	var out2 string
+	eg.Go(func() error {
+		time.Sleep(10 * time.Second)
+		var err error
+		out2, err = base2.
+			WithExec([]string{"sh", "-c", "sleep 30; echo hello"}).
+			Stdout(ctx)
+		return err
+	})
+
+	require.NoError(t, eg.Wait())
+	require.Equal(t, "hello\n", out2)
 }

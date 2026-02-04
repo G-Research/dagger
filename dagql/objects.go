@@ -321,12 +321,17 @@ func (class Class[T]) Call(
 		onRelease = onReleaser.OnRelease
 	}
 
-	return &CacheValWithCallbacks{
+	retVal := &CacheValWithCallbacks{
 		Value:              val,
 		PostCall:           postCall,
 		OnRelease:          onRelease,
 		SafeToPersistCache: safeToPersistCache,
-	}, nil
+	}
+	if val != nil && val.ID() != nil {
+		retVal.ContentDigestKey = string(val.ID().ContentDigest())
+		retVal.ResultCallKey = string(val.ID().Digest())
+	}
+	return retVal, nil
 }
 
 type Result[T Typed] struct {
@@ -403,8 +408,19 @@ func (r Result[T]) IsSafeToPersistCache() bool {
 // that won't be caputured by the default, call-chain derived digest.
 func (r Result[T]) WithDigest(customDigest digest.Digest) Result[T] {
 	return Result[T]{
-		constructor: r.constructor.WithDigest(customDigest),
-		self:        r.self,
+		constructor:        r.constructor.WithDigest(customDigest),
+		self:               r.self,
+		postCall:           r.postCall,
+		safeToPersistCache: r.safeToPersistCache,
+	}
+}
+
+func (r Result[T]) WithContentDigest(customDigest digest.Digest) Result[T] {
+	return Result[T]{
+		constructor:        r.constructor.With(call.WithContentDigest(customDigest)),
+		self:               r.self,
+		postCall:           r.postCall,
+		safeToPersistCache: r.safeToPersistCache,
 	}
 }
 
@@ -419,6 +435,15 @@ func (r Result[T]) GetPostCall() cache.PostCallFunc {
 
 func (r Result[T]) MarshalJSON() ([]byte, error) {
 	return json.Marshal(r.ID())
+}
+
+func (r Result[T]) WithID(id *call.ID) AnyResult {
+	return Result[T]{
+		constructor:        id,
+		self:               r.self,
+		postCall:           r.postCall,
+		safeToPersistCache: r.safeToPersistCache,
+	}
 }
 
 type ObjectResult[T Typed] struct {
@@ -452,14 +477,45 @@ func (r ObjectResult[T]) ObjectType() ObjectType {
 func (r ObjectResult[T]) WithObjectDigest(customDigest digest.Digest) ObjectResult[T] {
 	return ObjectResult[T]{
 		Result: Result[T]{
-			constructor: r.constructor.WithDigest(customDigest),
-			self:        r.self,
+			constructor:        r.constructor.WithDigest(customDigest),
+			self:               r.self,
+			postCall:           r.postCall,
+			safeToPersistCache: r.safeToPersistCache,
 		},
 		class: r.class,
 	}
 }
 
-func NoopDone(res AnyResult, cached bool, rerr error) {}
+func (r ObjectResult[T]) WithContentDigest(customDigest digest.Digest) ObjectResult[T] {
+	return ObjectResult[T]{
+		Result: Result[T]{
+			constructor:        r.constructor.With(call.WithContentDigest(customDigest)),
+			self:               r.self,
+			postCall:           r.postCall,
+			safeToPersistCache: r.safeToPersistCache,
+		},
+		class: r.class,
+	}
+}
+
+func (r ObjectResult[T]) WithID(id *call.ID) AnyResult {
+	return ObjectResult[T]{
+		Result: Result[T]{
+			constructor:        id,
+			self:               r.self,
+			postCall:           r.postCall,
+			safeToPersistCache: r.safeToPersistCache,
+		},
+		class: r.class,
+	}
+}
+
+func (r ObjectResult[T]) ObjectResultWithPostCall(fn cache.PostCallFunc) ObjectResult[T] {
+	r.postCall = fn
+	return r
+}
+
+func NoopDone(res AnyResult, cached bool, rerr *error) {}
 
 // Select calls the field on the instance specified by the selector
 func (r ObjectResult[T]) Select(ctx context.Context, s *Server, sel Selector) (AnyResult, error) {
@@ -612,9 +668,10 @@ func (r ObjectResult[T]) preselect(ctx context.Context, s *Server, sel Selector)
 
 func newCacheKey(ctx context.Context, id *call.ID, fieldSpec *FieldSpec) CacheKey {
 	cacheKey := CacheKey{
-		CallKey:    string(id.Digest()),
-		TTL:        fieldSpec.TTL,
-		DoNotCache: fieldSpec.DoNotCache != "",
+		CallKey:          string(id.Digest()),
+		TTL:              fieldSpec.TTL,
+		DoNotCache:       fieldSpec.DoNotCache != "",
+		ContentDigestKey: string(id.ContentDigest()),
 	}
 
 	// dedupe concurrent calls only if the ID digest is the same and if the two calls are from the same client
@@ -697,7 +754,7 @@ func (r ObjectResult[T]) call(
 	ctx = srvToContext(ctx, s)
 	var opts []CacheCallOpt
 	if s.telemetry != nil {
-		opts = append(opts, WithTelemetry(func(ctx context.Context) (context.Context, func(AnyResult, bool, error)) {
+		opts = append(opts, WithTelemetry(func(ctx context.Context) (context.Context, func(AnyResult, bool, *error)) {
 			return s.telemetry(ctx, r, newID)
 		}))
 	}
@@ -734,6 +791,8 @@ func (r ObjectResult[T]) call(
 			PostCall:           valWithCallbacks.PostCall,
 			OnRelease:          valWithCallbacks.OnRelease,
 			SafeToPersistCache: valWithCallbacks.SafeToPersistCache,
+			ContentDigestKey:   string(val.ID().ContentDigest()),
+			ResultCallKey:      string(val.ID().Digest()),
 		}, nil
 	}, opts...)
 
@@ -744,35 +803,12 @@ func (r ObjectResult[T]) call(
 		return nil, fmt.Errorf("post-call error: %w", err)
 	}
 	val := res.Result()
-
-	// If the returned val is IDable and has a different digest than the original, then
-	// add that different digest as a cache key for this val.
-	// This enables APIs to return new object instances with overridden purity and/or digests, e.g. returning
-	// values that have a pure content-based cache key different from the call-chain ID digest.
-	if idable, ok := val.(IDable); ok && idable != nil && !cacheKey.DoNotCache {
-		valID := idable.ID()
-		if valID == nil {
-			return nil, fmt.Errorf("impossible: nil ID returned for value: %+v (%T)", val, val)
-		}
-
-		// only need to add a new cache key if the returned val has a different custom digest than the original
-		digestChanged := valID.Digest() != newID.Digest()
-
-		// Corner case: the `id` field on an object returns an IDable value (IDs are themselves both values and IDable).
-		// However, if we cached `val` in this case, we would be caching <id digest> -> <id value>, which isn't what we
-		// want. Instead, we only want to cache <id digest> -> <actual object value>.
-		// To avoid this, we check that the returned IDable type is the actual object type.
-		matchesType := valID.Type().ToAST().Name() == val.Type().Name()
-
-		if digestChanged && matchesType {
-			newID = valID
-			_, err := s.Cache.GetOrInitializeValue(ctx, cache.CacheKey[CacheKeyType]{
-				CallKey: string(valID.Digest()),
-			}, val)
-			if err != nil {
-				return nil, err
-			}
-		}
+	// if the cache hit was only due to a matching content digest, rather than recipe,
+	// keep using the same ID as the input. This ensures that the client keeps seeing
+	// the recipe they expected rather than a different random one that happened to
+	// have the same content, which still allowing the underlying result be re-used.
+	if res.HitContentDigestCache() {
+		val = val.WithID(newID)
 	}
 
 	return val, nil
@@ -899,7 +935,6 @@ func NodeFuncWithCacheKey[T Typed, A any, R any](
 			if res, ok := any(ret).(AnyResult); ok {
 				return res, nil
 			}
-
 			res, err := builtinOrTyped(ret)
 			if err != nil {
 				return nil, fmt.Errorf("expected %T to be a Typed value, got %T: %w", ret, ret, err)
@@ -945,7 +980,7 @@ type FieldSpec struct {
 	// should not be displayed in telemetry.
 	Sensitive bool
 	// DeprecatedReason deprecates the field and provides a reason.
-	DeprecatedReason string
+	DeprecatedReason *string
 	// ExperimentalReason marks the field as experimental and provides a reason.
 	ExperimentalReason string
 	// Module is the module that provides the field's implementation.
@@ -983,7 +1018,7 @@ func (spec FieldSpec) FieldDefinition(view call.View) *ast.FieldDefinition {
 	if len(spec.Directives) > 0 {
 		def.Directives = slices.Clone(spec.Directives)
 	}
-	if spec.DeprecatedReason != "" {
+	if spec.DeprecatedReason != nil {
 		def.Directives = append(def.Directives, deprecated(spec.DeprecatedReason))
 	}
 	if spec.ExperimentalReason != "" {
@@ -1003,7 +1038,7 @@ type InputSpec struct {
 	// Default is the default value of the argument.
 	Default Input
 	// DeprecatedReason deprecates the input and provides a reason.
-	DeprecatedReason string
+	DeprecatedReason *string
 	// ExperimentalReason marks the field as experimental and provides a reason.
 	ExperimentalReason string
 	// Sensitive indicates that the value of this arg is sensitive and should be
@@ -1036,7 +1071,7 @@ func (spec *InputSpec) merge(other *InputSpec) {
 	if other.Default != nil {
 		spec.Default = other.Default
 	}
-	if other.DeprecatedReason != "" {
+	if other.DeprecatedReason != nil {
 		spec.DeprecatedReason = other.DeprecatedReason
 	}
 	if other.Sensitive {
@@ -1093,11 +1128,13 @@ func (arg Argument) View(view ViewFilter) Argument {
 
 func (arg Argument) Deprecated(paras ...string) Argument {
 	if len(paras) == 0 && arg.Spec.Description != "" {
-		arg.Spec.DeprecatedReason = arg.Spec.Description
+		reason := arg.Spec.Description
+		arg.Spec.DeprecatedReason = &reason
 		arg.Spec.Description = deprecationDescription(arg.Spec.Description)
 		return arg
 	}
-	arg.Spec.DeprecatedReason = FormatDescription(paras...)
+	reason := FormatDescription(paras...)
+	arg.Spec.DeprecatedReason = &reason
 	return arg
 }
 
@@ -1126,6 +1163,15 @@ func NewInputSpecs(specs ...InputSpec) InputSpecs {
 
 func (specs *InputSpecs) Add(target ...InputSpec) {
 	specs.raw = append(specs.raw, target...)
+}
+
+func (specs InputSpecs) HasRequired(view call.View) bool {
+	for _, input := range specs.Inputs(view) {
+		if input.Default == nil && input.Type.Type().NonNull {
+			return true
+		}
+	}
+	return false
 }
 
 func (specs InputSpecs) Input(name string, view call.View) (InputSpec, bool) {
@@ -1206,7 +1252,7 @@ func (specs InputSpecs) ArgumentDefinitions(view call.View) []*ast.ArgumentDefin
 		if len(arg.Directives) > 0 {
 			schemaArg.Directives = slices.Clone(arg.Directives)
 		}
-		if arg.DeprecatedReason != "" {
+		if arg.DeprecatedReason != nil {
 			schemaArg.Directives = append(schemaArg.Directives, deprecated(arg.DeprecatedReason))
 		}
 		if arg.ExperimentalReason != "" {
@@ -1266,14 +1312,19 @@ func (fields Fields[T]) Install(server *Server) {
 	}
 	for _, field := range objectFields {
 		name := field.Name
+		spec := &FieldSpec{
+			Name:               name,
+			Type:               field.Value,
+			Description:        field.Field.Tag.Get("doc"),
+			ExperimentalReason: field.Field.Tag.Get("experimental"),
+		}
+		if dep, ok := field.Field.Tag.Lookup("deprecated"); ok {
+			reason := dep // keep "" if that’s what the module author wrote: @deprecated("") != @deprecated()
+			spec.DeprecatedReason = &reason
+		}
+
 		fields = append(fields, Field[T]{
-			Spec: &FieldSpec{
-				Name:               name,
-				Type:               field.Value,
-				Description:        field.Field.Tag.Get("doc"),
-				DeprecatedReason:   field.Field.Tag.Get("deprecated"),
-				ExperimentalReason: field.Field.Tag.Get("experimental"),
-			},
+			Spec: spec,
 			Func: func(ctx context.Context, self ObjectResult[T], args map[string]Input, view call.View) (AnyResult, error) {
 				t, found, err := getField(ctx, self.Self(), false, name)
 				if err != nil {
@@ -1401,7 +1452,8 @@ func (field Field[T]) Deprecated(paras ...string) Field[T] {
 	if field.Spec.extend {
 		panic("cannot call on extended field")
 	}
-	field.Spec.DeprecatedReason = FormatDescription(paras...)
+	reason := FormatDescription(paras...)
+	field.Spec.DeprecatedReason = &reason
 	return field
 }
 
@@ -1472,13 +1524,17 @@ func InputSpecsForType(obj any, optIn bool) (InputSpecs, error) {
 			Description:        field.Field.Tag.Get("doc"),
 			Type:               input,
 			Default:            inputDef,
-			DeprecatedReason:   field.Field.Tag.Get("deprecated"),
 			ExperimentalReason: field.Field.Tag.Get("experimental"),
 			Sensitive:          field.Field.Tag.Get("sensitive") == "true",
 			Internal:           field.Field.Tag.Get("internal") == "true",
 		}
-		if spec.Description == "" && spec.DeprecatedReason != "" {
-			spec.Description = deprecationDescription(spec.DeprecatedReason)
+		if dep, ok := field.Field.Tag.Lookup("deprecated"); ok {
+			reason := dep
+			spec.DeprecatedReason = &reason
+		}
+
+		if spec.Description == "" && spec.DeprecatedReason != nil {
+			spec.Description = deprecationDescription(*spec.DeprecatedReason)
 		}
 		if spec.Description == "" && spec.ExperimentalReason != "" {
 			spec.Description = experimentalDescription(spec.ExperimentalReason)

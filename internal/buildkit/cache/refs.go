@@ -17,7 +17,9 @@ import (
 	"github.com/containerd/containerd/v2/core/snapshots"
 	"github.com/containerd/containerd/v2/pkg/labels"
 	cerrdefs "github.com/containerd/errdefs"
+	"github.com/dagger/dagger/engine/slog"
 	"github.com/dagger/dagger/internal/buildkit/cache/config"
+	"github.com/dagger/dagger/internal/buildkit/client"
 	"github.com/dagger/dagger/internal/buildkit/identity"
 	"github.com/dagger/dagger/internal/buildkit/session"
 	"github.com/dagger/dagger/internal/buildkit/snapshot"
@@ -452,6 +454,37 @@ func (cr *cacheRecord) mount(ctx context.Context) (_ snapshot.Mountable, rerr er
 	return cr.mountCache, nil
 }
 
+func (cr *cacheRecord) hasDirtyVolatile(ctx context.Context) (_ bool, rerr error) {
+	mntable, err := cr.mount(ctx)
+	if err != nil {
+		return false, err
+	}
+	mnts, cleanup, err := mntable.Mount()
+	if err != nil {
+		return false, err
+	}
+	defer cleanup()
+	if len(mnts) == 0 {
+		return false, nil
+	}
+	mnt := mnts[0]
+
+	if !overlay.IsOverlayMountType(mnt) {
+		return false, nil
+	}
+	volatileDir := overlay.VolatileIncompatDir(mnt)
+	if volatileDir == "" {
+		return false, nil
+	}
+	if _, err := os.Lstat(volatileDir); err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
 // call when holding the manager lock
 func (cr *cacheRecord) remove(ctx context.Context, removeSnapshot bool) (rerr error) {
 	defer func() {
@@ -686,7 +719,7 @@ func (sr *immutableRef) Clone() ImmutableRef {
 	return sr.clone()
 }
 
-// layertoDistributable changes the passed in media type to the "distributable" version of the media type.
+// layerToDistributable changes the passed in media type to the "distributable" version of the media type.
 func layerToDistributable(mt string) string {
 	if !images.IsNonDistributable(mt) {
 		// Layer is already a distributable media type (or this is not even a layer).
@@ -1561,9 +1594,12 @@ func (sr *mutableRef) Mount(ctx context.Context, readonly bool, s session.Group)
 		return nil, rerr
 	}
 
-	// Make the mounts sharable. We don't do this for immutableRef mounts because
-	// it requires the raw []mount.Mount for computing diff on overlayfs.
-	mnt = sr.cm.mountPool.setSharable(mnt)
+	if sr.GetRecordType() == client.UsageRecordTypeCacheMount {
+		// Make the mounts sharable. We don't do this for immutableRef mounts because
+		// it requires the raw []mount.Mount for computing diff on overlayfs.
+		mnt = sr.cm.mountPool.setSharable(mnt)
+	}
+
 	sr.mountCache = mnt
 	if readonly {
 		mnt = setReadonly(mnt)
@@ -1659,7 +1695,9 @@ func readonlyOverlay(opt []string) []string {
 	for _, o := range opt {
 		if strings.HasPrefix(o, "upperdir=") {
 			upper = strings.TrimPrefix(o, "upperdir=")
-		} else if !strings.HasPrefix(o, "workdir=") {
+		} else if strings.HasPrefix(o, "workdir=") || o == "volatile" {
+			continue
+		} else {
 			out = append(out, o)
 		}
 	}
@@ -1726,9 +1764,10 @@ type sharableMountable struct {
 	mu            sync.Mutex
 	mountPoolRoot string
 
-	curMounts     []mount.Mount
-	curMountPoint string
-	curRelease    func() error
+	curMounts              []mount.Mount
+	curMountPoint          string
+	curRelease             func() error
+	curOverlayIncompatDirs []string
 }
 
 func (sm *sharableMountable) Mount() (_ []mount.Mount, _ func() error, retErr error) {
@@ -1774,9 +1813,14 @@ func (sm *sharableMountable) Mount() (_ []mount.Mount, _ func() error, retErr er
 		if err := mount.All(mounts, dir); err != nil {
 			return nil, nil, err
 		}
+		overlayIncompatDirs := overlay.VolatileIncompatDirs(mounts)
+
 		defer func() {
 			if retErr != nil {
 				mount.Unmount(dir, 0)
+				for _, dir := range overlayIncompatDirs {
+					os.RemoveAll(dir)
+				}
 			}
 		}()
 		sm.curMounts = []mount.Mount{
@@ -1791,6 +1835,7 @@ func (sm *sharableMountable) Mount() (_ []mount.Mount, _ func() error, retErr er
 		}
 		sm.curMountPoint = dir
 		sm.curRelease = release
+		sm.curOverlayIncompatDirs = overlayIncompatDirs
 	}
 
 	mounts := make([]mount.Mount, len(sm.curMounts))
@@ -1813,8 +1858,13 @@ func (sm *sharableMountable) Mount() (_ []mount.Mount, _ func() error, retErr er
 		// no mount exist. release the current mount.
 		sm.curMounts = nil
 		if err := mount.Unmount(sm.curMountPoint, 0); err != nil {
+			slog.Error("failed to unmount sharable mount", "err", err)
 			return err
 		}
+		for _, dir := range sm.curOverlayIncompatDirs {
+			os.RemoveAll(dir)
+		}
+		sm.curOverlayIncompatDirs = nil
 		if err := sm.curRelease(); err != nil {
 			return err
 		}

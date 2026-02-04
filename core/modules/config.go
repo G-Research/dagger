@@ -97,6 +97,7 @@ type ModuleConfigUserFields struct {
 type SDK struct {
 	Source string         `json:"source"`
 	Config map[string]any `json:"config,omitempty"`
+	Debug  bool           `json:"debug,omitempty"`
 	// The experimental features enabled for this module.
 	Experimental map[string]bool `json:"experimental,omitempty"`
 }
@@ -202,6 +203,34 @@ type ModuleConfigDependency struct {
 
 	// The pinned version of the module dependency.
 	Pin string `json:"pin,omitempty"`
+
+	// Customizations configuration for toolchains that override function argument pragmas.
+	Customizations []*ModuleConfigArgument `json:"customizations,omitempty"`
+
+	// IgnoreChecks is a list of check patterns to exclude from this toolchain.
+	// Patterns can use glob syntax to match check names.
+	IgnoreChecks []string `json:"ignoreChecks,omitempty"`
+}
+
+// ModuleConfigArgument represents an argument override for a toolchain function
+type ModuleConfigArgument struct {
+	// The function chain to apply this argument to. Empty or nil for constructor.
+	Function []string `json:"function,omitempty"`
+
+	// The name of the argument to override.
+	Argument string `json:"argument"`
+
+	// The default value to use for this argument.
+	Default string `json:"default,omitempty"`
+
+	// The default path to use for File or Directory arguments.
+	DefaultPath string `json:"defaultPath,omitempty"`
+
+	// The default address to use for Container arguments.
+	DefaultAddress string `json:"defaultAddress,omitempty"`
+
+	// Ignore patterns for Directory arguments.
+	Ignore []string `json:"ignore,omitempty"`
 }
 
 func (depCfg *ModuleConfigDependency) UnmarshalJSON(data []byte) error {

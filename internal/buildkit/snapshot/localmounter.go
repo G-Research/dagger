@@ -34,12 +34,14 @@ func LocalMounterWithMounts(mounts []mount.Mount, opts ...LocalMounterOpt) Mount
 }
 
 type localMounter struct {
-	mu           sync.Mutex
-	mounts       []mount.Mount
-	mountable    Mountable
-	target       string
-	release      func() error
-	forceRemount bool
+	mu                  sync.Mutex
+	mounts              []mount.Mount
+	mountable           Mountable
+	target              string
+	release             func() error
+	forceRemount        bool
+	tmpDir              string
+	overlayIncompatDirs []string
 }
 
 func ForceRemount() LocalMounterOpt {

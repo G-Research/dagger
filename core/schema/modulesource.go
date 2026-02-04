@@ -16,6 +16,7 @@ import (
 
 	"github.com/dagger/dagger/engine/slog"
 	"github.com/dagger/dagger/util/hashutil"
+	"github.com/dagger/dagger/util/parallel"
 
 	"dagger.io/dagger/telemetry"
 	"github.com/dagger/dagger/core"
@@ -30,7 +31,6 @@ import (
 	"github.com/dagger/dagger/engine/server/resource"
 	"github.com/iancoleman/strcase"
 	"github.com/opencontainers/go-digest"
-	fsutiltypes "github.com/tonistiigi/fsutil/types"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -75,6 +75,15 @@ func (s *moduleSourceSchema) Install(dag *dagql.Server) {
 				dagql.Arg("allowNotExists").Doc(`If true, do not error out if the provided ref string is a local path and does not exist yet. Useful when initializing new modules in directories that don't exist yet.`),
 				dagql.Arg("requireKind").Doc(`If set, error out if the ref string is not of the provided requireKind.`),
 			),
+
+		dagql.NodeFuncWithCacheKey("_contextDirectory", s.contextDirectory, dagql.CachePerCall).
+			Doc(`Obtain a contextual directory argument for the given path, include/excludes and module.`),
+		dagql.NodeFuncWithCacheKey("_contextFile", s.contextFile, dagql.CachePerCall).
+			Doc(`Obtain a contextual file argument for the given path and module.`),
+		dagql.NodeFuncWithCacheKey("_contextGitRepository", s.contextGitRepository, dagql.CachePerCall).
+			Doc(`Obtain a contextual git repository argument for the given module.`),
+		dagql.NodeFuncWithCacheKey("_contextGitRef", s.contextGitRef, dagql.CachePerCall).
+			Doc(`Obtain a contextual git ref argument for the given module.`),
 	}.Install(dag)
 
 	dagql.Fields[*core.Directory]{
@@ -104,6 +113,12 @@ func (s *moduleSourceSchema) Install(dag *dagql.Server) {
 
 		dagql.Func("originalSubpath", s.moduleSourceOriginalSubpath).
 			Doc(`The original subpath used when instantiating this module source, relative to the context directory.`),
+
+		// NOTE: if/when this turns public, think about a less confusing and future proof name: `includes`, `includePaths`, `includePatterns`
+		// which would be relative to the context directory, while the same suggestions with an `original` prefix could mean the `Include` field
+		// as it was in the dagger.json.
+		dagql.Func("_rebasedIncludePaths", s.moduleSourceRebasedIncludePaths).
+			Doc(`List of include paths from dagger.json, relative to the context directory.`),
 
 		dagql.FuncWithCacheKey("withSourceSubpath", s.moduleSourceWithSourceSubpath, dagql.CachePerClient).
 			Doc(`Update the module source with a new source subpath.`).
@@ -383,7 +398,7 @@ func (s *moduleSourceSchema) localModuleSource(
 				// found a dep in the default dagger.json with the name localPath, load it and return it
 				parsedRef, err := core.ParseRefString(
 					ctx,
-					core.StatFSFunc(func(ctx context.Context, path string) (*fsutiltypes.Stat, error) {
+					core.StatFSFunc(func(ctx context.Context, path string) (string, *core.Stat, error) {
 						path = filepath.Join(defaultFindUpSourceRootDir, path)
 						return core.NewCallerStatFS(bk).Stat(ctx, path)
 					}),
@@ -510,7 +525,7 @@ func (s *moduleSourceSchema) localModuleSource(
 		// load this module source's context directory, ignore patterns, sdk and deps in parallel
 		var eg errgroup.Group
 		eg.Go(func() error {
-			if err := s.loadModuleSourceContext(ctx, bk, localSrc); err != nil {
+			if err := s.loadModuleSourceContext(ctx, localSrc); err != nil {
 				return fmt.Errorf("failed to load local module source context: %w", err)
 			}
 
@@ -610,12 +625,17 @@ func (s *moduleSourceSchema) gitModuleSource(
 		// first validate the given path exists at all, otherwise weird things like
 		// `dagger -m github.com/dagger/dagger/not/a/real/dir` can succeed because
 		// they find-up to a real dagger.json
-		statFS := core.NewCoreDirStatFS(gitSrc.ContextDirectory.Self(), bk)
-		if _, err := statFS.Stat(ctx, gitSrc.SourceRootSubpath); err != nil {
-			if errors.Is(err, os.ErrNotExist) {
-				return inst, fmt.Errorf("path %q does not exist in git repo", gitSrc.SourceRootSubpath)
+		statFS := core.StatFSFunc(func(ctx context.Context, path string) (string, *core.Stat, error) {
+			return core.CallDirStat(ctx, gitSrc.ContextDirectory, path)
+		})
+
+		if gitSrc.SourceRootSubpath != "" {
+			if _, _, err := statFS.Stat(ctx, gitSrc.SourceRootSubpath); err != nil {
+				if errors.Is(err, os.ErrNotExist) {
+					return inst, fmt.Errorf("path %q does not exist in git repo", gitSrc.SourceRootSubpath)
+				}
+				return inst, fmt.Errorf("failed to stat git module source: %w", err)
 			}
-			return inst, fmt.Errorf("failed to stat git module source: %w", err)
 		}
 
 		configDir, found, err := core.Host{}.FindUp(ctx, statFS,
@@ -668,7 +688,7 @@ func (s *moduleSourceSchema) gitModuleSource(
 	// load this module source's context directory and deps in parallel
 	var eg errgroup.Group
 	eg.Go(func() error {
-		if err := s.loadModuleSourceContext(ctx, bk, gitSrc); err != nil {
+		if err := s.loadModuleSourceContext(ctx, gitSrc); err != nil {
 			return fmt.Errorf("failed to load git module source context: %w", err)
 		}
 
@@ -705,7 +725,6 @@ func (s *moduleSourceSchema) gitModuleSource(
 	if err := gitSrc.LoadUserDefaults(ctx); err != nil {
 		return inst, fmt.Errorf("load user defaults: %w", err)
 	}
-
 	gitSrc.Digest = gitSrc.CalcDigest(ctx).String()
 
 	inst, err = dagql.NewResultForCurrentID(ctx, gitSrc)
@@ -736,29 +755,38 @@ func (s *moduleSourceSchema) loadBlueprintModule(
 		return fmt.Errorf("failed to get dag server: %w", err)
 	}
 
+	jobs := parallel.New().WithContextualTracer(true).WithReveal(false)
 	// Load blueprint
 	if src.ConfigBlueprint != nil {
-		blueprint, err := core.ResolveDepToSource(ctx, bk, dag, src, src.ConfigBlueprint.Source, src.ConfigBlueprint.Pin, src.ConfigBlueprint.Name)
-		if err != nil {
-			return fmt.Errorf("failed to resolve blueprint to source: %w", err)
-		}
+		jobs = jobs.WithJob("load blueprint: "+src.ConfigBlueprint.Source, func(ctx context.Context) error {
+			blueprint, err := core.ResolveDepToSource(ctx, bk, dag, src, src.ConfigBlueprint.Source, src.ConfigBlueprint.Pin, src.ConfigBlueprint.Name)
+			if err != nil {
+				return fmt.Errorf("failed to resolve blueprint to source: %w", err)
+			}
 
-		src.Blueprint = blueprint
+			src.Blueprint = blueprint
+			return nil
+		})
 	}
-
 	// Load toolchains array
 	if len(src.ConfigToolchains) > 0 {
-		src.Toolchains = make([]dagql.ObjectResult[*core.ModuleSource], len(src.ConfigToolchains))
-		for i, pcfg := range src.ConfigToolchains {
-			toolchain, err := core.ResolveDepToSource(ctx, bk, dag, src, pcfg.Source, pcfg.Pin, pcfg.Name)
-			if err != nil {
-				return fmt.Errorf("failed to resolve toolchain to source: %w", err)
+		jobs = jobs.WithJob("load toolchains", func(ctx context.Context) error {
+			src.Toolchains = make([]dagql.ObjectResult[*core.ModuleSource], len(src.ConfigToolchains))
+			toolchainJobs := parallel.New().WithReveal(false).WithContextualTracer(true)
+			for i, pcfg := range src.ConfigToolchains {
+				toolchainJobs = toolchainJobs.WithJob(pcfg.Name, func(ctx context.Context) error {
+					toolchain, err := core.ResolveDepToSource(ctx, bk, dag, src, pcfg.Source, pcfg.Pin, pcfg.Name)
+					if err != nil {
+						return fmt.Errorf("failed to resolve toolchain to source: %w", err)
+					}
+					src.Toolchains[i] = toolchain
+					return nil
+				})
 			}
-			src.Toolchains[i] = toolchain
-		}
+			return toolchainJobs.Run(ctx)
+		})
 	}
-
-	return nil
+	return jobs.Run(ctx)
 }
 
 type directoryAsModuleArgs struct {
@@ -813,6 +841,10 @@ func (s *moduleSourceSchema) directoryAsModuleSource(
 		SourceRootSubpath: sourceRootSubpath,
 		ContextDirectory:  contextDir,
 		Kind:              core.ModuleSourceKindDir,
+		DirSrc: &core.DirModuleSource{
+			OriginalContextDir:        contextDir,
+			OriginalSourceRootSubpath: args.SourceRootPath,
+		},
 	}
 	if dirSrc.SourceRootSubpath == "" {
 		dirSrc.SourceRootSubpath = "."
@@ -846,7 +878,7 @@ func (s *moduleSourceSchema) directoryAsModuleSource(
 
 	if dirSrc.SDK != nil {
 		eg.Go(func() error {
-			if err := s.loadModuleSourceContext(ctx, bk, dirSrc); err != nil {
+			if err := s.loadModuleSourceContext(ctx, dirSrc); err != nil {
 				return err
 			}
 
@@ -884,6 +916,193 @@ func (s *moduleSourceSchema) directoryAsModuleSource(
 		return inst, fmt.Errorf("load user defaults: %w", err)
 	}
 	dirSrc.Digest = dirSrc.CalcDigest(ctx).String()
+	return inst, nil
+}
+
+func (s *moduleSourceSchema) contextDirectory(
+	ctx context.Context,
+	query dagql.ObjectResult[*core.Query],
+	args struct {
+		Path string
+		core.CopyFilter
+
+		// the human-readable name of the module, currently just to help telemetry look nicer
+		Module string
+
+		// the content digest of the module
+		Digest string
+	},
+) (inst dagql.ObjectResult[*core.Directory], err error) {
+	// Load the module based on its content hashed key as saved in ModuleSource.asModule.
+	// We can't accept an actual Module as an argument because the current caching logic
+	// will result in that Module being re-loaded by clients (due to it being CachePerClient)
+	// and then possibly trying to load it from the wrong context (in the case of a cached
+	// result including a _contextDirectory call).
+	dag, err := query.Self().Server.Server(ctx)
+	if err != nil {
+		return inst, fmt.Errorf("failed to get dag server: %w", err)
+	}
+	mod, err := core.GetModuleFromContentDigest(ctx, dag, args.Module, args.Digest)
+	if err != nil {
+		return inst, err
+	}
+
+	dir, err := mod.Self().ContextSource.Value.Self().LoadContextDir(ctx, dag, args.Path, args.CopyFilter)
+	if err != nil {
+		return inst, fmt.Errorf("failed to load contextual directory: %w", err)
+	}
+
+	inst, err = dagql.NewObjectResultForCurrentID(ctx, dag, dir.Self())
+	if err != nil {
+		return inst, fmt.Errorf("failed to create directory result: %w", err)
+	}
+	// mix-in a constant string to avoid collisions w/ normal host dir loads, which
+	// can lead function calls encountering cached results that include contextual
+	// dir loads from older sessions to load from the wrong path
+	// FIXME:(sipsma) this is not ideal since contextual loaded dirs will have
+	// different cache keys than normally loaded host dirs. Support for multiple
+	// cache keys per result should help fix this.
+	dirDgst := dir.ID().ContentDigest()
+	if dirDgst == "" {
+		dirDgst = dir.ID().Digest()
+	}
+	dgst := hashutil.HashStrings(dirDgst.String(), "contextualDir")
+	inst = inst.WithContentDigest(dgst)
+	return inst, nil
+}
+
+func (s *moduleSourceSchema) contextFile(
+	ctx context.Context,
+	query dagql.ObjectResult[*core.Query],
+	args struct {
+		Path string
+
+		// the human-readable name of the module, currently just to help telemetry look nicer
+		Module string
+
+		// the content digest of the module
+		Digest string
+	},
+) (inst dagql.ObjectResult[*core.File], err error) {
+	dag, err := query.Self().Server.Server(ctx)
+	if err != nil {
+		return inst, fmt.Errorf("failed to get dag server: %w", err)
+	}
+	mod, err := core.GetModuleFromContentDigest(ctx, dag, args.Module, args.Digest)
+	if err != nil {
+		return inst, err
+	}
+	f, err := mod.Self().ContextSource.Value.Self().LoadContextFile(ctx, dag, args.Path)
+	if err != nil {
+		return inst, fmt.Errorf("failed to load contextual directory: %w", err)
+	}
+
+	inst, err = dagql.NewObjectResultForCurrentID(ctx, dag, f.Self())
+	if err != nil {
+		return inst, fmt.Errorf("failed to create directory result: %w", err)
+	}
+	// mix-in a constant string to avoid collisions w/ normal host file loads, which
+	// can lead function calls encountering cached results that include contextual
+	// file loads from older sessions to load from the wrong path
+	// FIXME:(sipsma) this is not ideal since contextual loaded files will have
+	// different cache keys than normally loaded host files. Support for multiple
+	// cache keys per result should help fix this.
+	fDgst := f.ID().ContentDigest()
+	if fDgst == "" {
+		fDgst = f.ID().Digest()
+	}
+	dgst := hashutil.HashStrings(fDgst.String(), "contextualFile")
+	inst = inst.WithContentDigest(dgst)
+	return inst, nil
+}
+
+func (s *moduleSourceSchema) contextGitRepository(
+	ctx context.Context,
+	query dagql.ObjectResult[*core.Query],
+	args struct {
+		// the human-readable name of the module, currently just to help telemetry look nicer
+		Module string
+
+		// the content digest of the module
+		Digest string
+	},
+) (inst dagql.ObjectResult[*core.GitRepository], err error) {
+	dag, err := query.Self().Server.Server(ctx)
+	if err != nil {
+		return inst, fmt.Errorf("failed to get dag server: %w", err)
+	}
+	mod, err := core.GetModuleFromContentDigest(ctx, dag, args.Module, args.Digest)
+	if err != nil {
+		return inst, err
+	}
+	f, err := mod.Self().ContextSource.Value.Self().LoadContextGit(ctx, dag)
+	if err != nil {
+		return inst, fmt.Errorf("failed to load contextual git repository: %w", err)
+	}
+
+	inst, err = dagql.NewObjectResultForCurrentID(ctx, dag, f.Self())
+	if err != nil {
+		return inst, fmt.Errorf("failed to create git repository result: %w", err)
+	}
+	// mix-in a constant string to avoid collisions w/ normal host file loads, which
+	// can lead function calls encountering cached results that include contextual
+	// file loads from older sessions to load from the wrong path
+	fDgst := f.ID().ContentDigest()
+	if fDgst == "" {
+		fDgst = f.ID().Digest()
+	}
+	dgst := hashutil.HashStrings(fDgst.String(), "contextualGitRepository")
+	inst = inst.WithContentDigest(dgst)
+	return inst, nil
+}
+
+func (s *moduleSourceSchema) contextGitRef(
+	ctx context.Context,
+	query dagql.ObjectResult[*core.Query],
+	args struct {
+		// the human-readable name of the module, currently just to help telemetry look nicer
+		Module string
+
+		// the content digest of the module
+		Digest string
+	},
+) (inst dagql.ObjectResult[*core.GitRef], err error) {
+	dag, err := query.Self().Server.Server(ctx)
+	if err != nil {
+		return inst, fmt.Errorf("failed to get dag server: %w", err)
+	}
+	mod, err := core.GetModuleFromContentDigest(ctx, dag, args.Module, args.Digest)
+	if err != nil {
+		return inst, err
+	}
+	f, err := mod.Self().ContextSource.Value.Self().LoadContextGit(ctx, dag)
+	if err != nil {
+		return inst, fmt.Errorf("failed to load contextual git ref: %w", err)
+	}
+
+	var gitRef dagql.ObjectResult[*core.GitRef]
+	err = dag.Select(ctx, f, &gitRef,
+		dagql.Selector{
+			Field: "head",
+		},
+	)
+	if err != nil {
+		return inst, fmt.Errorf("load contextual git ref: %w", err)
+	}
+
+	inst, err = dagql.NewObjectResultForCurrentID(ctx, dag, gitRef.Self())
+	if err != nil {
+		return inst, fmt.Errorf("failed to create git ref result: %w", err)
+	}
+	// mix-in a constant string to avoid collisions w/ normal host file loads, which
+	// can lead function calls encountering cached results that include contextual
+	// file loads from older sessions to load from the wrong path
+	fDgst := f.ID().ContentDigest()
+	if fDgst == "" {
+		fDgst = f.ID().Digest()
+	}
+	dgst := hashutil.HashStrings(fDgst.String(), "contextualGitRef")
+	inst = inst.WithContentDigest(dgst)
 	return inst, nil
 }
 
@@ -953,6 +1172,7 @@ func (s *moduleSourceSchema) initFromModConfig(configBytes []byte, src *core.Mod
 	if modCfg.SDK != nil {
 		src.SDK = &core.SDKConfig{
 			Source:       modCfg.SDK.Source,
+			Debug:        modCfg.SDK.Debug,
 			Config:       modCfg.SDK.Config,
 			Experimental: modCfg.SDK.Experimental,
 		}
@@ -995,7 +1215,6 @@ func (s *moduleSourceSchema) initFromModConfig(configBytes []byte, src *core.Mod
 // load (or re-load) the context directory for the given module source
 func (s *moduleSourceSchema) loadModuleSourceContext(
 	ctx context.Context,
-	bk *buildkit.Client,
 	src *core.ModuleSource,
 ) error {
 	dag, err := core.CurrentDagqlServer(ctx)
@@ -1038,8 +1257,6 @@ func (s *moduleSourceSchema) loadModuleSourceContext(
 			return err
 		}
 
-		// host.directory already content hashes, no need to here
-
 	case core.ModuleSourceKindGit:
 		fullIncludePaths = append(fullIncludePaths, src.RebasedIncludePaths...)
 
@@ -1056,19 +1273,6 @@ func (s *moduleSourceSchema) loadModuleSourceContext(
 		)
 		if err != nil {
 			return err
-		}
-
-		// content hash the context dir so that different git commits with the same module source code can all share cache
-		src.ContextDirectory, err = core.MakeDirectoryContentHashed(ctx, bk, src.ContextDirectory)
-		if err != nil {
-			return fmt.Errorf("failed to content hash git module source context dir: %w", err)
-		}
-
-	case core.ModuleSourceKindDir:
-		// content hash the context dir so that different dirs with the same module source code can all share cache
-		src.ContextDirectory, err = core.MakeDirectoryContentHashed(ctx, bk, src.ContextDirectory)
-		if err != nil {
-			return fmt.Errorf("failed to content hash dir module source context dir: %w", err)
 		}
 	}
 
@@ -1089,6 +1293,14 @@ func (s *moduleSourceSchema) moduleSourceOriginalSubpath(
 	args struct{},
 ) (string, error) {
 	return src.OriginalSubpath, nil
+}
+
+func (s *moduleSourceSchema) moduleSourceRebasedIncludePaths(
+	ctx context.Context,
+	src *core.ModuleSource,
+	args struct{},
+) ([]string, error) {
+	return src.RebasedIncludePaths, nil
 }
 
 func (s *moduleSourceSchema) moduleSourceWithSourceSubpath(
@@ -1118,15 +1330,7 @@ func (s *moduleSourceSchema) moduleSourceWithSourceSubpath(
 	}
 
 	// reload context since the subpath impacts what we implicitly include in the load
-	query, err := core.CurrentQuery(ctx)
-	if err != nil {
-		return nil, err
-	}
-	bk, err := query.Buildkit(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get buildkit client: %w", err)
-	}
-	err = s.loadModuleSourceContext(ctx, bk, src)
+	err = s.loadModuleSourceContext(ctx, src)
 	switch {
 	case err == nil:
 	case codes.NotFound == status.Code(err) && src.Kind == core.ModuleSourceKindLocal:
@@ -1202,15 +1406,7 @@ func (s *moduleSourceSchema) moduleSourceWithIncludes(
 	src.RebasedIncludePaths = append(src.RebasedIncludePaths, rebasedIncludes...)
 
 	// reload context in case includes have changed it
-	query, err := core.CurrentQuery(ctx)
-	if err != nil {
-		return nil, err
-	}
-	bk, err := query.Buildkit(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get buildkit client: %w", err)
-	}
-	err = s.loadModuleSourceContext(ctx, bk, src)
+	err = s.loadModuleSourceContext(ctx, src)
 	switch {
 	case err == nil:
 	case codes.NotFound == status.Code(err) && src.Kind == core.ModuleSourceKindLocal:
@@ -1519,6 +1715,15 @@ func (s *moduleSourceSchema) deduplicateAndSortItems(
 			if item.Self().SourceRootSubpath != "" {
 				symbolicItemStr += "/" + strings.TrimPrefix(item.Self().SourceRootSubpath, "/")
 			}
+			// This enables toolchains to install multiple versions from the same source
+			// For dependencies, we want to deduplicate by base path (without version) so updates work correctly
+			if accessor.typ == core.ModuleRelationTypeToolchain {
+				if item.Self().Git.Version != "" {
+					symbolicItemStr += "@" + item.Self().Git.Version
+				} else if item.Self().Git.Commit != "" {
+					symbolicItemStr += "@" + item.Self().Git.Commit
+				}
+			}
 		}
 
 		_, isDuplicateSymbolic := symbolicItems[symbolicItemStr]
@@ -1638,11 +1843,21 @@ func (s *moduleSourceSchema) moduleSourceUpdateItems(
 		if itemSrcRoot := existingItem.Self().SourceRootSubpath; itemSrcRoot != "" {
 			existingSymbolic += "/" + strings.TrimPrefix(itemSrcRoot, "/")
 		}
+		// For matching purposes, include version/commit in symbolic representation to match deduplication logic
+		// This ensures proper matching when updating dependencies with version information
+		existingSymbolicWithVersion := existingSymbolic
+		if existingItem.Self().Git.Version != "" {
+			existingSymbolicWithVersion += "@" + existingItem.Self().Git.Version
+		} else if existingItem.Self().Git.Commit != "" {
+			existingSymbolicWithVersion += "@" + existingItem.Self().Git.Commit
+		}
 
+		matched := false
 		for updateReq := range updateReqs {
-			if updateReq.symbolic != existingName && updateReq.symbolic != existingSymbolic {
+			if updateReq.symbolic != existingName && updateReq.symbolic != existingSymbolic && updateReq.symbolic != existingSymbolicWithVersion {
 				continue
 			}
+			matched = true
 			delete(updateReqs, updateReq)
 
 			updateVersion := updateReq.version
@@ -1668,6 +1883,12 @@ func (s *moduleSourceSchema) moduleSourceUpdateItems(
 			}
 
 			newUpdatedArgs = append(newUpdatedArgs, dagql.NewID[*core.ModuleSource](updatedItem.ID()))
+			break
+		}
+
+		// If this item wasn't matched for update, keep it as-is
+		if !matched {
+			newUpdatedArgs = append(newUpdatedArgs, dagql.NewID[*core.ModuleSource](existingItem.ID()))
 		}
 	}
 
@@ -1899,6 +2120,7 @@ func (s *moduleSourceSchema) moduleSourceWithToolchains(
 
 	// Load the config for all toolchains to populate ConfigToolchains
 	// We need to convert each toolchain into a config entry by loading it as a dependency
+	// Also preserve any existing Customizations configuration
 	configToolchains := make([]*modules.ModuleConfigDependency, len(finalToolchains))
 	for i, toolchain := range finalToolchains {
 		// Load as a dependency to get the proper config format
@@ -1917,6 +2139,14 @@ func (s *moduleSourceSchema) moduleSourceWithToolchains(
 		}
 		if len(tmpConfig.Dependencies) > 0 {
 			configToolchains[i] = tmpConfig.Dependencies[0]
+
+			// Preserve Customization from the original ConfigToolchains if they exist
+			for _, origToolchain := range parentSrc.ConfigToolchains {
+				if origToolchain.Name == configToolchains[i].Name {
+					configToolchains[i].Customizations = origToolchain.Customizations
+					break
+				}
+			}
 		}
 	}
 	parentSrc.ConfigToolchains = configToolchains
@@ -2119,7 +2349,7 @@ func (s *moduleSourceSchema) loadModuleSourceConfig(
 	modCfg := &modules.ModuleConfigWithUserFields{
 		ModuleConfigUserFields: src.ModuleConfigUserFields,
 		ModuleConfig: modules.ModuleConfig{
-			Name:          src.ModuleName,
+			Name:          src.ModuleOriginalName,
 			EngineVersion: src.EngineVersion,
 			Include:       src.IncludePaths,
 			Codegen:       src.CodegenConfig,
@@ -2134,6 +2364,7 @@ func (s *moduleSourceSchema) loadModuleSourceConfig(
 	if src.SDK != nil {
 		modCfg.SDK = &modules.SDK{
 			Source:       src.SDK.Source,
+			Debug:        src.SDK.Debug,
 			Config:       src.SDK.Config,
 			Experimental: src.SDK.Experimental,
 		}
@@ -2178,6 +2409,7 @@ func (s *moduleSourceSchema) loadModuleSourceConfig(
 		depCfg := &modules.ModuleConfigDependency{
 			Name: depSrc.Self().ModuleName,
 		}
+
 		modCfg.Dependencies[i] = depCfg
 
 		switch src.Kind {
@@ -2656,14 +2888,14 @@ func (s *moduleSourceSchema) runModuleDefInSDK(ctx context.Context, src, srcInst
 
 		err = (func() (rerr error) {
 			ctx, span := core.Tracer(ctx).Start(ctx, "asModule getModDef", telemetry.Internal())
-			defer telemetry.End(span, func() error { return rerr })
+			defer telemetry.EndWithCause(span, &rerr)
 			getModDefFn, err := core.NewModFunction(
 				ctx,
 				mod,
 				nil,
 				core.NewFunction("", &core.TypeDef{
 					Kind:     core.TypeDefKindObject,
-					AsObject: dagql.NonNull(core.NewObjectTypeDef("Module", "")),
+					AsObject: dagql.NonNull(core.NewObjectTypeDef("Module", "", nil)),
 				}))
 			if err != nil {
 				return fmt.Errorf("failed to create module definition function for module %q: %w", modName, err)
@@ -2728,6 +2960,28 @@ func (s *moduleSourceSchema) runModuleDefInSDK(ctx context.Context, src, srcInst
 	if typeDefsEnabled && isSelfCallsEnabled(srcInstContentHashed) {
 		// append module types to the module itself so self calls are possible
 		mod.Deps = mod.Deps.Append(mod)
+	}
+
+	// Verify if lazy loading is disabled ; if so, load the runtime eagerly.
+	clientMetadata, err := engine.ClientMetadataFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get client metadata: %w", err)
+	}
+
+	if clientMetadata.EagerRuntime && !mod.Runtime.Valid {
+		runtime, err := runtimeImpl.Runtime(ctx, mod.Deps, srcInstContentHashed)
+		if err != nil {
+			return nil, err
+		}
+		mod.Runtime = dagql.NonNull(runtime)
+
+		// Force load the runtime to fill the cache
+		var runtimeRes dagql.ID[*core.Container]
+		if err = dag.Select(ctx, mod.Runtime.Value, &runtimeRes, dagql.Selector{
+			Field: "sync",
+		}); err != nil {
+			return nil, err
+		}
 	}
 
 	return mod, nil
@@ -2857,6 +3111,260 @@ func extractToolchainModules(mod *core.Module) []*core.Module {
 	return toolchainMods
 }
 
+// applyArgumentConfigToFunction applies argument configuration overrides to a function
+func applyArgumentConfigToFunction(fn *core.Function, argConfigs []*modules.ModuleConfigArgument, functionChain []string) *core.Function {
+	fn = fn.Clone()
+
+	// Apply configs that match the function chain (or empty for constructor)
+	for _, argCfg := range argConfigs {
+		// Check if this config applies to this function
+		// Empty function chain in config means constructor
+		if len(argCfg.Function) == 0 && len(functionChain) == 0 {
+			// This is for the constructor
+		} else if len(argCfg.Function) > 0 && len(functionChain) > 0 {
+			// Check if function chains match
+			if len(argCfg.Function) != len(functionChain) {
+				continue
+			}
+			match := true
+			for i, fnName := range argCfg.Function {
+				if !strings.EqualFold(fnName, functionChain[i]) {
+					match = false
+					break
+				}
+			}
+			if !match {
+				continue
+			}
+		} else {
+			// One is constructor, one is not - skip
+			continue
+		}
+
+		// Find the matching argument and apply overrides
+		for _, arg := range fn.Args {
+			if strings.EqualFold(arg.Name, argCfg.Argument) || strings.EqualFold(arg.OriginalName, argCfg.Argument) {
+				// Apply default value if specified
+				if argCfg.Default != "" {
+					// Parse the default value as JSON to determine its type
+					var defaultValue any
+					if err := json.Unmarshal([]byte(argCfg.Default), &defaultValue); err != nil {
+						// If it's not valid JSON, treat it as a string literal
+						defaultValue = argCfg.Default
+					}
+
+					// Validate the type matches the argument type
+					_, err := arg.TypeDef.ToInput().Decoder().DecodeInput(defaultValue)
+					if err != nil {
+						// Log warning but don't fail - allow for flexibility
+						slog.Warn("default value type mismatch",
+							"function", fn.Name,
+							"argument", arg.Name,
+							"error", err)
+					}
+
+					// Marshal back to JSON for storage
+					marshaledValue, err := json.Marshal(defaultValue)
+					if err != nil {
+						slog.Warn("failed to marshal default value",
+							"function", fn.Name,
+							"argument", arg.Name,
+							"error", err)
+					} else {
+						arg.DefaultValue = core.JSON(marshaledValue)
+					}
+				}
+
+				// Apply defaultPath if specified
+				if argCfg.DefaultPath != "" {
+					arg.DefaultPath = argCfg.DefaultPath
+				}
+
+				// Apply defaultAddress if specified
+				if argCfg.DefaultAddress != "" {
+					arg.DefaultAddress = argCfg.DefaultAddress
+				}
+
+				// Apply ignore patterns if specified
+				if len(argCfg.Ignore) > 0 {
+					arg.Ignore = argCfg.Ignore
+				}
+				break
+			}
+		}
+	}
+
+	return fn
+}
+
+// applyArgumentConfigsToObjectFunctions applies argument configurations to all functions in an object
+func applyArgumentConfigsToObjectFunctions(objDef *core.TypeDef, argConfigs []*modules.ModuleConfigArgument) *core.TypeDef {
+	if !objDef.AsObject.Valid {
+		return objDef
+	}
+
+	objDef = objDef.Clone()
+	obj := objDef.AsObject.Value
+
+	// Apply to constructor if it exists
+	if obj.Constructor.Valid {
+		obj.Constructor.Value = applyArgumentConfigToFunction(obj.Constructor.Value, argConfigs, []string{})
+	}
+
+	// Apply to all regular functions
+	for i, fn := range obj.Functions {
+		// Function chain is just the function's original name for direct functions
+		obj.Functions[i] = applyArgumentConfigToFunction(fn, argConfigs, []string{fn.OriginalName})
+	}
+
+	return objDef
+}
+
+// applyArgumentConfigsToModule applies argument configurations to all functions in a module, including chained functions
+func applyArgumentConfigsToModule(mod *core.Module, argConfigs []*modules.ModuleConfigArgument) {
+	// Group configs by chain length for efficiency
+	directConfigs := []*modules.ModuleConfigArgument{}
+	chainedConfigs := []*modules.ModuleConfigArgument{}
+
+	for _, cfg := range argConfigs {
+		if len(cfg.Function) <= 1 {
+			directConfigs = append(directConfigs, cfg)
+		} else {
+			chainedConfigs = append(chainedConfigs, cfg)
+		}
+	}
+
+	// Apply direct configs (constructor and single-level functions)
+	for objIdx, objDef := range mod.ObjectDefs {
+		mod.ObjectDefs[objIdx] = applyArgumentConfigsToObjectFunctions(objDef, directConfigs)
+	}
+
+	// Apply chained configs
+	for _, cfg := range chainedConfigs {
+		applyChainedArgumentConfig(mod, cfg)
+	}
+}
+
+// applyChainedArgumentConfig applies a configuration to a function in a chain
+func applyChainedArgumentConfig(mod *core.Module, cfg *modules.ModuleConfigArgument) {
+	if len(cfg.Function) < 2 {
+		return // Not a chain
+	}
+
+	// Find the starting object that has the first function in the chain
+	for _, objDef := range mod.ObjectDefs {
+		if !objDef.AsObject.Valid {
+			continue
+		}
+
+		obj := objDef.AsObject.Value
+
+		// Find the first function in the chain
+		firstFn := findFunction(obj, cfg.Function[0])
+		if firstFn == nil {
+			continue
+		}
+
+		// Follow the chain to find the target function
+		targetObj, targetFnIdx := followFunctionChain(mod, firstFn.ReturnType, cfg.Function[1:])
+		if targetObj == nil {
+			continue
+		}
+
+		// Apply the configuration to the target function
+		targetFn := targetObj.Functions[targetFnIdx]
+		updatedFn := applyArgumentConfigToFunction(targetFn, []*modules.ModuleConfigArgument{cfg}, cfg.Function)
+		targetObj.Functions[targetFnIdx] = updatedFn
+	}
+}
+
+// findFunction finds a function by name (case-insensitive) in an object
+func findFunction(obj *core.ObjectTypeDef, name string) *core.Function {
+	for _, fn := range obj.Functions {
+		if strings.EqualFold(fn.OriginalName, name) {
+			return fn
+		}
+	}
+	return nil
+}
+
+// findObjectInModule finds an object in mod.ObjectDefs by OriginalName
+func findObjectInModule(mod *core.Module, originalName string) *core.ObjectTypeDef {
+	for _, objDef := range mod.ObjectDefs {
+		if objDef.AsObject.Valid && objDef.AsObject.Value.OriginalName == originalName {
+			return objDef.AsObject.Value
+		}
+	}
+	return nil
+}
+
+// followFunctionChain traverses a chain of functions through return types
+// Returns the target object and function index if the chain is valid, nil otherwise
+func followFunctionChain(mod *core.Module, startType *core.TypeDef, chain []string) (*core.ObjectTypeDef, int) {
+	currentType := startType
+
+	for i, fnName := range chain {
+		// Unwrap the type to get to the object
+		currentType = unwrapType(currentType)
+		if currentType == nil || !currentType.AsObject.Valid {
+			return nil, -1
+		}
+
+		// Get the actual module object (not the cloned return type instance)
+		obj := findObjectInModule(mod, currentType.AsObject.Value.OriginalName)
+		if obj == nil {
+			return nil, -1
+		}
+
+		// Find the next function in the chain
+		fnIdx := findFunctionIndex(obj, fnName)
+		if fnIdx < 0 {
+			return nil, -1
+		}
+
+		// If this is the last function in the chain, we found our target
+		if i == len(chain)-1 {
+			return obj, fnIdx
+		}
+
+		// Otherwise, continue following the chain
+		currentType = obj.Functions[fnIdx].ReturnType
+	}
+
+	return nil, -1
+}
+
+// unwrapType unwraps optional and list types to get to the underlying type
+func unwrapType(t *core.TypeDef) *core.TypeDef {
+	if t == nil {
+		return nil
+	}
+
+	// Unwrap optional
+	if t.Optional {
+		unwrapped := t.Clone()
+		unwrapped.Optional = false
+		t = unwrapped
+	}
+
+	// Unwrap list
+	if t.AsList.Valid {
+		return unwrapType(t.AsList.Value.ElementTypeDef)
+	}
+
+	return t
+}
+
+// findFunctionIndex finds the index of a function by name (case-insensitive) in an object
+func findFunctionIndex(obj *core.ObjectTypeDef, name string) int {
+	for i, fn := range obj.Functions {
+		if strings.EqualFold(fn.OriginalName, name) {
+			return i
+		}
+	}
+	return -1
+}
+
 // addToolchainFieldsToObject adds toolchain fields/functions to an existing TypeDef
 func addToolchainFieldsToObject(
 	objectDef *core.TypeDef,
@@ -2886,9 +3394,16 @@ func addToolchainFieldsToObject(
 					}
 				}
 
+				// Apply argument configuration overrides if present (from registry)
+				if mod.Toolchains != nil {
+					if entry, ok := mod.Toolchains.Get(originalName); ok && entry.ArgumentConfigs != nil {
+						constructor = applyArgumentConfigToFunction(constructor, entry.ArgumentConfigs, []string{})
+					}
+				}
+
 				constructor.Name = fieldName
 				constructor.OriginalName = originalName
-				constructor.Description = fmt.Sprintf("toolchain '%s': %s", originalName, tcMod.Description)
+				constructor.Description = tcMod.Description
 				constructor.ReturnType = obj
 
 				var err error
@@ -2897,7 +3412,6 @@ func addToolchainFieldsToObject(
 					return nil, fmt.Errorf("failed to add toolchain function %q: %w", fieldName, err)
 				}
 
-				mod.ToolchainModules[originalName] = tcMod
 				break
 			}
 		}
@@ -2980,9 +3494,34 @@ func (s *moduleSourceSchema) integrateToolchains(
 		return mod, nil
 	}
 
-	// Initialize toolchain modules map
-	if mod.ToolchainModules == nil {
-		mod.ToolchainModules = make(map[string]*core.Module)
+	// Initialize toolchain registry
+	mod.Toolchains = core.NewToolchainRegistry(mod)
+
+	// Register all toolchains in the registry
+	for _, tcMod := range toolchainMods {
+		originalName := tcMod.NameField
+		fieldName := strcase.ToLowerCamel(tcMod.NameField)
+
+		mod.Toolchains.Register(originalName, fieldName, tcMod)
+
+		// Apply configurations from config
+		if entry, ok := mod.Toolchains.Get(originalName); ok {
+			// Read configs from the module source
+			src := mod.GetSource()
+			if src != nil {
+				for _, tcCfg := range src.ConfigToolchains {
+					if tcCfg.Name == originalName {
+						if len(tcCfg.Customizations) > 0 {
+							entry.ArgumentConfigs = tcCfg.Customizations
+						}
+						if len(tcCfg.IgnoreChecks) > 0 {
+							entry.IgnoreChecks = tcCfg.IgnoreChecks
+						}
+						break
+					}
+				}
+			}
+		}
 	}
 
 	// Check if we have an SDK module (has object definitions)
@@ -3019,7 +3558,7 @@ func (s *moduleSourceSchema) moduleSourceAsModule(
 		// to latest engine versions.
 		ForceDefaultFunctionCaching bool `internal:"true" default:"false"`
 	},
-) (inst dagql.Result[*core.Module], err error) {
+) (inst dagql.ObjectResult[*core.Module], err error) {
 	dag, err := core.CurrentDagqlServer(ctx)
 	if err != nil {
 		return inst, fmt.Errorf("failed to get dag server: %w", err)
@@ -3105,17 +3644,23 @@ func (s *moduleSourceSchema) moduleSourceAsModule(
 		return inst, err
 	}
 
-	inst, err = dagql.NewResultForCurrentID(ctx, mod)
+	inst, err = dagql.NewObjectResultForCurrentID(ctx, dag, mod)
 	if err != nil {
 		return inst, fmt.Errorf("failed to create instance for module %q: %w", src.Self().ModuleName, err)
 	}
+
+	// save a result for the final module based on its content hash, currently used in the _contextDirectory API
+	if err := core.CacheModuleByContentDigest(ctx, dag, inst); err != nil {
+		return inst, fmt.Errorf("failed to cache module by content digest: %w", err)
+	}
+
 	return inst, nil
 }
 
 // load the given module source's dependencies as modules
 func (s *moduleSourceSchema) loadDependencyModules(ctx context.Context, src dagql.ObjectResult[*core.ModuleSource]) (_ *core.ModDeps, rerr error) {
 	ctx, span := core.Tracer(ctx).Start(ctx, "load dep modules", telemetry.Internal())
-	defer telemetry.End(span, func() error { return rerr })
+	defer telemetry.EndWithCause(span, &rerr)
 
 	query, err := core.CurrentQuery(ctx)
 	if err != nil {
@@ -3161,10 +3706,21 @@ func (s *moduleSourceSchema) loadDependencyModules(ctx context.Context, src dagq
 	for _, depMod := range depMods {
 		deps = deps.Append(depMod.Self())
 	}
-	for _, tcMod := range tcMods {
+	for i, tcMod := range tcMods {
 		clone := tcMod.Self().Clone()
 		clone.IsToolchain = true
 		clone.ContextSource = dagql.NonNull(src)
+
+		// Apply argument configurations from the parent module's toolchain config
+		// Match by index since ConfigToolchains and Toolchains arrays have the same ordering
+		if i < len(src.Self().ConfigToolchains) {
+			tcCfg := src.Self().ConfigToolchains[i]
+			if len(tcCfg.Customizations) > 0 {
+				// Apply configurations to the toolchain module's functions, including chained functions
+				applyArgumentConfigsToModule(clone, tcCfg.Customizations)
+			}
+		}
+
 		deps = deps.Append(clone)
 	}
 	for i, depMod := range deps.Mods {

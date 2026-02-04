@@ -1,4 +1,4 @@
-# Releasing ![shields.io](https://img.shields.io/badge/Last%20updated%20on-October%223,%202025-success?style=flat-square)
+# Releasing ![shields.io](https://img.shields.io/badge/Last%20updated%20on-December%204,%202025-success?style=flat-square)
 
 This document describes the process for releasing Dagger.
 
@@ -115,9 +115,6 @@ to dagger.
   git pull $DAGGER_REPO_REMOTE "$RELEASE_BRANCH"
   ```
 
-- [ ] Ensure that `.changes/.next` contains `$ENGINE_VERSION` - if it doesn't,
-      update it now!
-
 - [ ] Determine the next release version (use `patch`/`minor`/`major` to set the release type):
 
   ```console
@@ -127,7 +124,10 @@ to dagger.
   export CHANGIE_ENGINE_VERSION="$ENGINE_VERSION"
   ```
 
-- [ ] Create the target release notes branch for a PR - e.g. `prep-v0.12.4`.
+- [ ] Ensure that `.changes/.next` contains `$ENGINE_VERSION` - if it doesn't,
+      update it now!
+
+- [ ] Create the target release notes branch for a PR.
 
   ```console
   git checkout -b prep-$ENGINE_VERSION
@@ -136,7 +136,7 @@ to dagger.
 - [ ] Bump internal versions (sdks + docs + helm chart) to the target version
 
   ```console
-  dagger call -m releaser bump --version="$ENGINE_VERSION" -o ./
+  dagger call release bump --engine-version="$ENGINE_VERSION"
   git add docs sdk helm
   git commit -s -m "chore: bump dependencies to $ENGINE_VERSION"
   ```
@@ -160,13 +160,20 @@ to dagger.
 - [ ] Generate release notes `.changes/**/v0.12.4.md` for all releases:
 
   ```console
+  export CHANGIE_MAINTAINERS=$(dagger call release get-maintainers --github-org-name dagger --github-token="cmd://gh auth token" --json)
   find . sdk/go sdk/python sdk/typescript sdk/elixir sdk/php sdk/rust helm/dagger -maxdepth 1 -name .changie.yaml -execdir changie batch $ENGINE_VERSION \;
   ```
 
 - [ ] Make any necessary edits to the newly generated file, e.g. `.changes/v0.12.4.md`
-- [ ] Update `CHANGELOG.md` by running `changie merge`:
+- [ ] Update `CHANGELOG.md` by running:
+
+> [!NOTE]
+>
+> We need to rethink SDK-specific changelogs, they're not really used anymore other than bumping engine versions.
+>
 
   ```console
+  changie merge
   find . sdk/go sdk/python sdk/typescript sdk/elixir sdk/php sdk/rust helm/dagger -maxdepth 1 -name .changie.yaml -execdir changie merge \;
   find . -name .changes -type d -exec git add {} \;
   find . -name CHANGELOG.md -type f -exec git add {} \;
@@ -175,6 +182,11 @@ to dagger.
 
 - [ ] Update `.changes/.next` with the next release number if known and commit it -
       otherwise, make the file empty (but don't remove it).
+
+  ```console
+  git add .changes/.next
+  git commit -s -m 'bump .next to next release version'
+  ```
 
 - [ ] Push changes, and bring the prep PR out of draft:
 
@@ -196,6 +208,11 @@ to dagger.
 - [ ] Confirm that all checks on `$RELEASE_BRANCH` are green, for main you're basically [checking](https://github.com/dagger/dagger/commits/main/) that the merged prep commit is has a green check.
       Do not push tags until this is finished.
 
+> [!NOTE]
+>
+> CI on main currently has the MacOS workflow failing, it needs fixing.
+>
+
 ## 🚀 Release
 
 - [ ] When you have confirmed that all checks on `$RELEASE_BRANCH` are green, pull the latest changes, and push the tag to trigger the release workflow by running:
@@ -208,6 +225,11 @@ to dagger.
   git tag "$ENGINE_VERSION" "$ENGINE_GIT_SHA"
   git push "$DAGGER_REPO_REMOTE" "$ENGINE_VERSION"
   ```
+
+> [!NOTE]
+>
+> We should probably sign the git tag before pushing.
+>
 
   This will kick off [`.github/workflows/publish.yml`](https://github.com/dagger/dagger/actions/workflows/publish.yml) which publishes:
   - A new image to [ghcr.io/dagger/engine](https://github.com/dagger/dagger/pkgs/container/engine) (mirrored to registry.dagger.io/engine using https://github.com/dagger/registry-redirect).
@@ -234,6 +256,11 @@ This will also kick off [`.github/workflows/evals.yml`], which is currently brok
   dagger core version
   ```
 
+> [!NOTE]
+>
+> Checks in workflow should already handle verifying the new versions.
+>
+
 - [ ] Double-check that all the above packages have been correctly published
       and updated to their latest versions.
       _Note_: the [Go package](https://pkg.go.dev/dagger.io/dagger) may not be instantly updated due to caching.
@@ -244,32 +271,29 @@ This will also kick off [`.github/workflows/evals.yml`], which is currently brok
 
 - [ ] Ask @marcosnils @matipan @sipsma on the release thread to review and merge the newly opened dagger.io PR (this is created by the publish workflow). This PR updates both the Daggerverse and Dagger Cloud. If anything fails, cc @kpenfound @matipan.
 
-## Improve releasing 改善 (Post release steps)
+## Post release steps
 
-- [ ] Start an release improvements branch:
-
-  ```console
-  git checkout -b improve-releasing-during-$ENGINE_VERSION
-  ```
-
-- [ ] Download and install the latest release, and continue the rest of the
-      release process using the just-released CLI. This is needed now so the
-      `.dagger` module updated below will get `dagger.json`'s engine version bumped.
-
-- [ ] Update the dagger version in `.github/main.go`, then regenerate
-      `.github/` configs:
+- [ ] Start a post-release branch:
 
   ```console
-  dagger call -m .github generate -o .
+  git checkout -b post-release-$ENGINE_VERSION
   ```
 
 - [ ] Update non-autogenerated `.github` configs to `$ENGINE_VERSION`
   - The version numbers (of the form `<major>.<minor>.<patch>`) should be updated to the new version
   - The worker runner versions (of the form `dagger-v<major>-<minor>-<patch>-<worker>`)
-  - e.g. if bumping 0.19.1->0.19.2, can run:
+  - Update the version numbers in the commands below and run:
+
+If Linux:
 
 ```console
 find .github/ -type f -exec sed -i 's/0-19-1/0-19-2/g; s/0\.19\.1/0\.19\.2/g' {} +
+```
+
+If MacOS:
+
+```console
+find .github/ -type f -exec sed -i '' -e 's/0-19-1/0-19-2/g' -e 's/0\.19\.1/0\.19\.2/g' {} +
 ```
 
 - [ ] Bump the Go SDK version in our internal CI targets (these aren't actually
@@ -277,41 +301,69 @@ find .github/ -type f -exec sed -i 's/0-19-1/0-19-2/g; s/0\.19\.1/0\.19\.2/g' {}
       practice regardless).
 
   ```console
-  # update deps
-  go mod edit -require dagger.io/dagger@$ENGINE_VERSION
-  go mod edit -require github.com/dagger/dagger/engine/distconsts@$ENGINE_VERSION
-  go mod tidy
+  # remove generated .dagger/internal so that disconsts is not referenced as a direct dependency when doing below `go mod tidy`
+  rm -rf .dagger/internal/
+
+  # update deps at root
+  go get dagger.io/dagger@$ENGINE_VERSION github.com/dagger/dagger/engine/distconsts@$ENGINE_VERSION
+
+  # update deps in .dagger (use go mod edit + tidy to avoid adding versioned require for replaced module)
   cd .dagger
   go mod edit -require github.com/dagger/dagger/engine/distconsts@$ENGINE_VERSION
   go mod tidy
   cd ..
 
+  # update deps in toolchains that directly import distconsts
+  cd toolchains/engine-dev
+  go get github.com/dagger/dagger/engine/distconsts@$ENGINE_VERSION
+  cd ../..
+
   dagger develop --recursive -m .
-  dagger develop --recursive -m ./releaser
+
+  # update all other modules in the repo (excluding docs snippets)
+  find . -name dagger.json -not -path "./docs/*" -exec dirname {} \; | xargs -I {} dagger develop -m {}
+
+  # update docs recorder modules
+  dagger develop -m docs/recorder
+  dagger develop -m docs/recorder2
+
+  # run go mod tidy on all go modules that were updated (excluding root, which was already tidied)
+  find . -name go.mod -not -path "./docs/*" -not -path "./go.mod" -not -path "./.dagger/*" -execdir go mod tidy \;
 
   # add, commit and push the changes to the branch
-  git add .
-  git commit -s -m "chore: bump internal tooling to $ENGINE_VERSION"
-  git push
+  git commit -a -s -m "chore: bump internal tooling to $ENGINE_VERSION"
   ```
 
-- [ ] Open a PR with the title `Improve Releasing during $ENGINE_VERSION`
+> [!NOTE]
+>
+> FIXME: For some reason, `dagger develop --recursive -m ./releaser` displays weird absolute-like paths such as Users/...
+>
+
+- [ ] Open a PR with the title `chore: post-release $ENGINE_VERSION`
 
   ```console
-  git add .  # or any other files changed during the last few steps
-  git commit -s -m "Improve releasing during $ENGINE_VERSION"
-  git push "$DAGGER_REPO_REMOTE" "improve-releasing-during-$ENGINE_VERSION"
-  gh pr create --draft --title "Improve releasing during $ENGINE_VERSION" --body ""
+  git push "$DAGGER_REPO_REMOTE" "post-release-$ENGINE_VERSION"
+  gh pr create --title "chore: post-release during $ENGINE_VERSION" --body ""
   ```
 
 - [ ] When all the above done, remember to add the `RELEASING.md` changes to
-      the `improve-releasing-during-v...` PR that you have opened earlier (remember
+      the `post-release...` PR that you have opened earlier (remember
       to toggle all the checkboxes back to `[ ]`). Here is an example:
       https://github.com/dagger/dagger/pull/5658
 
+  ```console
+  git commit -a -s -m "Improve releasing during $ENGINE_VERSION"
+  git push "$DAGGER_REPO_REMOTE" "post-release-$ENGINE_VERSION"
+  ```
+
+- [ ] If the git remote url was changed to ssh, now is a good time to revert it to https.
+
+  ```console
+  git remote set-url $DAGGER_REPO_REMOTE https://github.com/dagger/dagger.git
+  ```
+
 ## Last step
 
-- [ ] Close the Discord release thread you created in [Let the team know](#let-the-team-know)
 - [ ] Close the GitHub milestone you created in [Let the team know](#let-the-team-know)
   - If there are remaining PRs/issues that were not resolved, then move
     them into the next milestone (or remove it from a milestone entirely)

@@ -1,6 +1,6 @@
 {
   "name": "dagger-engine",
-  "engineVersion": "v0.19.4",
+  "engineVersion": "v0.19.7",
   "sdk": {
     "source": "go"
   },
@@ -17,12 +17,16 @@
       "source": "../../modules/alpine"
     },
     {
+      "name": "codegen",
+      "source": "../codegen"
+    },
+    {
       "name": "dagger-cli",
       "source": "../dagger"
     },
     {
       "name": "go",
-      "source": "../../modules/go"
+      "source": "../../toolchains/go"
     },
     {
       "name": "version",

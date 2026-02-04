@@ -35,6 +35,26 @@ func (ps *parseState) parseGoFunc(parentType *types.Named, fn *types.Func) (*fun
 		}
 	}
 
+	if v, ok := docPragmas["check"]; ok {
+		if v == nil {
+			spec.isCheck = true
+		} else {
+			spec.isCheck, ok = v.(bool)
+			if !ok {
+				return nil, fmt.Errorf("check pragma %q, must be a valid boolean", v)
+			}
+		}
+	}
+
+	if v, ok := docPragmas["deprecated"]; ok {
+		if v == nil {
+			spec.deprecated = nil
+		} else {
+			deprecationReason, _ := v.(string)
+			spec.deprecated = &deprecationReason
+		}
+	}
+
 	spec.sourceMap = ps.sourceMap(funcDecl)
 
 	sig, ok := fn.Type().(*types.Signature)
@@ -46,6 +66,20 @@ func (ps *parseState) parseGoFunc(parentType *types.Named, fn *types.Func) (*fun
 	spec.argSpecs, err = ps.parseParamSpecs(parentType, fn)
 	if err != nil {
 		return nil, err
+	}
+
+	for _, argSpec := range spec.argSpecs {
+		if argSpec.deprecated != nil && !argSpec.isOptional() {
+			argName := argSpec.name
+			if argName == "" && argSpec.parent != nil {
+				argName = argSpec.parent.name
+			}
+			owner := fn.Name()
+			if parentType != nil {
+				owner = fmt.Sprintf("%s.%s", parentType.Obj().Name(), fn.Name())
+			}
+			return nil, fmt.Errorf("argument %q on %s is required and cannot be deprecated", argName, owner)
+		}
 	}
 
 	if parentType != nil {
@@ -91,8 +125,11 @@ type funcTypeSpec struct {
 	doc         string
 	sourceMap   *sourceMap
 	cachePolicy string
+	isCheck     bool
 
 	argSpecs []paramSpec
+
+	deprecated *string
 
 	returnSpec   ParsedType // nil if void return
 	returnsError bool
@@ -146,6 +183,14 @@ func (spec *funcTypeSpec) TypeDefFunc(dag *dagger.Client) (*dagger.Function, err
 	if spec.sourceMap != nil {
 		fnTypeDef = fnTypeDef.WithSourceMap(spec.sourceMap.TypeDef(dag))
 	}
+	if spec.deprecated != nil {
+		fnTypeDef = fnTypeDef.WithDeprecated(dagger.FunctionWithDeprecatedOpts{
+			Reason: strings.TrimSpace(*spec.deprecated),
+		})
+	}
+	if spec.isCheck {
+		fnTypeDef = fnTypeDef.WithCheck()
+	}
 
 	for _, argSpec := range spec.argSpecs {
 		if argSpec.isContext {
@@ -192,6 +237,14 @@ func (spec *funcTypeSpec) TypeDefFunc(dag *dagger.Client) (*dagger.Function, err
 
 		if argSpec.defaultPath != "" {
 			argOpts.DefaultPath = argSpec.defaultPath
+		}
+
+		if argSpec.defaultAddress != "" {
+			argOpts.DefaultAddress = argSpec.defaultAddress
+		}
+
+		if argSpec.deprecated != nil {
+			argOpts.Deprecated = *argSpec.deprecated
 		}
 
 		if len(argSpec.ignore) > 0 {
@@ -341,6 +394,22 @@ func (ps *parseState) parseParamSpecVar(field *types.Var, astField *ast.Field, d
 		}
 		optional = true // If defaultPath is set, the argument becomes optional
 	}
+	defaultAddress := ""
+	if v, ok := pragmas["defaultAddress"]; ok {
+		defaultAddress, ok = v.(string)
+		if !ok {
+			return paramSpec{}, fmt.Errorf("defaultAddress pragma %q, must be a valid string", v)
+		}
+		optional = true // If defaultAddress is set, the argument becomes optional
+	}
+	var deprecated *string
+	if v, ok := pragmas["deprecated"]; ok {
+		reason := ""
+		if str, _ := v.(string); str != "" {
+			reason = str
+		}
+		deprecated = &reason
+	}
 
 	ignore := []string{}
 	if v, ok := pragmas["ignore"]; ok {
@@ -383,6 +452,8 @@ func (ps *parseState) parseParamSpecVar(field *types.Var, astField *ast.Field, d
 		hasDefaultValue: hasDefaultValue,
 		description:     comment,
 		defaultPath:     defaultPath,
+		defaultAddress:  defaultAddress,
+		deprecated:      deprecated,
 		ignore:          ignore,
 	}, nil
 }
@@ -401,6 +472,8 @@ type paramSpec struct {
 	defaultValue    any
 	hasDefaultValue bool
 
+	deprecated *string
+
 	// paramType is the full type declared in the function signature, which may
 	// include pointer types, etc
 	paramType types.Type
@@ -416,8 +489,19 @@ type paramSpec struct {
 	// If the argument is not set, load it from the given path in the context directory
 	defaultPath string
 
+	// Only applies to arguments of type Container.
+	// If the argument is not set, load it from the given address (e.g. "alpine:latest")
+	defaultAddress string
+
 	// Only applies to arguments of type Directory.
 	// The ignore patterns are applied to the input directory, and
 	// matching entries are filtered out, in a cache-efficient manner.
 	ignore []string
+}
+
+func (spec paramSpec) isOptional() bool {
+	if spec.optional || spec.hasDefaultValue || spec.variadic {
+		return true
+	}
+	return isOptionalGoType(spec.paramType)
 }

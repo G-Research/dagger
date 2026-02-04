@@ -1837,6 +1837,40 @@
     ],
     "directives": [
       {
+        "args": [],
+        "description": "Indicates that this function is a check.",
+        "locations": [
+          "FIELD_DEFINITION"
+        ],
+        "name": "check"
+      },
+      {
+        "args": [
+          {
+            "defaultValue": null,
+            "deprecationReason": null,
+            "description": "",
+            "directives": [],
+            "isDeprecated": false,
+            "name": "address",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              }
+            }
+          }
+        ],
+        "description": "Indicates that the argument defaults to a container address.",
+        "locations": [
+          "ARGUMENT_DEFINITION"
+        ],
+        "name": "defaultAddress"
+      },
+      {
         "args": [
           {
             "defaultValue": null,

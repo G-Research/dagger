@@ -3,11 +3,13 @@ package schema
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/dagger/dagger/core"
 	"github.com/dagger/dagger/dagql"
 	"github.com/dagger/dagger/dagql/call"
 	"github.com/dagger/dagger/internal/buildkit/client/llb"
+	"github.com/dagger/dagger/internal/buildkit/solver/pb"
 	"github.com/dagger/dagger/util/hashutil"
 	"github.com/opencontainers/go-digest"
 )
@@ -16,10 +18,14 @@ import (
 func DagOpWrapper[T dagql.Typed, A DagOpInternalArgsIface, R dagql.Typed](
 	srv *dagql.Server,
 	fn dagql.NodeFuncHandler[T, A, R],
-) dagql.NodeFuncHandler[T, A, R] {
-	return func(ctx context.Context, self dagql.ObjectResult[T], args A) (inst R, err error) {
+) dagql.NodeFuncHandler[T, A, dagql.Result[R]] {
+	return func(ctx context.Context, self dagql.ObjectResult[T], args A) (inst dagql.Result[R], err error) {
 		if args.InDagOp() {
-			return fn(ctx, self, args)
+			val, err := fn(ctx, self, args)
+			if err != nil {
+				return inst, err
+			}
+			return dagql.NewResultForCurrentID(ctx, val)
 		}
 		return DagOp(ctx, srv, self, args, fn)
 	}
@@ -35,27 +41,34 @@ func DagOp[T dagql.Typed, A any, R dagql.Typed](
 	self dagql.ObjectResult[T],
 	args A,
 	fn dagql.NodeFuncHandler[T, A, R],
-) (inst R, err error) {
-	deps, err := extractLLBDependencies(ctx, self.Self())
+) (inst dagql.Result[R], err error) {
+	deps, err := core.InputsOf(ctx, args)
 	if err != nil {
 		return inst, err
 	}
-	argDeps, err := core.InputsOf(ctx, args)
-	if err != nil {
-		return inst, err
-	}
-	deps = append(deps, argDeps...)
 
-	filename := "output.json"
+	filename := rawDagOpFilename
 	curIDForRawDagOp, err := currentIDForRawDagOp(ctx, filename)
 	if err != nil {
 		return inst, err
 	}
-	return core.NewRawDagOp[R](ctx, srv, &core.RawDagOp{
-		ID:       curIDForRawDagOp,
+
+	resultID := dagql.CurrentID(ctx)
+	if resultID != nil {
+		resultID = resultID.AppendEffectIDs(curIDForRawDagOp.Digest().String())
+	}
+
+	val, err := core.NewRawDagOp[R](ctx, srv, &core.RawDagOp{
+		ID:       curIDForRawDagOp, // FIXME: using this in the cache key means we effectively disable buildkit content caching
 		Filename: filename,
 	}, deps)
+	if err != nil {
+		return inst, err
+	}
+	return dagql.NewResultForID(val, resultID)
 }
+
+const rawDagOpFilename = "output.json"
 
 type PathFunc[T dagql.Typed, A any] func(ctx context.Context, val T, args A) (string, error)
 
@@ -71,11 +84,19 @@ func DagOpFileWrapper[T dagql.Typed, A DagOpInternalArgsIface](
 		if args.InDagOp() {
 			return fn(ctx, self, args)
 		}
-		file, err := DagOpFile(ctx, srv, self.Self(), args, fn, opts...)
+		file, effectID, err := DagOpFile(ctx, srv, self.Self(), args, fn, opts...)
 		if err != nil {
 			return inst, err
 		}
-		return dagql.NewObjectResultForCurrentID(ctx, srv, file)
+		resultID := dagql.CurrentID(ctx)
+		if effectID != "" && resultID != nil {
+			resultID = resultID.AppendEffectIDs(effectID)
+		}
+		inst, err = dagql.NewObjectResultForID(file, srv, resultID)
+		if err != nil {
+			return inst, err
+		}
+		return inst, nil
 	}
 }
 
@@ -91,32 +112,51 @@ func DagOpFile[T dagql.Typed, A any](
 	args A,
 	fn dagql.NodeFuncHandler[T, A, dagql.ObjectResult[*core.File]],
 	opts ...DagOpOptsFn[T, A],
-) (*core.File, error) {
+) (*core.File, string, error) {
 	o := getOpts(opts...)
-	deps, err := extractLLBDependencies(ctx, self)
-	if err != nil {
-		return nil, err
-	}
 
 	filename := "file"
 	if o.pfn != nil {
 		// NOTE: if set, the path function must be *somewhat* stable -
 		// since it becomes part of the op, then any changes to this
 		// invalidate the cache
+		var err error
 		filename, err = o.pfn(ctx, self, args)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
+	}
+
+	selfDigest, deps, err := getSelfDigest(ctx, self)
+	if err != nil {
+		return nil, "", err
+	}
+	argDigest, err := core.DigestOf(args)
+	if err != nil {
+		return nil, "", err
 	}
 
 	curIDForFSDagOp, err := currentIDForFSDagOp(ctx, filename)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return core.NewFileDagOp(ctx, srv, &core.FSDagOp{
-		ID:   curIDForFSDagOp,
-		Path: filename,
+
+	cacheKey := digest.FromString(
+		strings.Join([]string{
+			selfDigest.String(),
+			argDigest.String(),
+		}, "\x00"),
+	)
+
+	f, err := core.NewFileDagOp(ctx, srv, &core.FSDagOp{
+		ID:       curIDForFSDagOp,
+		Path:     filename,
+		CacheKey: cacheKey,
 	}, deps)
+	if err != nil {
+		return nil, "", err
+	}
+	return f, curIDForFSDagOp.Digest().String(), nil
 }
 
 // DagOpDirectoryWrapper caches a directory field as a buildkit operation,
@@ -131,12 +171,16 @@ func DagOpDirectoryWrapper[T dagql.Typed, A DagOpInternalArgsIface](
 			return fn(ctx, self, args)
 		}
 
-		dir, err := DagOpDirectory(ctx, srv, self.Self(), args, "", fn, opts...)
+		dir, effectID, err := DagOpDirectory(ctx, srv, self.Self(), args, "", fn, opts...)
 		if err != nil {
 			return inst, err
 		}
 
-		dirResult, err := dagql.NewObjectResultForCurrentID(ctx, srv, dir)
+		resultID := dagql.CurrentID(ctx)
+		if effectID != "" && resultID != nil {
+			resultID = resultID.AppendEffectIDs(effectID)
+		}
+		dirResult, err := dagql.NewObjectResultForID(dir, srv, resultID)
 		if err != nil {
 			return inst, err
 		}
@@ -204,9 +248,59 @@ func getOpts[T dagql.Typed, A any](opts ...DagOpOptsFn[T, A]) *DagOpOpts[T, A] {
 	return &o
 }
 
-func getSelfDigest(a any) (digest.Digest, []llb.State, error) {
+func getSelfDigest(ctx context.Context, a any) (digest.Digest, []llb.State, error) {
 	switch x := a.(type) {
+	case *core.Container:
+		dgst, err := core.DigestOf(x.WithoutInputs())
+		if err != nil {
+			return "", nil, err
+		}
+
+		var deps []llb.State
+		var fsLLB *pb.Definition
+		if x.FS != nil && x.FS.Self() != nil {
+			fsLLB = x.FS.Self().LLB
+		}
+		if fsLLB == nil || fsLLB.Def == nil {
+			deps = append(deps, llb.Scratch())
+		} else {
+			op, err := llb.NewDefinitionOp(fsLLB)
+			if err != nil {
+				return "", nil, err
+			}
+			deps = append(deps, llb.NewState(op))
+		}
+
+		for _, m := range x.Mounts {
+			mLLB := m.GetLLB()
+			if mLLB != nil && mLLB.Def != nil {
+				op, err := llb.NewDefinitionOp(mLLB)
+				if err != nil {
+					return "", nil, err
+				}
+				deps = append(deps, llb.NewState(op))
+			}
+		}
+
+		return dgst, deps, err
 	case *core.Directory:
+		dgst, err := core.DigestOf(x.WithoutInputs())
+		if err != nil {
+			return "", nil, err
+		}
+
+		var deps []llb.State
+		if x.LLB == nil || x.LLB.Def == nil {
+			deps = append(deps, llb.Scratch())
+		} else {
+			op, err := llb.NewDefinitionOp(x.LLB)
+			if err != nil {
+				return "", nil, err
+			}
+			deps = append(deps, llb.NewState(op))
+		}
+		return dgst, deps, err
+	case *core.File:
 		dgst, err := core.DigestOf(x.WithoutInputs())
 		if err != nil {
 			return "", nil, err
@@ -225,12 +319,13 @@ func getSelfDigest(a any) (digest.Digest, []llb.State, error) {
 		return dgst, deps, err
 	case
 		// FIXME: these are weird
-		*core.GitRepository,
-		*core.GitRef,
 		*core.Changeset,
-		*core.Query,
-		*core.Host:
-		return "", nil, nil // fallback to using dagop ID
+		*core.GitRef,
+		*core.GitRepository,
+		*core.Host,
+		*core.Query:
+		// fallback to using dagop ID
+		return dagql.CurrentID(ctx).Digest(), nil, nil
 	default:
 		return "", nil, fmt.Errorf("unable to create digest: unknown type %T", a)
 	}
@@ -247,20 +342,20 @@ func DagOpDirectory[T dagql.Typed, A any](
 	data string,
 	fn dagql.NodeFuncHandler[T, A, dagql.ObjectResult[*core.Directory]],
 	opts ...DagOpOptsFn[T, A],
-) (*core.Directory, error) {
+) (*core.Directory, string, error) {
 	o := getOpts(opts...)
 
-	selfDigest, deps, err := getSelfDigest(self)
+	selfDigest, deps, err := getSelfDigest(ctx, self)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	argDigest, err := core.DigestOf(args)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	argDeps, err := core.InputsOf(ctx, args)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	deps = append(deps, argDeps...)
 
@@ -268,20 +363,31 @@ func DagOpDirectory[T dagql.Typed, A any](
 	if o.pfn != nil {
 		filename, err = o.pfn(ctx, self, args)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 	}
 
+	cacheKey := digest.FromString(
+		strings.Join([]string{
+			selfDigest.String(),
+			argDigest.String(),
+		}, "\x00"),
+	)
+
 	curIDForFSDagOp, err := currentIDForFSDagOp(ctx, filename)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return core.NewDirectoryDagOp(ctx, srv, &core.FSDagOp{
-		// FIXME: using this in the cache key means we effectively disable
-		// buildkit content caching
-		ID:   curIDForFSDagOp,
-		Path: filename,
+
+	dir, err := core.NewDirectoryDagOp(ctx, srv, &core.FSDagOp{
+		ID:       curIDForFSDagOp,
+		Path:     filename,
+		CacheKey: cacheKey,
 	}, deps, selfDigest, argDigest)
+	if err != nil {
+		return nil, "", err
+	}
+	return dir, curIDForFSDagOp.Digest().String(), nil
 }
 
 func DagOpContainerWrapper[A DagOpInternalArgsIface](
@@ -294,14 +400,22 @@ func DagOpContainerWrapper[A DagOpInternalArgsIface](
 		if args.InDagOp() {
 			return fn(ctx, self, args)
 		}
-		ctr, err := DagOpContainer(ctx, srv, self.Self(), args, fn)
+		ctr, effectID, err := DagOpContainer(ctx, srv, self.Self(), args, fn)
 		if err != nil {
 			return inst, err
 		}
 		if !o.keepImageRef {
 			ctr.ImageRef = ""
 		}
-		return dagql.NewObjectResultForCurrentID(ctx, srv, ctr)
+		resultID := dagql.CurrentID(ctx)
+		if effectID != "" && resultID != nil {
+			resultID = resultID.AppendEffectIDs(effectID)
+		}
+		inst, err = dagql.NewObjectResultForID(ctr, srv, resultID)
+		if err != nil {
+			return inst, err
+		}
+		return inst, nil
 	}
 }
 
@@ -311,21 +425,25 @@ func DagOpContainer[A any](
 	ctr *core.Container,
 	args A,
 	fn dagql.NodeFuncHandler[*core.Container, A, dagql.ObjectResult[*core.Container]],
-) (*core.Container, error) {
+) (*core.Container, string, error) {
 	argDigest, err := core.DigestOf(args)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	deps, err := core.InputsOf(ctx, args)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	curIDForContainerDagOp, err := currentIDForContainerDagOp(ctx)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return core.NewContainerDagOp(ctx, curIDForContainerDagOp, argDigest, deps, ctr)
+	ctrRes, err := core.NewContainerDagOp(ctx, curIDForContainerDagOp, argDigest, deps, ctr)
+	if err != nil {
+		return nil, "", err
+	}
+	return ctrRes, curIDForContainerDagOp.Digest().String(), nil
 }
 
 const (
@@ -381,7 +499,7 @@ func currentIDForRawDagOp(
 	var err error
 	for _, arg := range args {
 		newID = newID.WithArgument(arg)
-		h, err = call.AppendArgumentBytes(arg.PB(), h)
+		h, err = call.AppendArgumentBytes(arg, h)
 		if err != nil {
 			h.Close()
 			return nil, err
@@ -430,7 +548,7 @@ func currentIDForFSDagOp(
 	var err error
 	for _, arg := range args {
 		newID = newID.WithArgument(arg)
-		h, err = call.AppendArgumentBytes(arg.PB(), h)
+		h, err = call.AppendArgumentBytes(arg, h)
 		if err != nil {
 			h.Close()
 			return nil, err
@@ -466,7 +584,7 @@ func currentIDForContainerDagOp(
 	var err error
 	for _, arg := range args {
 		newID = newID.WithArgument(arg)
-		h, err = call.AppendArgumentBytes(arg.PB(), h)
+		h, err = call.AppendArgumentBytes(arg, h)
 		if err != nil {
 			h.Close()
 			return nil, err
@@ -478,27 +596,29 @@ func currentIDForContainerDagOp(
 	return newID.WithDigest(digest.Digest(dgst)), nil
 }
 
-func extractLLBDependencies(ctx context.Context, val any) ([]llb.State, error) {
-	hasPBs, ok := dagql.UnwrapAs[core.HasPBDefinitions](val)
-	if !ok {
-		return nil, nil
-	}
-
-	depsDefs, err := hasPBs.PBDefinitions(ctx)
-	if err != nil {
-		return nil, err
-	}
-	deps := make([]llb.State, 0, len(depsDefs))
-	for _, def := range depsDefs {
-		if def == nil || def.Def == nil {
-			deps = append(deps, llb.Scratch())
-			continue
+// DagOpChangesetWrapper caches a changeset field as a buildkit operation.
+// After JSON deserialization, it resolves the ObjectResult references that
+// couldn't be directly unmarshaled.
+func DagOpChangesetWrapper[T dagql.Typed, A DagOpInternalArgsIface](
+	srv *dagql.Server,
+	fn dagql.NodeFuncHandler[T, A, *core.Changeset],
+) dagql.NodeFuncHandler[T, A, dagql.Result[*core.Changeset]] {
+	return func(ctx context.Context, self dagql.ObjectResult[T], args A) (inst dagql.Result[*core.Changeset], err error) {
+		if args.InDagOp() {
+			val, err := fn(ctx, self, args)
+			if err != nil {
+				return inst, err
+			}
+			return dagql.NewResultForCurrentID(ctx, val)
 		}
-		op, err := llb.NewDefinitionOp(def)
+		cs, err := DagOp(ctx, srv, self, args, fn)
 		if err != nil {
-			return nil, err
+			return inst, err
 		}
-		deps = append(deps, llb.NewState(op))
+		// Resolve refs after JSON deserialization to reconstruct ObjectResult fields
+		if err := cs.Self().ResolveRefs(ctx, srv); err != nil {
+			return inst, fmt.Errorf("resolve changeset refs: %w", err)
+		}
+		return cs, nil
 	}
-	return deps, nil
 }

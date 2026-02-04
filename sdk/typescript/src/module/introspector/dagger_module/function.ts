@@ -10,7 +10,7 @@ import {
   resolveTypeDef,
 } from "../typescript_module/index.js"
 import { DaggerArgument, DaggerArguments } from "./argument.js"
-import { FUNCTION_DECORATOR } from "./decorator.js"
+import { CHECK_DECORATOR, FUNCTION_DECORATOR } from "./decorator.js"
 import { Locatable } from "./locatable.js"
 import { References } from "./reference.js"
 
@@ -19,11 +19,13 @@ export type DaggerFunctions = { [name: string]: DaggerFunction }
 export class DaggerFunction extends Locatable {
   public name: string
   public description: string
+  public deprecated?: string
   private _returnTypeRef?: string
   public returnType?: TypeDef<TypeDefKind>
   public arguments: DaggerArguments = {}
   public alias: string | undefined
   public cache: string | undefined
+  public isCheck: boolean = false
 
   private signature: ts.Signature
   private symbol: ts.Symbol
@@ -37,7 +39,9 @@ export class DaggerFunction extends Locatable {
     this.symbol = this.ast.getSymbolOrThrow(node.name)
     this.signature = this.ast.getSignatureFromFunctionOrThrow(node)
     this.name = this.node.name.getText()
-    this.description = this.ast.getDocFromSymbol(this.symbol)
+    const { description, deprecated } = this.ast.getSymbolDoc(this.symbol)
+    this.description = description
+    this.deprecated = deprecated
 
     const functionArguments = this.ast.getDecoratorArgument<
       FunctionOptions | string
@@ -51,6 +55,11 @@ export class DaggerFunction extends Locatable {
         this.alias = functionArguments.alias
         this.cache = functionArguments.cache
       }
+    }
+
+    // Parse @check decorator
+    if (this.ast.isNodeDecoratedWith(this.node, CHECK_DECORATOR)) {
+      this.isCheck = true
     }
 
     for (const parameter of this.node.parameters) {
@@ -124,6 +133,7 @@ export class DaggerFunction extends Locatable {
     return {
       name: this.name,
       description: this.description,
+      deprecated: this.deprecated,
       alias: this.alias,
       arguments: this.arguments,
       returnType: this.returnType,

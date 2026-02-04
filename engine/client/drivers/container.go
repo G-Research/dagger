@@ -200,6 +200,11 @@ func (d containerConnector) Connect(ctx context.Context) (net.Conn, error) {
 	return d.backend.ContainerDial(context.WithoutCancel(ctx), d.host, args)
 }
 
+func (d containerConnector) EngineID() string {
+	// not supported yet
+	return ""
+}
+
 const (
 	// trim image digests to 16 characters to makeoutput more readable
 	hashLen             = 16
@@ -229,7 +234,7 @@ type containerCreateOpts struct {
 // "dagger-engine-").
 func (d *imageDriver) create(ctx context.Context, opts containerCreateOpts, dopts *DriverOpts) (target *url.URL, rerr error) {
 	ctx, span := otel.Tracer("").Start(ctx, "create container")
-	defer telemetry.End(span, func() error { return rerr })
+	defer telemetry.EndWithCause(span, &rerr)
 	slog := slog.SpanLogger(ctx, InstrumentationLibrary)
 
 	containerName := opts.containerName

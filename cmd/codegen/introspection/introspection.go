@@ -69,10 +69,14 @@ func (s *Schema) ScrubType(typeName string) {
 }
 
 type DirectiveDef struct {
-	Name        string      `json:"name,omitempty"`
-	Description string      `json:"description,omitempty"`
-	Locations   []string    `json:"locations,omitempty"`
-	Args        InputValues `json:"args,omitempty"`
+	Name        string   `json:"name,omitempty"`
+	Description string   `json:"description,omitempty"`
+	Locations   []string `json:"locations,omitempty"`
+
+	// NB(vito): don't omitempty - Python complains:
+	//
+	//   https://github.com/graphql-python/graphql-core/blob/758fef19194005d3a287e28a4e172e0ed7955d42/src/graphql/utilities/build_client_schema.py#L383
+	Args InputValues `json:"args"`
 }
 
 type TypeKind string
@@ -172,7 +176,7 @@ type Field struct {
 	TypeRef           *TypeRef    `json:"type"`
 	Args              InputValues `json:"args"`
 	IsDeprecated      bool        `json:"isDeprecated"`
-	DeprecationReason string      `json:"deprecationReason"`
+	DeprecationReason *string     `json:"deprecationReason"`
 	Directives        Directives  `json:"directives"`
 
 	ParentObject *Type `json:"-"`
@@ -275,11 +279,13 @@ func (i InputValues) HasOptionals() bool {
 }
 
 type InputValue struct {
-	Name         string     `json:"name"`
-	Description  string     `json:"description"`
-	DefaultValue *string    `json:"defaultValue"`
-	TypeRef      *TypeRef   `json:"type"`
-	Directives   Directives `json:"directives"`
+	Name              string     `json:"name"`
+	Description       string     `json:"description"`
+	DefaultValue      *string    `json:"defaultValue"`
+	TypeRef           *TypeRef   `json:"type"`
+	Directives        Directives `json:"directives"`
+	IsDeprecated      bool       `json:"isDeprecated"`
+	DeprecationReason *string    `json:"deprecationReason"`
 }
 
 func (v InputValue) IsOptional() bool {
@@ -308,7 +314,7 @@ type EnumValue struct {
 	Name              string     `json:"name"`
 	Description       string     `json:"description"`
 	IsDeprecated      bool       `json:"isDeprecated"`
-	DeprecationReason string     `json:"deprecationReason"`
+	DeprecationReason *string    `json:"deprecationReason"`
 	Directives        Directives `json:"directives"`
 }
 
