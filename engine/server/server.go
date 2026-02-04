@@ -809,7 +809,6 @@ func (srv *Server) Close() error {
 	// the server should be shutdown first
 	srv.daggerSessionsMu.Lock()
 	daggerSessions := srv.daggerSessions
-	srv.daggerSessions = nil
 	srv.daggerSessionsMu.Unlock()
 
 	for _, s := range daggerSessions {
