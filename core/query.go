@@ -114,9 +114,10 @@ type Server interface {
 	// Return all the cache entries in the local cache. No support for filtering yet.
 	EngineLocalCacheEntries(context.Context) (*EngineCacheEntrySet, error)
 
-	// Prune the local cache of releaseable entries. If useDefaultPolicy is true, use the engine-wide default pruning policy,
-	// otherwise prune the whole cache of any releasable entries.
-	PruneEngineLocalCacheEntries(context.Context, bool) (*EngineCacheEntrySet, error)
+	// Prune the local cache of releaseable entries. If UseDefaultPolicy is true,
+	// use the engine-wide default pruning policy, otherwise prune the whole cache
+	// of any releasable entries.
+	PruneEngineLocalCacheEntries(context.Context, EngineCachePruneOptions) (*EngineCacheEntrySet, error)
 
 	// RegisterSSHFSVolume instructs the engine to ensure an sshfs-backed volume is mounted and
 	// returns a Volume instance describing it. privateKey and publicKey are the digest identifiers

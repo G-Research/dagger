@@ -990,6 +990,7 @@ func (s *containerSchema) build(ctx context.Context, parent dagql.ObjectResult[*
 		secrets,
 		secretStore,
 		args.NoInit,
+		nil,
 	)
 }
 
@@ -2514,7 +2515,7 @@ func (s *containerSchema) withRegistryAuth(ctx context.Context, parent *core.Con
 	if err != nil {
 		return nil, err
 	}
-	secretBytes, err := secretStore.GetSecretPlaintext(ctx, secret.ID().Digest())
+	secretBytes, err := secretStore.GetSecretPlaintext(ctx, core.SecretIDDigest(secret.ID()))
 	if err != nil {
 		return nil, err
 	}

@@ -743,8 +743,8 @@ func (ContainerSuite) TestWithDefaultArgs(ctx context.Context, t *testctx.T) {
 				}
 			}
 		}`, nil)
+	require.NoError(t, err)
 	t.Run("default alpine (no entrypoint)", func(ctx context.Context, t *testctx.T) {
-		require.NoError(t, err)
 		require.Empty(t, res.Container.From.Entrypoint)
 		require.Equal(t, []string{"/bin/sh"}, res.Container.From.DefaultArgs)
 	})

@@ -26,7 +26,7 @@ var _ SchemaResolvers = &directorySchema{}
 
 func (s *directorySchema) Install(srv *dagql.Server) {
 	dagql.Fields[*core.Query]{
-		dagql.Func("directory", s.directory).
+		dagql.NodeFunc("directory", DagOpDirectoryWrapper(srv, s.directory)).
 			Doc(`Creates an empty directory.`),
 		dagql.NodeFunc("__immutableRef", DagOpDirectoryWrapper(srv, s.immutableRef)).
 			Doc(`Returns a directory backed by a pre-existing immutable ref.`).
@@ -222,6 +222,10 @@ func (s *directorySchema) Install(srv *dagql.Server) {
 					`This should only be used if the user requires that their exec processes be the
 				pid 1 process in the container. Otherwise it may result in unexpected behavior.`,
 				),
+				dagql.Arg("ssh").Doc(
+					`A socket to use for SSH authentication during the build`,
+					`(e.g., for Dockerfile RUN --mount=type=ssh instructions).`,
+					`Typically obtained via host.unixSocket() pointing to the SSH_AUTH_SOCK.`),
 			),
 		dagql.NodeFunc("withTimestamps", DagOpDirectoryWrapper(srv, s.withTimestamps, WithPathFn(keepParentDir[dirWithTimestampsArgs]))).
 			Doc(`Retrieves this directory with all file/dir timestamps set to the given time.`).
@@ -354,7 +358,7 @@ func (s *directorySchema) immutableRef(ctx context.Context, parent dagql.ObjectR
 	if err != nil {
 		return res, fmt.Errorf("failed to get immutable ref %q: %w", args.Ref, err)
 	}
-	dir, err := core.NewScratchDirectory(ctx, query.Platform())
+	dir, err := core.NewScratchDirectoryDagOp(ctx, query.Platform())
 	if err != nil {
 		return res, fmt.Errorf("failed to create scratch directory: %w", err)
 	}
@@ -367,9 +371,17 @@ func (s *directorySchema) pipeline(ctx context.Context, parent *core.Directory, 
 	return parent, nil
 }
 
-func (s *directorySchema) directory(ctx context.Context, parent *core.Query, _ struct{}) (*core.Directory, error) {
-	platform := parent.Platform()
-	return core.NewScratchDirectory(ctx, platform)
+func (s *directorySchema) directory(ctx context.Context, parent dagql.ObjectResult[*core.Query], _ DagOpInternalArgs) (inst dagql.ObjectResult[*core.Directory], _ error) {
+	srv, err := core.CurrentDagqlServer(ctx)
+	if err != nil {
+		return inst, err
+	}
+	platform := parent.Self().Platform()
+	dir, err := core.NewScratchDirectoryDagOp(ctx, platform)
+	if err != nil {
+		return inst, err
+	}
+	return dagql.NewObjectResultForCurrentID(ctx, srv, dir)
 }
 
 type subdirectoryArgs struct {
@@ -1278,6 +1290,7 @@ type dirDockerBuildArgs struct {
 	BuildArgs  []dagql.InputObject[core.BuildArg] `default:"[]"`
 	Secrets    []core.SecretID                    `default:"[]"`
 	NoInit     bool                               `default:"false"`
+	SSH        dagql.Optional[core.SocketID]
 }
 
 func getDockerIgnoreFileContent(ctx context.Context, parent dagql.ObjectResult[*core.Directory], filename string) ([]byte, error) {
@@ -1374,6 +1387,15 @@ func (s *directorySchema) dockerBuild(ctx context.Context, parent dagql.ObjectRe
 		return nil, fmt.Errorf("failed to get secret store: %w", err)
 	}
 
+	var sshSocket *core.Socket
+	if args.SSH.Valid {
+		sshSocketResult, err := args.SSH.Value.Load(ctx, srv)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load SSH socket: %w", err)
+		}
+		sshSocket = sshSocketResult.Self()
+	}
+
 	return ctr.Build(
 		ctx,
 		parent.Self(),
@@ -1384,6 +1406,7 @@ func (s *directorySchema) dockerBuild(ctx context.Context, parent dagql.ObjectRe
 		secrets,
 		secretStore,
 		args.NoInit,
+		sshSocket,
 	)
 }
 
