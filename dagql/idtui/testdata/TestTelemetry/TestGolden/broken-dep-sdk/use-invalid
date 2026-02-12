@@ -2,30 +2,20 @@ Expected stderr:
 
 ✔ connect X.Xs
 ├╴✔ starting engine X.Xs
-│ ╰╴✔ create container X.Xs
-│   ├╴✔ exec docker ps -a --format {{.Names}} X.Xs
-│   │ ┃ pulsar
-│   │ ┃ postgres
-│   │ ┃ redis
-│   │ ┃ dagger-engine-v0.19.11
-│   │ ┃ determined_murdock
-│   ╰╴✔ exec docker start dagger-engine-v0.19.11 X.Xs
-│     ┃ dagger-engine-v0.19.11
-│    
 ├╴✔ connecting to engine X.Xs
-│ ┃ XX:XX:XX INF connected name=0b6fc8748791 client-version=vX.X.X-xxxxxxxxxxxx-xxxxxxxxxxxx server-version=vX.X.X-xxxxxxxxxxxx-xxxxxxxxxxxx
+│ ┃ XX:XX:XX INF connected name=xxxxxxxxxxxxx.xxxxxxxxxxxxx.dagger.local client-version=vX.X.X-xxxxxxxxxxxx-xxxxxxxxxxxx server-version=vX.X.X-xxxxxxxxxxxx-xxxxxxxxxxxx
 ╰╴✔ starting session X.Xs
  
 ✘ load module: ./viztest/broken-dep-sdk X.Xs ERROR
 ╰╴✘ finding module configuration X.Xs ERROR
   ╰╴✘ moduleSource(refString: "./viztest/broken-dep-sdk"): ModuleSource! X.Xs ERROR
-    ├╴✘ moduleSource(refString: "/home/nikola/dev/dagger/dagql/idtui/viztest/broken-dep-sdk/invalid", disableFindUp: true): ModuleSource! X.Xs ERROR
+    ├╴✘ moduleSource(refString: "/app/dagql/idtui/viztest/broken-dep-sdk/invalid", disableFindUp: true): ModuleSource! X.Xs ERROR
     │ ╰╴✘ load SDK: unknown X.Xs ERROR
     │   ┃ Could not load SDK "unknown".
     │   ┃
     │   ┃ Errors:
     │   ┃ - unknown built-in sdk
-    │   ┃ - local path "/home/nikola/dev/dagger/dagql/idtui/viztest/broken-dep-sdk/invalid/unknown" does not exist [traceparent:00000000000000000000000000000000-0000000000000000]
+    │   ┃ - local path "/app/dagql/idtui/viztest/broken-dep-sdk/invalid/unknown" does not exist [traceparent:00000000000000000000000000000000-0000000000000000]
     │   ┃
     │   ┃ The available SDKs are:
     │   ┃ - go
@@ -37,8 +27,8 @@ Expected stderr:
     │   ┃ - any git module ref, e.g. github.com/dagger/dagger/sdk/elixir@main
     │   ┃ - any local module path, e.g. ./my-sdk
     │   ! invalid SDK: "unknown"
-    │   ╰╴✘ moduleSource(refString: "/home/nikola/dev/dagger/dagql/idtui/viztest/broken-dep-sdk/invalid/unknown", disableFindUp: true): ModuleSource! X.Xs ERROR
-    │     ! local path "/home/nikola/dev/dagger/dagql/idtui/viztest/broken-dep-sdk/invalid/unknown" does not exist
+    │   ╰╴✘ moduleSource(refString: "/app/dagql/idtui/viztest/broken-dep-sdk/invalid/unknown", disableFindUp: true): ModuleSource! X.Xs ERROR
+    │     ! local path "/app/dagql/idtui/viztest/broken-dep-sdk/invalid/unknown" does not exist
     │    
     ╰╴✔ load SDK: go X.Xs
 

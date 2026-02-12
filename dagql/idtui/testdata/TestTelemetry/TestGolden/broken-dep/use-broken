@@ -2,18 +2,8 @@ Expected stderr:
 
 ✔ connect X.Xs
 ├╴✔ starting engine X.Xs
-│ ╰╴✔ create container X.Xs
-│   ├╴✔ exec docker ps -a --format {{.Names}} X.Xs
-│   │ ┃ pulsar
-│   │ ┃ postgres
-│   │ ┃ redis
-│   │ ┃ dagger-engine-v0.19.11
-│   │ ┃ determined_murdock
-│   ╰╴✔ exec docker start dagger-engine-v0.19.11 X.Xs
-│     ┃ dagger-engine-v0.19.11
-│    
 ├╴✔ connecting to engine X.Xs
-│ ┃ XX:XX:XX INF connected name=0b6fc8748791 client-version=vX.X.X-xxxxxxxxxxxx-xxxxxxxxxxxx server-version=vX.X.X-xxxxxxxxxxxx-xxxxxxxxxxxx
+│ ┃ XX:XX:XX INF connected name=xxxxxxxxxxxxx.xxxxxxxxxxxxx.dagger.local client-version=vX.X.X-xxxxxxxxxxxx-xxxxxxxxxxxx server-version=vX.X.X-xxxxxxxxxxxx-xxxxxxxxxxxx
 ╰╴✔ starting session X.Xs
  
 ✔ load module: ./viztest/broken-dep X.Xs
