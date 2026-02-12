@@ -43,9 +43,9 @@ func (s *volumeSchema) sshfsVolume(ctx context.Context, parent dagql.ObjectResul
 		return i, fmt.Errorf("failed to get dagql server: %w", err)
 	}
 
-	// extract secret digests
-	privDgst := args.PrivateKey.ID().Digest()
-	pubDgst := args.PublicKey.ID().Digest()
+	// extract canonical secret digests (prefers content digest when available)
+	privDgst := core.SecretIDDigest(args.PrivateKey.ID())
+	pubDgst := core.SecretIDDigest(args.PublicKey.ID())
 
 	vol, err := query.Server.RegisterSSHFSVolume(ctx, args.Endpoint, privDgst, pubDgst)
 	if err != nil {
