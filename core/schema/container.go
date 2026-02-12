@@ -837,10 +837,13 @@ func (s *containerSchema) fromCacheKey(
 	}
 
 	resp := &dagql.GetCacheConfigResponse{CacheKey: req.CacheKey}
-	resp.CacheKey.CallKey = hashutil.HashStrings(
+	if resp.CacheKey.ID == nil {
+		return nil, errors.New("cache key ID is nil")
+	}
+	resp.CacheKey.ID = resp.CacheKey.ID.WithDigest(hashutil.HashStrings(
 		parent.ID().Digest().String(),
 		imageRef,
-	).String()
+	))
 	return resp, nil
 }
 
@@ -1136,10 +1139,13 @@ func (s *containerSchema) withExecCacheKey(
 	}
 
 	resp := &dagql.GetCacheConfigResponse{CacheKey: req.CacheKey}
-	resp.CacheKey.CallKey = hashutil.HashStrings(
+	if resp.CacheKey.ID == nil {
+		return nil, errors.New("cache key ID is nil")
+	}
+	resp.CacheKey.ID = resp.CacheKey.ID.WithDigest(hashutil.HashStrings(
 		parent.ID().Digest().String(),
 		string(argDigest),
-	).String()
+	))
 	return resp, nil
 }
 
