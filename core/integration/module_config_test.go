@@ -1190,12 +1190,18 @@ type vcsTestCase struct {
 
 	// encodedToken is a based64 encoded read-only PAT
 	encodedToken string
+	// encodedToken2 is an optional second token to test cases of using different tokens for the same repo
+	encodedToken2 string
 	// sshKey determines whether to propagate the host's ssh-key
 	sshKey bool
 }
 
 func (tc vcsTestCase) token() string {
-	decodedToken, err := base64.StdEncoding.DecodeString(tc.encodedToken)
+	return decodedGitToken(tc.encodedToken)
+}
+
+func decodedGitToken(encodedToken string) string {
+	decodedToken, err := base64.StdEncoding.DecodeString(encodedToken)
 	if err != nil {
 		return ""
 	}
@@ -1203,7 +1209,7 @@ func (tc vcsTestCase) token() string {
 	return string(decodedToken)
 }
 
-const vcsTestCaseCommit = "e04b301a11c4fb11e02ecf9e4a16081894dd5255"
+const vcsTestCaseCommit = "d730fb3af8757e1ca293e01aa4fcfd510a6e40e5"
 
 var vcsTestCases = []vcsTestCase{
 	// Test cases for public repositories using Go-style references, without '.git' suffix (optional)
@@ -1273,7 +1279,10 @@ var vcsTestCases = []vcsTestCase{
 		expectedURLPathComponent: "tree",
 		expectedPathPrefix:       "",
 		isPrivateRepo:            true,
-		encodedToken:             "Z2xwYXQtMGF2bWZBbHBxWENwOXpuazZfZ2JmbTg2TVFwMU9tTjRhV3BqQ3cuMDEuMTIxbWF0b2Rx",
+		// NOTE: this is not a security vulnerability, these tokens are read-only and scoped to a test repository
+		// with no actual private code
+		encodedToken:  "Z2xwYXQtMGF2bWZBbHBxWENwOXpuazZfZ2JmbTg2TVFwMU9tTjRhV3BqQ3cuMDEuMTIxbWF0b2Rx",
+		encodedToken2: "Z2xwYXQtcFVIWDVmZmVCUmdjZ2FYTHdndjNPVzg2TVFwMU9tTjRhV3BqQ3cuMDEuMTIxa2oyMHJi",
 	},
 	// BitBucket private repository using SCP-like SSH reference format
 	{
@@ -1335,10 +1344,6 @@ func getVCSTestCase(t *testctx.T, url string) vcsTestCase {
 }
 
 func testGitModuleRef(tc vcsTestCase, subpath string) string {
-	return testGitModuleRefAtCommit(tc, subpath, tc.gitTestRepoCommit)
-}
-
-func testGitModuleRefAtCommit(tc vcsTestCase, subpath string, commit string) string {
 	url := tc.gitTestRepoRef
 	if subpath != "" {
 		if !strings.HasPrefix(subpath, "/") {
@@ -1346,7 +1351,7 @@ func testGitModuleRefAtCommit(tc vcsTestCase, subpath string, commit string) str
 		}
 		url += subpath
 	}
-	return fmt.Sprintf("%s@%s", url, commit)
+	return fmt.Sprintf("%s@%s", url, tc.gitTestRepoCommit)
 }
 
 func (ConfigSuite) TestDaggerGitRefs(ctx context.Context, t *testctx.T) {
@@ -1491,26 +1496,6 @@ func (m *Work) Fn(ctx context.Context) (string, error) {
 			})
 		}
 	})
-}
-
-func (ConfigSuite) TestDaggerGitModuleSourceContentCache(ctx context.Context, t *testctx.T) {
-	c := connect(ctx, t)
-	tc := getVCSTestCase(t, "github.com/dagger/dagger-test-modules")
-
-	// two commits where the module content is the same
-	const commitA = "e04b301a11c4fb11e02ecf9e4a16081894dd5255"
-	const commitB = "94b985e575900d9ede336a5ffd615558e4204c6b"
-
-	const moduleSubpath = "subdir/dep2"
-	refA := testGitModuleRefAtCommit(tc, moduleSubpath, commitA)
-	refB := testGitModuleRefAtCommit(tc, moduleSubpath, commitB)
-
-	dgstA, error := c.ModuleSource(refA).Digest(ctx)
-	require.NoError(t, error)
-	dgstB, error := c.ModuleSource(refB).Digest(ctx)
-	require.NoError(t, error)
-
-	require.Equal(t, dgstA, dgstB)
 }
 
 func (ConfigSuite) TestDepPins(ctx context.Context, t *testctx.T) {

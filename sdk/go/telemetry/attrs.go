@@ -40,6 +40,10 @@ const (
 	// Reveal the span all the way up to the top-level parent.
 	UIRevealAttr = "dagger.io/ui.reveal"
 
+	// Prevent Reveal, RollUpLogs, and RollUpSpans from bubbling telemetry up past
+	// this span.
+	UIBoundaryAttr = "dagger.io/ui.boundary"
+
 	// An emoji representing the conceptual source of the span.
 	//
 	// Example: 🧑, 🤖
@@ -68,6 +72,22 @@ const (
 
 	// Substitute the span for its children and move its logs to its parent.
 	UIPassthroughAttr = "dagger.io/ui.passthrough" //nolint: gosec // lol
+
+	// Roll up child logs into this span.
+	UIRollUpLogsAttr = "dagger.io/ui.rollup.logs"
+
+	// Roll up child spans into this span for aggregated progress display.
+	UIRollUpSpansAttr = "dagger.io/ui.rollup.spans"
+
+	// The name of the check that this span represents.
+	// TODO: redundant with span name?
+	CheckNameAttr = "dagger.io/check.name"
+	// TODO: redundant with span status?
+	CheckPassedAttr = "dagger.io/check.passed"
+
+	// The name of the generator that this span represents.
+	// TODO: redundant with span name?
+	GeneratorNameAttr = "dagger.io/generator.name"
 
 	// Clarifies the meaning of a link between two spans.
 	LinkPurposeAttr = "dagger.io/link.purpose"
@@ -175,4 +195,7 @@ const (
 
 	// The function name of the current module in the format of "type.functionName"
 	ModuleCallerFunctionCallNameAttr = "dagger.io/module.caller.function.name"
+
+	// When scaling out calls to engines, the ID of the engine handling for the span
+	EngineIDAttr = "dagger.io/engine.id"
 )

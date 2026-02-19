@@ -1,41 +1,16 @@
 package fsxutil
 
 import (
-	"bytes"
 	"fmt"
-	gofs "io/fs"
 	"net"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/dagger/dagger/internal/fsutil"
+	"github.com/dagger/dagger/internal/fsutil/types"
 	"github.com/pkg/errors"
-	"github.com/tonistiigi/fsutil"
-	"github.com/tonistiigi/fsutil/types"
 )
-
-// bufWalkDir is a helper function that matches the style in filter_test.go
-func bufWalkDir(buf *bytes.Buffer) gofs.WalkDirFunc {
-	return func(path string, entry gofs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		fi, err := entry.Info()
-		if err != nil {
-			return err
-		}
-
-		t := "file"
-		if fi.IsDir() {
-			t = "dir"
-		}
-		if fi.Mode()&os.ModeSymlink != 0 {
-			t = "symlink"
-		}
-		fmt.Fprintf(buf, "%s %s\n", t, path)
-		return nil
-	}
-}
 
 func tmpDir(inp []*change) (dir string, retErr error) {
 	tmpdir, err := os.MkdirTemp("", "diff")

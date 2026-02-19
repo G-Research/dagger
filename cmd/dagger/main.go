@@ -60,6 +60,7 @@ var (
 	verbose                  int
 	quiet, _                 = strconv.Atoi(os.Getenv("DAGGER_QUIET"))
 	reveal                   = os.Getenv("DAGGER_REVEAL") != ""
+	expandCompleted          = os.Getenv("DAGGER_EXPAND_COMPLETED") != ""
 	debugFlag                bool
 	progress                 string
 	interactive              bool
@@ -68,6 +69,7 @@ var (
 	web                      bool
 	noExit                   bool
 	_, useCloudEngine        = os.LookupEnv("DAGGER_CLOUD_ENGINE")
+	enableScaleOut           bool
 
 	dotOutputFilePath string
 	dotFocusField     string
@@ -136,8 +138,10 @@ func init() {
 		versionCmd(),
 		queryCmd,
 		runCmd,
-		watchCmd,
+		traceCmd,
 		configCmd,
+		checksCmd,
+		generateCmd,
 		moduleInitCmd,
 		moduleInstallCmd,
 		moduleUnInstallCmd,
@@ -328,7 +332,7 @@ func installGlobalFlags(flags *pflag.FlagSet) {
 	flags.CountVarP(&quiet, "quiet", "q", "Reduce verbosity (show progress, but clean up at the end)")
 	flags.BoolVarP(&silent, "silent", "s", silent, "Do not show progress at all")
 	flags.BoolVarP(&debugFlag, "debug", "d", debugFlag, "Show debug logs and full verbosity")
-	flags.StringVar(&progress, "progress", "auto", "Progress output format (auto, plain, tty, dots)")
+	flags.StringVar(&progress, "progress", "auto", "Progress output format (auto, plain, tty, dots, logs)")
 	flags.BoolVarP(&interactive, "interactive", "i", false, "Spawn a terminal on container exec failure")
 	flags.StringVar(&interactiveCommand, "interactive-command", "/bin/sh", "Change the default command for interactive mode")
 	flags.BoolVarP(&web, "web", "w", false, "Open trace URL in a web browser")
@@ -343,6 +347,10 @@ func installGlobalFlags(flags *pflag.FlagSet) {
 	// all those functions will run in a remote cloud engine which gets created at execution time
 	flags.BoolVar(&useCloudEngine, "cloud", useCloudEngine, "Run in a Dagger Cloud Engine")
 	flags.Lookup("cloud").Hidden = true
+
+	// this flag enables scale-out for a few commands, e.g. checks, generate
+	flags.BoolVar(&enableScaleOut, "scale-out", false, "Enable scale-out to cloud engines for each check or generate executed")
+	flags.Lookup("scale-out").Hidden = true
 
 	for _, fl := range []string{
 		"workdir",
@@ -386,7 +394,7 @@ func Resource(ctx context.Context) *resource.Resource {
 		semconv.ServiceName("dagger-cli"),
 		semconv.ServiceVersion(engine.Version),
 	}
-	for k, v := range enginetel.LoadDefaultLabels(workdir, engine.Version) {
+	for k, v := range enginetel.LoadDefaultLabels(workdir, engine.Version).AsMap() {
 		attrs = append(attrs, attribute.String(k, v))
 	}
 	res, err := resource.New(ctx,
@@ -403,31 +411,6 @@ func Resource(ctx context.Context) *resource.Resource {
 	return res
 }
 
-// ExitError is an error that indicates a command should exit with a specific
-// status code, without printing an error message, assuming a human readable
-// message has been printed already.
-//
-// It is basically a shortcut for `os.Exit` while giving the TUI a chance to
-// exit gracefully and flush output.
-type ExitError struct {
-	Code int
-
-	// An optional originating error, for any code paths that go looking for it,
-	// e.g. telemetry.End which looks for error origins.
-	Original error
-}
-
-var Fail = ExitError{Code: 1}
-
-func (e ExitError) Error() string {
-	// Not actually printed anywhere.
-	return fmt.Sprintf("exit code %d", e.Code)
-}
-
-func (e ExitError) Unwrap() error {
-	return e.Original
-}
-
 const InstrumentationLibrary = "dagger.io/cli"
 
 var opts dagui.FrontendOpts
@@ -440,12 +423,13 @@ func main() {
 	opts.Silent = silent                           // show no progress
 	opts.Debug = debugFlag                         // show everything
 	opts.RevealNoisySpans = reveal                 // disable 'reveal: true' mechanic (for tests)
+	opts.ExpandCompleted = expandCompleted         // leave things expanded as they complete
 	opts.OpenWeb = web
 	opts.NoExit = noExit
 	opts.DotOutputFilePath = dotOutputFilePath
 	opts.DotFocusField = dotFocusField
 	opts.DotShowInternal = dotShowInternal
-	opts.UsingCloudEngine = useCloudEngine || strings.HasPrefix(RunnerHost, "dagger-cloud://")
+	opts.UsingCloudEngine = useCloudEngine || strings.HasPrefix(RunnerHost, engine.CloudRunnerHostPrefix)
 	if progress == "auto" {
 		if env := os.Getenv("DAGGER_PROGRESS"); env != "" {
 			progress = env
@@ -472,6 +456,8 @@ func main() {
 		Frontend = idtui.NewPretty(stderr)
 	case "dots":
 		Frontend = idtui.NewDots(stderr)
+	case "logs":
+		Frontend = idtui.NewLogs(stderr)
 	case "report":
 		Frontend = idtui.NewReporter(stderr)
 	default:
@@ -496,7 +482,7 @@ func main() {
 
 	if err := rootCmd.ExecuteContext(ctx); err != nil {
 		stop()
-		var exit ExitError
+		var exit idtui.ExitError
 		switch {
 		case errors.As(err, &exit):
 			os.Exit(exit.Code)

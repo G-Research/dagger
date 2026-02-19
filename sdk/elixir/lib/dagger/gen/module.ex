@@ -16,6 +16,44 @@ defmodule Dagger.Module do
   @type t() :: %__MODULE__{}
 
   @doc """
+  Return the check defined by the module with the given name. Must match to exactly one check.
+
+  > #### Experimental {: .warning}
+  >
+  > "This API is highly experimental and may be removed or replaced entirely."
+  """
+  @spec check(t(), String.t()) :: Dagger.Check.t()
+  def check(%__MODULE__{} = module, name) do
+    query_builder =
+      module.query_builder |> QB.select("check") |> QB.put_arg("name", name)
+
+    %Dagger.Check{
+      query_builder: query_builder,
+      client: module.client
+    }
+  end
+
+  @doc """
+  Return all checks defined by the module
+
+  > #### Experimental {: .warning}
+  >
+  > "This API is highly experimental and may be removed or replaced entirely."
+  """
+  @spec checks(t(), [{:include, [String.t()]}]) :: Dagger.CheckGroup.t()
+  def checks(%__MODULE__{} = module, optional_args \\ []) do
+    query_builder =
+      module.query_builder
+      |> QB.select("checks")
+      |> QB.maybe_put_arg("include", optional_args[:include])
+
+    %Dagger.CheckGroup{
+      query_builder: query_builder,
+      client: module.client
+    }
+  end
+
+  @doc """
   The dependencies of the module.
   """
   @spec dependencies(t()) :: {:ok, [Dagger.Module.t()]} | {:error, term()}

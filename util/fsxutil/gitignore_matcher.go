@@ -9,9 +9,9 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/dagger/dagger/internal/fsutil"
 	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
 	"github.com/pkg/errors"
-	"github.com/tonistiigi/fsutil"
 )
 
 type GitignoreMatcher struct {
@@ -23,7 +23,7 @@ type GitignoreMatcher struct {
 	gitignoreCacheMu       sync.RWMutex
 }
 
-// NewGitignoreMatcher creates a new GitignoreMatcher for the given FS
+// NewGitIgnoreMatcher creates a new GitignoreMatcher for the given FS
 func NewGitIgnoreMatcher(fs fsutil.FS) *GitignoreMatcher {
 	gfs := &GitignoreMatcher{
 		fs:                     fs,

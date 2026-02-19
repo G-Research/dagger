@@ -570,7 +570,7 @@ func (CLISuite) TestDaggerDevelop(ctx context.Context, t *testctx.T) {
 			WithExec([]string{"rm", "dagger.gen.go"}).
 			WithWorkdir("/work").
 			With(daggerExec("init", "--source=.", "--sdk=go")).
-			With(daggerExec("install", "./dep")).
+			With(daggerExec("install", "--name=cooldep", "./dep")).
 			WithExec([]string{"rm", "dagger.gen.go"})
 		developed := base.With(daggerExec("develop", "--recursive"))
 
@@ -579,6 +579,73 @@ func (CLISuite) TestDaggerDevelop(ctx context.Context, t *testctx.T) {
 		require.NoError(t, err)
 		_, err = developed.File("/work/dep/dagger.gen.go").Contents(ctx)
 		require.NoError(t, err)
+
+		// make sure that even though we named the dep cooldep during install,
+		// the updated dagger.json for the dep still has the original name
+		depDaggerJSON, err := developed.File("/work/dep/dagger.json").Contents(ctx)
+		require.NoError(t, err)
+		require.Equal(t, gjson.Get(depDaggerJSON, "name").String(), "dep")
+	})
+}
+
+func (CLISuite) TestDevelopDeterministicCodegen(ctx context.Context, t *testctx.T) {
+	// Test that running codegen multiple times produces identical output.
+	// This is critical for version control - we want to be able to commit
+	// generated files and know they won't change unless the API changes.
+	t.Run("go with dependencies", func(ctx context.Context, t *testctx.T) {
+		c := connect(ctx, t)
+
+		// Set up a module with dependencies to test case ordering
+		modGen := goGitBase(t, c).
+			WithMountedFile(testCLIBinPath, daggerCliFile(t, c)).
+			WithWorkdir("/work/dep").
+			With(daggerExec("init", "--name=dep", "--sdk=go")).
+			WithNewFile("/work/dep/main.go", `package main
+
+import "context"
+
+type Dep struct {}
+
+func (m *Dep) Method1(ctx context.Context) string {
+	return "method1"
+}
+
+func (m *Dep) Method2(ctx context.Context) string {
+	return "method2"
+}
+
+func (m *Dep) Method3(ctx context.Context) string {
+	return "method3"
+}
+`,
+			).
+			WithWorkdir("/work").
+			With(daggerExec("init", "--name=test", "--sdk=go", "--source=.")).
+			WithNewFile("/work/main.go", `package main
+
+import "context"
+
+type Test struct {}
+
+func (m *Test) UsesDep(ctx context.Context) (string, error) {
+	return dag.Dep().Method2(ctx)
+}
+`,
+			).
+			With(daggerExec("install", "./dep"))
+
+		// Generate code the first time
+		modGen = modGen.With(daggerExec("develop"))
+		firstGen, err := modGen.File("/work/dagger.gen.go").Contents(ctx)
+		require.NoError(t, err)
+
+		// Generate code a second time - should be identical
+		modGen = modGen.With(daggerExec("develop"))
+		secondGen, err := modGen.File("/work/dagger.gen.go").Contents(ctx)
+		require.NoError(t, err)
+
+		// The generated code should be byte-for-byte identical
+		require.Equal(t, firstGen, secondGen, "Generated code should be deterministic across multiple runs")
 	})
 }
 

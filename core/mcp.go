@@ -25,8 +25,11 @@ import (
 	"github.com/dagger/dagger/engine/clientdb"
 	"github.com/dagger/dagger/engine/slog"
 	"github.com/dagger/dagger/util/hashutil"
+	"github.com/dagger/dagger/util/patchpreview"
 	"github.com/iancoleman/strcase"
+	"github.com/jedevc/diffparser"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/muesli/termenv"
 	"github.com/opencontainers/go-digest"
 	"github.com/sourcegraph/conc/pool"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -111,7 +114,7 @@ type MCPServerConfig struct {
 
 func (srv *MCPServerConfig) Dial(ctx context.Context) (_ *mcp.ClientSession, rerr error) {
 	ctx, span := Tracer(ctx).Start(ctx, "start mcp server: "+srv.Name, telemetry.Reveal())
-	defer telemetry.End(span, func() error { return rerr })
+	defer telemetry.EndWithCause(span, &rerr)
 	return mcp.NewClient(&mcp.Implementation{
 		Title:   "Dagger",
 		Version: engine.Version,
@@ -315,9 +318,14 @@ func (m *MCP) loadMCPTools(ctx context.Context, allTools *LLMToolSet) error {
 			if err != nil {
 				return err
 			}
-			anied, err := toAny(tool.InputSchema)
+			schema, err := toAny(tool.InputSchema)
 			if err != nil {
 				return err
+			}
+			if schema["properties"] == nil {
+				// OpenAI is very particular; it wants there to always be properties,
+				// even if empty.
+				schema["properties"] = map[string]any{}
 			}
 
 			// Check if the tool is read-only from MCP annotations
@@ -327,7 +335,7 @@ func (m *MCP) loadMCPTools(ctx context.Context, allTools *LLMToolSet) error {
 				Name:        tool.Name,
 				Server:      serverName,
 				Description: tool.Description,
-				Schema:      anied,
+				Schema:      schema,
 				ReadOnly:    isReadOnly,
 				Call: func(ctx context.Context, args any) (any, error) {
 					res, err := sess.CallTool(ctx, &mcp.CallToolParams{
@@ -386,6 +394,62 @@ func (m *MCP) updateEnvWorkspace(ctx context.Context, workspace dagql.ObjectResu
 	}
 	m.env = newEnv
 	return nil
+}
+
+func (m *MCP) summarizePatch(ctx context.Context, srv *dagql.Server, changes dagql.ObjectResult[*Changeset]) (string, error) {
+	var rawPatch string
+	if err := srv.Select(ctx, changes, &rawPatch, dagql.Selector{
+		View:  srv.View,
+		Field: "asPatch",
+	}, dagql.Selector{
+		View:  srv.View,
+		Field: "contents",
+	}); err != nil {
+		return fmt.Sprintf("WARNING: failed to fetch patch summary: %s", err), nil
+	}
+	if rawPatch == "" {
+		// No changes; don't say anything, since saying "No changes" could be
+		// confusing depending on other context (like logs from a `git show`)
+		return "", nil
+	}
+	if strings.Count(rawPatch, "\n") > 100 {
+		// If the patch is too large, show a summary instead
+		var addedPaths, removedPaths []string
+		if err := srv.Select(ctx, changes, &addedPaths, dagql.Selector{
+			View:  srv.View,
+			Field: "addedPaths",
+		}); err != nil {
+			return fmt.Sprintf("WARNING: failed to fetch added paths: %s", err), nil
+		}
+		if err := srv.Select(ctx, changes, &removedPaths, dagql.Selector{
+			View:  srv.View,
+			Field: "removedPaths",
+		}); err != nil {
+			return fmt.Sprintf("WARNING: failed to fetch removed paths: %s", err), nil
+		}
+		addedDirectories := slices.DeleteFunc(addedPaths, func(s string) bool {
+			return !strings.HasSuffix(s, "/")
+		})
+		removedDirectories := slices.DeleteFunc(removedPaths, func(s string) bool {
+			return !strings.HasSuffix(s, "/")
+		})
+		patch, err := diffparser.Parse(rawPatch)
+		if err != nil {
+			return "", fmt.Errorf("parse patch: %w", err)
+		}
+		preview := &patchpreview.PatchPreview{
+			Patch:       patch,
+			AddedDirs:   addedDirectories,
+			RemovedDirs: removedDirectories,
+		}
+		var res strings.Builder
+		llmOut := termenv.NewOutput(&res, termenv.WithProfile(termenv.Ascii))
+		if err := preview.Summarize(llmOut, 80); err != nil {
+			return fmt.Sprintf("WARNING: failed to render patch summary: %s", err), nil
+		}
+		return res.String(), nil
+	}
+	return rawPatch, nil
 }
 
 func toAny(v any) (res map[string]any, rerr error) {
@@ -496,10 +560,24 @@ func (m *MCP) typeTools(allTools *LLMToolSet, srv *dagql.Server, schema *ast.Sch
 		if slices.Contains(m.blockedMethods[typeDef.Name], field.Name) {
 			continue
 		}
-		if field.Directives.ForName(trivialFieldDirectiveName) != nil {
-			// skip trivial fields on objects, only expose "real" functions
-			// with implementations
-			continue
+		// Check if this is a trivial field (field accessor with no logic)
+		isTrivial := field.Directives.ForName(trivialFieldDirectiveName) != nil
+
+		// Skip trivial fields that return scalars/non-objects since they're shown in toolObjectResponse
+		if isTrivial {
+			// But DO expose trivial fields that return objects, as these are field accessors
+			// like sdk().rust() that the LLM needs to navigate the object graph
+			fieldType := field.Type
+			if fieldType.Elem != nil {
+				// Skip arrays for now (too complex)
+				continue
+			}
+			typeDef, isObject := schema.Types[fieldType.NamedType]
+			if !isObject || typeDef.Kind != ast.Object {
+				// Not an object type - skip it (scalars shown in toolObjectResponse)
+				continue
+			}
+			// Fall through - this is an object-returning field accessor, expose it as a tool
 		}
 		if field.Directives.ForName(deprecatedDirectiveName) != nil {
 			// don't expose deprecated APIs
@@ -521,6 +599,8 @@ func (m *MCP) typeTools(allTools *LLMToolSet, srv *dagql.Server, schema *ast.Sch
 			toolName = typeDef.Name + "_" + field.Name
 		}
 
+		contextual := autoConstruct != nil
+
 		allTools.Add(LLMTool{
 			Name:        toolName,
 			Field:       field,
@@ -533,7 +613,7 @@ func (m *MCP) typeTools(allTools *LLMToolSet, srv *dagql.Server, schema *ast.Sch
 
 			// Only set Passthrough if this is a plain object method call, as opposed
 			// to a contextual module tool.
-			HideSelf: autoConstruct == nil,
+			HideSelf: !contextual,
 
 			// Tools that return Changeset or Env modify the environment.
 			ReadOnly: field.Type.NamedType != "Env" && field.Type.NamedType != "Changeset",
@@ -542,6 +622,11 @@ func (m *MCP) typeTools(allTools *LLMToolSet, srv *dagql.Server, schema *ast.Sch
 				argsMap, ok := args.(map[string]any)
 				if !ok {
 					return nil, fmt.Errorf("invalid arguments type: %T", args)
+				}
+				if !contextual {
+					// reveal cache hits for raw (non-contextual) calls, even if we've
+					// already seen them within the session
+					ctx = dagql.WithRepeatedTelemetry(ctx)
 				}
 				return m.call(ctx, srv, schema, typeDef.Name, field, argsMap, autoConstruct)
 			},
@@ -645,13 +730,7 @@ func (m *MCP) call(ctx context.Context,
 			return nil, fmt.Errorf("failed to convert call inputs: %w", err)
 		}
 		var val dagql.AnyResult
-		if err := srv.Select(
-			// reveal cache hits, even if we've already seen them within the session
-			dagql.WithRepeatedTelemetry(ctx),
-			target,
-			&val,
-			sels...,
-		); err != nil {
+		if err := srv.Select(ctx, target, &val, sels...); err != nil {
 			return nil, err
 		}
 		if id, ok := dagql.UnwrapAs[dagql.IDType](val); ok {
@@ -703,11 +782,7 @@ func (m *MCP) call(ctx context.Context,
 		if err := m.updateEnvWorkspace(ctx, newWS); err != nil {
 			return "", err
 		}
-		// No particular message needed here. At one point we diffed the Env.workspace
-		// and printed which files were modified, but it's not really necessary to
-		// show things like that unilaterally vs. just allowing each Env-returning
-		// tool to control the messaging.
-		return "", nil
+		return m.summarizePatch(ctx, srv, changes)
 	}
 
 	if autoConstruct != nil {
@@ -995,12 +1070,14 @@ func (m *MCP) Call(ctx context.Context, tools []LLMTool, toolCall LLMToolCall) (
 		telemetry.Reveal(),
 		trace.WithAttributes(attrs...),
 	)
-	defer telemetry.End(span, func() error {
+
+	var telemetryErr error
+	defer telemetry.EndWithCause(span, &telemetryErr)
+	defer func() {
 		if failed {
-			return fmt.Errorf("tool call %q failed", tool.Name)
+			telemetryErr = fmt.Errorf("tool call %q failed", tool.Name)
 		}
-		return nil
-	})
+	}()
 
 	stdio := telemetry.SpanStdio(ctx, InstrumentationLibrary,
 		log.Bool(telemetry.LogsVerboseAttr, true))
@@ -1067,21 +1144,7 @@ func (m *MCP) CallBatch(ctx context.Context, tools []LLMTool, toolCalls []LLMToo
 
 	var allResults []*ModelMessage
 
-	// 1. Execute all regular read-only (non-MCP) calls in parallel
-	if len(regularCalls) > 0 {
-		allResults = append(allResults, m.callBatchRegular(ctx, tools, regularCalls)...)
-	}
-
-	// 2. Execute all read-only MCP calls in parallel (safe across servers)
-	var readOnlyToolCalls []LLMToolCall
-	for _, calls := range readOnlyMCPCalls {
-		readOnlyToolCalls = append(readOnlyToolCalls, calls...)
-	}
-	if len(readOnlyToolCalls) > 0 {
-		allResults = append(allResults, m.callBatchRegular(ctx, tools, readOnlyToolCalls)...)
-	}
-
-	// 3. Execute destructive non-MCP calls sequentially (they modify Env/Changeset state)
+	// 1. Execute destructive non-MCP calls sequentially (they modify Env/Changeset state)
 	for _, call := range destructiveCalls {
 		result, isError := m.Call(ctx, tools, call)
 		allResults = append(allResults, &ModelMessage{
@@ -1092,10 +1155,24 @@ func (m *MCP) CallBatch(ctx context.Context, tools []LLMTool, toolCalls []LLMToo
 		})
 	}
 
-	// 4. Execute destructive MCP calls one server at a time to avoid workspace conflicts
+	// 2. Execute destructive MCP calls one server at a time to avoid workspace conflicts
 	for serverName, calls := range destructiveMCPCalls {
 		serverResults := m.callBatchMCPServer(ctx, tools, calls, serverName)
 		allResults = append(allResults, serverResults...)
+	}
+
+	// 3. Execute all regular read-only (non-MCP) calls in parallel
+	if len(regularCalls) > 0 {
+		allResults = append(allResults, m.callBatchRegular(ctx, tools, regularCalls)...)
+	}
+
+	// 4. Execute all read-only MCP calls in parallel (safe across servers)
+	var readOnlyToolCalls []LLMToolCall
+	for _, calls := range readOnlyMCPCalls {
+		readOnlyToolCalls = append(readOnlyToolCalls, calls...)
+	}
+	if len(readOnlyToolCalls) > 0 {
+		allResults = append(allResults, m.callBatchRegular(ctx, tools, readOnlyToolCalls)...)
 	}
 
 	return allResults
@@ -1184,11 +1261,11 @@ func (m *MCP) captureLogs(ctx context.Context, spanID string) ([]string, error) 
 	if err != nil {
 		return nil, fmt.Errorf("get main client caller metadata: %w", err)
 	}
-	q, close, err := root.ClientTelemetry(ctx, mainMeta.SessionID, mainMeta.ClientID)
+	q, err := root.ClientTelemetry(ctx, mainMeta.SessionID, mainMeta.ClientID)
 	if err != nil {
 		return nil, err
 	}
-	defer close()
+	defer q.Close()
 
 	buf := new(strings.Builder)
 
@@ -1216,11 +1293,13 @@ func (m *MCP) captureLogs(ctx context.Context, spanID string) ([]string, error) 
 				continue
 			}
 			var skip bool
+		dance:
 			for _, attr := range logAttrs {
-				if attr.Key == telemetry.StdioEOFAttr || attr.Key == telemetry.LogsVerboseAttr {
+				switch attr.Key {
+				case telemetry.StdioEOFAttr, telemetry.LogsVerboseAttr, telemetry.LogsGlobalAttr:
 					if attr.Value.GetBoolValue() {
 						skip = true
-						break
+						break dance
 					}
 				}
 			}
@@ -1289,7 +1368,7 @@ func toolErrorMessage(err error) string {
 		// TODO: return a structured error object instead?
 		var exts []string
 		for k, v := range extErr.Extensions() {
-			if k == "traceparent" {
+			if k == "traceparent" || k == "baggage" {
 				// silence this one
 				continue
 			}
@@ -2175,6 +2254,11 @@ func (m *MCP) toolObjectResponse(ctx context.Context, srv *dagql.Server, target 
 		})
 		if err != nil {
 			return "", err
+		}
+		if _, isObj := srv.ObjectType(val.Type().Name()); isObj {
+			// skip any fields that reference objects, to avoid dumping entire
+			// ModuleObjects
+			continue
 		}
 		datum, err := m.sanitizeResult(val)
 		if err != nil {

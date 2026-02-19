@@ -13,9 +13,11 @@ import (
 
 	"github.com/dagger/dagger/core"
 	"github.com/dagger/dagger/dagql"
+	"github.com/dagger/dagger/dagql/call"
 	"github.com/dagger/dagger/internal/buildkit/client/llb"
+	"github.com/dagger/dagger/util/hashutil"
 	"github.com/moby/patternmatcher/ignorefile"
-	"github.com/opencontainers/go-digest"
+	"github.com/vektah/gqlparser/v2/ast"
 )
 
 type directorySchema struct{}
@@ -24,7 +26,7 @@ var _ SchemaResolvers = &directorySchema{}
 
 func (s *directorySchema) Install(srv *dagql.Server) {
 	dagql.Fields[*core.Query]{
-		dagql.Func("directory", s.directory).
+		dagql.NodeFunc("directory", DagOpDirectoryWrapper(srv, s.directory)).
 			Doc(`Creates an empty directory.`),
 		dagql.NodeFunc("__immutableRef", DagOpDirectoryWrapper(srv, s.immutableRef)).
 			Doc(`Returns a directory backed by a pre-existing immutable ref.`).
@@ -32,6 +34,8 @@ func (s *directorySchema) Install(srv *dagql.Server) {
 	}.Install(srv)
 
 	core.ExistsTypes.Install(srv)
+	core.FileTypes.Install(srv)
+	dagql.Fields[*core.Stat]{}.Install(srv)
 
 	dagql.Fields[*core.Directory]{
 		Syncer[*core.Directory]().
@@ -80,7 +84,7 @@ func (s *directorySchema) Install(srv *dagql.Server) {
 				The format of the digest is not guaranteed to be stable between releases of Dagger.
 				It is guaranteed to be stable between invocations of the same Dagger engine.`,
 			),
-		dagql.Func("file", s.file).
+		dagql.NodeFunc("file", s.file).
 			Doc(`Retrieve a file at the given path.`).
 			Args(
 				dagql.Arg("path").Doc(`Location of the file to retrieve (e.g., "README.md").`),
@@ -124,6 +128,12 @@ func (s *directorySchema) Install(srv *dagql.Server) {
 			Args(
 				dagql.Arg("path").Doc(`Path to check (e.g., "/file.txt").`),
 				dagql.Arg("expectedType").Doc(`If specified, also validate the type of file (e.g. "REGULAR_TYPE", "DIRECTORY_TYPE", or "SYMLINK_TYPE").`),
+				dagql.Arg("doNotFollowSymlinks").Doc(`If specified, do not follow symlinks.`),
+			),
+		dagql.Func("stat", s.stat).
+			Doc(`Return file status`).
+			Args(
+				dagql.Arg("path").Doc(`Path to stat (e.g., "/file.txt").`),
 				dagql.Arg("doNotFollowSymlinks").Doc(`If specified, do not follow symlinks.`),
 			),
 		dagql.NodeFunc("directory", maintainContentHashing(s.subdirectory)).
@@ -187,7 +197,7 @@ func (s *directorySchema) Install(srv *dagql.Server) {
 			Args(
 				dagql.Arg("changes").Doc(`Changes to apply to the directory`),
 			),
-		dagql.Func("export", s.export).
+		dagql.NodeFuncWithCacheKey("export", DagOpWrapper(srv, s.export), dagql.CachePerClient).
 			View(AllVersion).
 			DoNotCache("Writes to the local host.").
 			Doc(`Writes the contents of the directory to a path on the host.`).
@@ -195,7 +205,7 @@ func (s *directorySchema) Install(srv *dagql.Server) {
 				dagql.Arg("path").Doc(`Location of the copied directory (e.g., "logs/").`),
 				dagql.Arg("wipe").Doc(`If true, then the host directory will be wiped clean before exporting so that it exactly matches the directory being exported; this means it will delete any files on the host that aren't in the exported dir. If false (the default), the contents of the directory will be merged with any existing contents of the host directory, leaving any existing files on the host that aren't in the exported directory alone.`),
 			),
-		dagql.Func("export", s.exportLegacy).
+		dagql.NodeFuncWithCacheKey("export", DagOpWrapper(srv, s.exportLegacy), dagql.CachePerClient).
 			View(BeforeVersion("v0.12.0")).
 			Extend(),
 		dagql.NodeFunc("dockerBuild", s.dockerBuild).
@@ -212,6 +222,10 @@ func (s *directorySchema) Install(srv *dagql.Server) {
 					`This should only be used if the user requires that their exec processes be the
 				pid 1 process in the container. Otherwise it may result in unexpected behavior.`,
 				),
+				dagql.Arg("ssh").Doc(
+					`A socket to use for SSH authentication during the build`,
+					`(e.g., for Dockerfile RUN --mount=type=ssh instructions).`,
+					`Typically obtained via host.unixSocket() pointing to the SSH_AUTH_SOCK.`),
 			),
 		dagql.NodeFunc("withTimestamps", DagOpDirectoryWrapper(srv, s.withTimestamps, WithPathFn(keepParentDir[dirWithTimestampsArgs]))).
 			Doc(`Retrieves this directory with all file/dir timestamps set to the given time.`).
@@ -285,15 +299,44 @@ func (s *directorySchema) Install(srv *dagql.Server) {
 		dagql.NodeFunc("asPatch", DagOpFileWrapper(srv, s.changesetAsPatch,
 			WithStaticPath[*core.Changeset, changesetAsPatchArgs](core.ChangesetPatchFilename))).
 			Doc(`Return a Git-compatible patch of the changes`),
-		dagql.Func("export", s.changesetExport).
+		dagql.NodeFuncWithCacheKey("export", DagOpWrapper(srv, s.changesetExport), dagql.CachePerClient).
 			DoNotCache("Writes to the local host.").
 			Doc(`Applies the diff represented by this changeset to a path on the host.`).
 			Args(
 				dagql.Arg("path").Doc(`Location of the copied directory (e.g., "logs/").`),
 			),
-		dagql.NodeFunc("isEmpty", s.changesetEmpty).
+		dagql.NodeFunc("isEmpty", DagOpWrapper(srv, s.changesetEmpty)).
 			Doc(`Returns true if the changeset is empty (i.e. there are no changes).`),
+		dagql.NodeFunc("addedPaths", DagOpWrapper(srv, s.changesetAddedPaths)).
+			Doc(`Files and directories that were added in the newer directory.`),
+		dagql.NodeFunc("modifiedPaths", DagOpWrapper(srv, s.changesetModifiedPaths)).
+			Doc(`Files and directories that existed before and were updated in the newer directory.`),
+		dagql.NodeFunc("removedPaths", DagOpWrapper(srv, s.changesetRemovedPaths)).
+			Doc(`Files and directories that were removed. Directories are indicated by a trailing slash, and their child paths are not included.`),
+		dagql.NodeFunc("withChangeset", DagOpChangesetWrapper(srv, s.changesetWithChangeset)).
+			Doc(`Add changes to an existing changeset`,
+				`By default the operation will fail in case of conflicts, for instance a file modified in both changesets. The behavior can be adjusted using onConflict argument`).
+			Args(
+				dagql.Arg("changes").Doc(`Changes to merge into the actual changeset`),
+				dagql.Arg("onConflict").Doc(`What to do on a merge conflict`),
+			),
+		dagql.NodeFunc("withChangesets", DagOpChangesetWrapper(srv, s.changesetWithChangesets)).
+			// ensure we are not exposing this feature on engines < v0.15.0
+			// before v0.15.0 the Go codegen can't handle the same value in multiple enums
+			// withChangeset and withChangesets features are using two different enums with some common values
+			// withChangesets will only be visible on engines >= v0.15.0
+			View(AfterVersion("v0.15.0")).
+			Doc(`Add changes from multiple changesets using git octopus merge strategy`,
+				`This is more efficient than chaining multiple withChangeset calls when merging many changesets.`,
+				`Only FAIL and FAIL_EARLY conflict strategies are supported (octopus merge cannot use -X ours/theirs).`).
+			Args(
+				dagql.Arg("changes").Doc(`List of changesets to merge into the actual changeset`),
+				dagql.Arg("onConflict").Doc(`What to do on a merge conflict`),
+			),
 	}.Install(srv)
+
+	ChangesetMergeConflictEnum.Install(srv)
+	ChangesetsMergeConflictEnum.Install(srv)
 }
 
 type directoryPipelineArgs struct {
@@ -315,7 +358,7 @@ func (s *directorySchema) immutableRef(ctx context.Context, parent dagql.ObjectR
 	if err != nil {
 		return res, fmt.Errorf("failed to get immutable ref %q: %w", args.Ref, err)
 	}
-	dir, err := core.NewScratchDirectory(ctx, query.Platform())
+	dir, err := core.NewScratchDirectoryDagOp(ctx, query.Platform())
 	if err != nil {
 		return res, fmt.Errorf("failed to create scratch directory: %w", err)
 	}
@@ -328,9 +371,17 @@ func (s *directorySchema) pipeline(ctx context.Context, parent *core.Directory, 
 	return parent, nil
 }
 
-func (s *directorySchema) directory(ctx context.Context, parent *core.Query, _ struct{}) (*core.Directory, error) {
-	platform := parent.Platform()
-	return core.NewScratchDirectory(ctx, platform)
+func (s *directorySchema) directory(ctx context.Context, parent dagql.ObjectResult[*core.Query], _ DagOpInternalArgs) (inst dagql.ObjectResult[*core.Directory], _ error) {
+	srv, err := core.CurrentDagqlServer(ctx)
+	if err != nil {
+		return inst, err
+	}
+	platform := parent.Self().Platform()
+	dir, err := core.NewScratchDirectoryDagOp(ctx, platform)
+	if err != nil {
+		return inst, err
+	}
+	return dagql.NewObjectResultForCurrentID(ctx, srv, dir)
 }
 
 type subdirectoryArgs struct {
@@ -516,7 +567,7 @@ type searchArgs struct {
 }
 
 func (s *directorySchema) search(ctx context.Context, parent dagql.ObjectResult[*core.Directory], args searchArgs) (dagql.Array[*core.SearchResult], error) {
-	return parent.Self().Search(ctx, args.SearchOpts, args.Paths, args.Globs)
+	return parent.Self().Search(ctx, args.SearchOpts, true, args.Paths, args.Globs)
 }
 
 type withPatchArgs struct {
@@ -580,10 +631,45 @@ func (s *directorySchema) digest(ctx context.Context, parent *core.Directory, ar
 
 type dirFileArgs struct {
 	Path string
+
+	FSDagOpInternalArgs
 }
 
-func (s *directorySchema) file(ctx context.Context, parent *core.Directory, args dirFileArgs) (*core.File, error) {
-	return parent.File(ctx, args.Path)
+func (s *directorySchema) file(ctx context.Context, parent dagql.ObjectResult[*core.Directory], args dirFileArgs) (inst dagql.ObjectResult[*core.File], _ error) {
+	srv, err := core.CurrentDagqlServer(ctx)
+	if err != nil {
+		return inst, fmt.Errorf("failed to get dagql server: %w", err)
+	}
+
+	f, err := parent.Self().FileLLB(ctx, parent, args.Path)
+	if err != nil {
+		return inst, err
+	}
+	fileResult, err := dagql.NewObjectResultForCurrentID(ctx, srv, f)
+	if err != nil {
+		return inst, err
+	}
+
+	query, err := core.CurrentQuery(ctx)
+	if err != nil {
+		return inst, err
+	}
+	bk, err := query.Buildkit(ctx)
+	if err != nil {
+		return inst, fmt.Errorf("failed to get buildkit client: %w", err)
+	}
+	dgst, err := core.GetContentHashFromFile(ctx, bk, fileResult)
+	if err != nil {
+		return inst, err
+	}
+
+	filename := path.Join(parent.Self().Dir, args.Path)
+	dgst = hashutil.HashStrings(
+		filename,
+		string(dgst),
+	)
+
+	return fileResult.WithContentDigest(dgst), nil
 }
 
 type WithNewFileArgs struct {
@@ -600,7 +686,7 @@ func (s *directorySchema) withNewFile(ctx context.Context, parent dagql.ObjectRe
 		return inst, err
 	}
 
-	dir, err := parent.Self().WithNewFileDagOp(ctx, args.Path, []byte(args.Contents), fs.FileMode(args.Permissions), nil)
+	dir, err := parent.Self().WithNewFile(ctx, args.Path, []byte(args.Contents), fs.FileMode(args.Permissions), nil)
 	if err != nil {
 		return inst, err
 	}
@@ -614,6 +700,34 @@ type WithFileArgs struct {
 	Owner       string `default:""`
 
 	FSDagOpInternalArgs
+}
+
+var _ core.Inputs = WithFileArgs{}
+
+func (args WithFileArgs) Inputs(ctx context.Context) ([]llb.State, error) {
+	deps := []llb.State{}
+	srv, err := core.CurrentDagqlServer(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current dagql server: %w", err)
+	}
+
+	if args.Source.ID() == nil {
+		return nil, nil
+	}
+
+	sourceRes, err := args.Source.Load(ctx, srv)
+	if err != nil {
+		return nil, fmt.Errorf("load source: %w", err)
+	}
+	sourceOp, err := llb.NewDefinitionOp(sourceRes.Self().LLB)
+	if err != nil {
+		return nil, fmt.Errorf("source op: %w", err)
+	}
+	if sourceOp.Output() != nil {
+		deps = append(deps, llb.NewState(sourceOp))
+	}
+
+	return deps, nil
 }
 
 func (s *directorySchema) withFile(ctx context.Context, parent dagql.ObjectResult[*core.Directory], args WithFileArgs) (inst dagql.ObjectResult[*core.Directory], err error) {
@@ -763,6 +877,19 @@ func (s *directorySchema) exists(ctx context.Context, parent *core.Directory, ar
 	return dagql.NewBoolean(exists), err
 }
 
+type statArgs struct {
+	Path                string
+	DoNotFollowSymlinks bool `default:"false"`
+}
+
+func (s *directorySchema) stat(ctx context.Context, parent *core.Directory, args statArgs) (*core.Stat, error) {
+	srv, err := core.CurrentDagqlServer(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return parent.Stat(ctx, srv, args.Path, args.DoNotFollowSymlinks)
+}
+
 type diffArgs struct {
 	Other core.DirectoryID
 
@@ -906,10 +1033,12 @@ func (s *directorySchema) changesetAsPatch(ctx context.Context, parent dagql.Obj
 
 type changesetExportArgs struct {
 	Path string
+
+	RawDagOpInternalArgs
 }
 
-func (s *directorySchema) changesetExport(ctx context.Context, parent *core.Changeset, args changesetExportArgs) (dagql.String, error) {
-	err := parent.Export(ctx, args.Path)
+func (s *directorySchema) changesetExport(ctx context.Context, parent dagql.ObjectResult[*core.Changeset], args changesetExportArgs) (dagql.String, error) {
+	err := parent.Self().Export(ctx, args.Path)
 	if err != nil {
 		return "", err
 	}
@@ -928,34 +1057,53 @@ func (s *directorySchema) changesetExport(ctx context.Context, parent *core.Chan
 	return dagql.String(stat.Path), err
 }
 
-func (s *directorySchema) changesetEmpty(ctx context.Context, parent dagql.ObjectResult[*core.Changeset], args struct{}) (dagql.Boolean, error) {
-	srv, err := core.CurrentDagqlServer(ctx)
+func (s *directorySchema) changesetEmpty(ctx context.Context, parent dagql.ObjectResult[*core.Changeset], args struct {
+	RawDagOpInternalArgs
+}) (dagql.Boolean, error) {
+	isEmpty, err := parent.Self().IsEmpty(ctx)
 	if err != nil {
 		return false, err
 	}
+	return dagql.Boolean(isEmpty), nil
+}
 
-	var size dagql.Int
-	if err := srv.Select(ctx, parent, &size,
-		dagql.Selector{
-			Field: "asPatch",
-		},
-		dagql.Selector{
-			Field: "size",
-		},
-	); err != nil {
-		return false, err
+type changesetPathsArgs struct {
+	RawDagOpInternalArgs
+}
+
+func (s *directorySchema) changesetAddedPaths(ctx context.Context, parent dagql.ObjectResult[*core.Changeset], args changesetPathsArgs) (dagql.Array[dagql.String], error) {
+	paths, err := parent.Self().ComputePaths(ctx)
+	if err != nil {
+		return nil, err
 	}
+	return dagql.NewStringArray(paths.Added...), nil
+}
 
-	return size == 0, nil
+func (s *directorySchema) changesetModifiedPaths(ctx context.Context, parent dagql.ObjectResult[*core.Changeset], args changesetPathsArgs) (dagql.Array[dagql.String], error) {
+	paths, err := parent.Self().ComputePaths(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return dagql.NewStringArray(paths.Modified...), nil
+}
+
+func (s *directorySchema) changesetRemovedPaths(ctx context.Context, parent dagql.ObjectResult[*core.Changeset], args changesetPathsArgs) (dagql.Array[dagql.String], error) {
+	paths, err := parent.Self().ComputePaths(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return dagql.NewStringArray(paths.Removed...), nil
 }
 
 type dirExportArgs struct {
 	Path string
 	Wipe bool `default:"false"`
+
+	RawDagOpInternalArgs
 }
 
-func (s *directorySchema) export(ctx context.Context, parent *core.Directory, args dirExportArgs) (dagql.String, error) {
-	err := parent.Export(ctx, args.Path, !args.Wipe)
+func (s *directorySchema) export(ctx context.Context, parent dagql.ObjectResult[*core.Directory], args dirExportArgs) (dagql.String, error) {
+	err := parent.Self().Export(ctx, args.Path, !args.Wipe)
 	if err != nil {
 		return "", err
 	}
@@ -974,12 +1122,165 @@ func (s *directorySchema) export(ctx context.Context, parent *core.Directory, ar
 	return dagql.String(stat.Path), err
 }
 
-func (s *directorySchema) exportLegacy(ctx context.Context, parent *core.Directory, args dirExportArgs) (dagql.Boolean, error) {
+func (s *directorySchema) exportLegacy(ctx context.Context, parent dagql.ObjectResult[*core.Directory], args dirExportArgs) (dagql.Boolean, error) {
 	_, err := s.export(ctx, parent, args)
 	if err != nil {
 		return false, err
 	}
 	return true, nil
+}
+
+type ChangesetMergeConflict string
+
+var ChangesetMergeConflictEnum = dagql.NewEnum[ChangesetMergeConflict]()
+
+var (
+	FailEarlyOnMergeConflict = ChangesetMergeConflictEnum.RegisterView("FAIL_EARLY",
+		// starting with engine version 0.15.0 Go codegen only exposes scoped enum values
+		// like ChangesetMergeConflictFailEarly and doesn't expose anymore unscopped enum values (FailEarly)
+		// unscopped enum values will conflict as the same value is defined twice in ChangesetMergeConflictEnum and
+		// ChangesetsMergeConflictEnum.
+		// Ensure those enum values are only exposed on engines >= 0.15.0
+		// Values are removed on this enum ChangesetMergeConflictEnum and not ChangesetsMergeConflictEnum so that
+		// there's never an empty enum, that causes troubles with other SDKs like python
+		AfterVersion("v0.15.0"),
+		`Fail before attempting merge if file-level conflicts are detected`)
+	FailOnMergeConflict = ChangesetMergeConflictEnum.RegisterView("FAIL",
+		AfterVersion("v0.15.0"),
+		`Attempt the merge and fail if git merge fails due to conflicts`)
+	LeaveConflictMarkersOnMergeConflict = ChangesetMergeConflictEnum.Register("LEAVE_CONFLICT_MARKERS",
+		`Let git create conflict markers in files. For modify/delete conflicts, keeps the modified version. Fails on binary conflicts.`)
+	PreferOursOnMergeConflict = ChangesetMergeConflictEnum.Register("PREFER_OURS",
+		`The conflict is resolved by applying the version of the calling changeset`)
+	PreferTheirsOnMergeConflict = ChangesetMergeConflictEnum.Register("PREFER_THEIRS",
+		`The conflict is resolved by applying the version of the other changeset`)
+)
+
+func (proto ChangesetMergeConflict) Type() *ast.Type {
+	return &ast.Type{
+		NamedType: "ChangesetMergeConflict",
+		NonNull:   true,
+	}
+}
+
+func (proto ChangesetMergeConflict) TypeDescription() string {
+	return "Strategy to use when merging changesets with conflicting changes."
+}
+
+func (proto ChangesetMergeConflict) Decoder() dagql.InputDecoder {
+	return ChangesetMergeConflictEnum
+}
+
+func (proto ChangesetMergeConflict) ToLiteral() call.Literal {
+	return ChangesetMergeConflictEnum.Literal(proto)
+}
+
+// ChangesetsMergeConflict is the enum for octopus merge conflict strategies (WithChangesets).
+// Only FAIL_EARLY and FAIL are supported (no -X ours/theirs with octopus merge).
+type ChangesetsMergeConflict string
+
+var ChangesetsMergeConflictEnum = dagql.NewEnum[ChangesetsMergeConflict]()
+
+var (
+	FailEarlyOnMergeConflicts = ChangesetsMergeConflictEnum.Register("FAIL_EARLY",
+		`Fail before attempting merge if file-level conflicts are detected between any changesets`)
+	FailOnMergeConflicts = ChangesetsMergeConflictEnum.Register("FAIL",
+		`Attempt the octopus merge and fail if git merge fails due to conflicts`)
+)
+
+func (proto ChangesetsMergeConflict) Type() *ast.Type {
+	return &ast.Type{
+		NamedType: "ChangesetsMergeConflict",
+		NonNull:   true,
+	}
+}
+
+func (proto ChangesetsMergeConflict) TypeDescription() string {
+	return "Strategy to use when merging multiple changesets with git octopus merge."
+}
+
+func (proto ChangesetsMergeConflict) Decoder() dagql.InputDecoder {
+	return ChangesetsMergeConflictEnum
+}
+
+func (proto ChangesetsMergeConflict) ToLiteral() call.Literal {
+	return ChangesetsMergeConflictEnum.Literal(proto)
+}
+
+func mergeConflictsStrategyToCore(onConflict ChangesetsMergeConflict) core.WithChangesetsMergeConflict {
+	switch onConflict {
+	case FailEarlyOnMergeConflicts:
+		return core.FailEarlyOnConflicts
+	case FailOnMergeConflicts:
+		fallthrough
+	default:
+		return core.FailOnConflicts
+	}
+}
+
+type changesetWithChangesetArgs struct {
+	Changes    dagql.ID[*core.Changeset]
+	OnConflict ChangesetMergeConflict `default:"FAIL"`
+	DagOpInternalArgs
+}
+
+func mergeConflictStrategyToCore(onConflict ChangesetMergeConflict) core.WithChangesetMergeConflict {
+	switch onConflict {
+	case FailEarlyOnMergeConflict:
+		return core.FailEarlyOnConflict
+	case LeaveConflictMarkersOnMergeConflict:
+		return core.LeaveConflictMarkers
+	case PreferOursOnMergeConflict:
+		return core.PreferOursOnConflict
+	case PreferTheirsOnMergeConflict:
+		return core.PreferTheirsOnConflict
+	case FailOnMergeConflict:
+		fallthrough
+	default:
+		return core.FailOnConflict
+	}
+}
+
+func (s *directorySchema) changesetWithChangeset(ctx context.Context, parent dagql.ObjectResult[*core.Changeset], args changesetWithChangesetArgs) (*core.Changeset, error) {
+	srv, err := core.CurrentDagqlServer(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	change, err := args.Changes.Load(ctx, srv)
+	if err != nil {
+		return nil, err
+	}
+
+	onConflictStrategy := mergeConflictStrategyToCore(args.OnConflict)
+
+	return parent.Self().WithChangeset(ctx, change.Self(), onConflictStrategy)
+}
+
+type changesetWithChangesetsArgs struct {
+	Changes    dagql.ArrayInput[dagql.ID[*core.Changeset]]
+	OnConflict ChangesetsMergeConflict `default:"FAIL"`
+	DagOpInternalArgs
+}
+
+func (s *directorySchema) changesetWithChangesets(ctx context.Context, parent dagql.ObjectResult[*core.Changeset], args changesetWithChangesetsArgs) (*core.Changeset, error) {
+	srv, err := core.CurrentDagqlServer(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	changes := make([]*core.Changeset, len(args.Changes))
+	for i, changeID := range args.Changes {
+		change, err := changeID.Load(ctx, srv)
+		if err != nil {
+			return nil, fmt.Errorf("load changeset %d: %w", i, err)
+		}
+		changes[i] = change.Self()
+	}
+
+	onConflictStrategy := mergeConflictsStrategyToCore(args.OnConflict)
+
+	return parent.Self().WithChangesets(ctx, changes, onConflictStrategy)
 }
 
 type dirDockerBuildArgs struct {
@@ -989,10 +1290,11 @@ type dirDockerBuildArgs struct {
 	BuildArgs  []dagql.InputObject[core.BuildArg] `default:"[]"`
 	Secrets    []core.SecretID                    `default:"[]"`
 	NoInit     bool                               `default:"false"`
+	SSH        dagql.Optional[core.SocketID]
 }
 
 func getDockerIgnoreFileContent(ctx context.Context, parent dagql.ObjectResult[*core.Directory], filename string) ([]byte, error) {
-	file, err := parent.Self().File(ctx, filename)
+	file, err := parent.Self().FileLLB(ctx, parent, filename)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, nil
@@ -1085,6 +1387,15 @@ func (s *directorySchema) dockerBuild(ctx context.Context, parent dagql.ObjectRe
 		return nil, fmt.Errorf("failed to get secret store: %w", err)
 	}
 
+	var sshSocket *core.Socket
+	if args.SSH.Valid {
+		sshSocketResult, err := args.SSH.Value.Load(ctx, srv)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load SSH socket: %w", err)
+		}
+		sshSocket = sshSocketResult.Self()
+	}
+
 	return ctr.Build(
 		ctx,
 		parent.Self(),
@@ -1095,6 +1406,7 @@ func (s *directorySchema) dockerBuild(ctx context.Context, parent dagql.ObjectRe
 		secrets,
 		secretStore,
 		args.NoInit,
+		sshSocket,
 	)
 }
 
@@ -1218,11 +1530,7 @@ func maintainContentHashing[A any](
 			return res, err
 		}
 
-		// in practice right now, a custom digest is always a content hash
-		// *unless* it's been manually rewritten using hashutil.HashStrings (e.g. in
-		// the case of GitRef.tree - that case is manually rewritten to avoid
-		// accidental collisions later)
-		if parent.ID().HasCustomDigest() && parent.ID().Digest().Algorithm() == digest.SHA256 {
+		if parent.ID().ContentDigest() != "" {
 			query, err := core.CurrentQuery(ctx)
 			if err != nil {
 				return res, err
@@ -1235,7 +1543,7 @@ func maintainContentHashing[A any](
 			if err != nil {
 				return res, fmt.Errorf("failed to make directory content hashed: %w", err)
 			}
-			if res.ID().Digest() == parent.ID().Digest() { // if this didn't change anything, return the parent, making this a no-op
+			if res.ID().ContentDigest() == parent.ID().ContentDigest() { // if this didn't change anything, return the parent, making this a no-op
 				return parent, nil
 			}
 		}

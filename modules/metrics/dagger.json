@@ -1,13 +1,13 @@
 {
   "name": "metrics",
-  "engineVersion": "v0.19.4",
+  "engineVersion": "v0.19.11",
   "sdk": {
     "source": "go"
   },
   "dependencies": [
     {
       "name": "dagger-engine",
-      "source": "../../cmd/engine"
+      "source": "../../toolchains/engine-dev"
     }
   ]
 }

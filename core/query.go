@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/containerd/containerd/v2/core/content"
 	bkcache "github.com/dagger/dagger/internal/buildkit/cache"
@@ -19,6 +20,7 @@ import (
 	"github.com/dagger/dagger/dagql/call"
 	"github.com/dagger/dagger/engine"
 	"github.com/dagger/dagger/engine/buildkit"
+	engineclient "github.com/dagger/dagger/engine/client"
 	"github.com/dagger/dagger/engine/clientdb"
 	"github.com/dagger/dagger/engine/filesync"
 	"github.com/dagger/dagger/engine/server/resource"
@@ -43,6 +45,9 @@ type Server interface {
 
 	// If the current client is coming from a function, return the module that function is from
 	CurrentModule(context.Context) (*Module, error)
+
+	// If the current client is a module client or a client created by a module function, returns that module.
+	ModuleParent(context.Context) (*Module, error)
 
 	// If the current client is coming from a function, return the function call metadata
 	CurrentFunctionCall(context.Context) (*FunctionCall, error)
@@ -109,9 +114,15 @@ type Server interface {
 	// Return all the cache entries in the local cache. No support for filtering yet.
 	EngineLocalCacheEntries(context.Context) (*EngineCacheEntrySet, error)
 
-	// Prune the local cache of releaseable entries. If useDefaultPolicy is true, use the engine-wide default pruning policy,
-	// otherwise prune the whole cache of any releasable entries.
-	PruneEngineLocalCacheEntries(context.Context, bool) (*EngineCacheEntrySet, error)
+	// Prune the local cache of releaseable entries. If UseDefaultPolicy is true,
+	// use the engine-wide default pruning policy, otherwise prune the whole cache
+	// of any releasable entries.
+	PruneEngineLocalCacheEntries(context.Context, EngineCachePruneOptions) (*EngineCacheEntrySet, error)
+
+	// RegisterSSHFSVolume instructs the engine to ensure an sshfs-backed volume is mounted and
+	// returns a Volume instance describing it. privateKey and publicKey are the digest identifiers
+	// of secrets stored in the client's secret store.
+	RegisterSSHFSVolume(ctx context.Context, endpoint string, privateKey digest.Digest, publicKey digest.Digest) (*Volume, error)
 
 	// RegisterSSHFSVolume instructs the engine to ensure an sshfs-backed volume is mounted and
 	// returns a Volume instance describing it. privateKey and publicKey are the digest identifiers
@@ -138,13 +149,31 @@ type Server interface {
 	SecretSalt() []byte
 
 	// Open a client's telemetry database.
-	ClientTelemetry(ctc context.Context, sessID, clientID string) (*clientdb.Queries, func() error, error)
+	ClientTelemetry(ctc context.Context, sessID, clientID string) (*clientdb.DB, error)
 
 	// The name of the engine
 	EngineName() string
 
 	// The list of connected client IDs
 	Clients() []string
+
+	// Return a client connected to a cloud engine. If bool return is false, the local engine should be used. Session attachables for the returned client will be proxied back to the calling client.
+	CloudEngineClient(
+		ctx context.Context,
+		module string,
+		function string,
+		execCmd []string,
+	) (
+		cloudClient *engineclient.Client,
+		useCloudClient bool,
+		err error,
+	)
+
+	// A mount namespace guaranteed to not have any mounts created by engine operations.
+	// Should be used when creating goroutines/processes that unshare a mount namespace,
+	// otherwise those unshared mnt namespaces may inherit mounts from engine operations
+	// and leak them.
+	CleanMountNS() *os.File
 }
 
 type queryKey struct{}
@@ -232,11 +261,11 @@ func (q *Query) IDDeps(ctx context.Context, id *call.ID) (*ModDeps, error) {
 	}
 	deps := defaultDeps
 	for _, modID := range id.Modules() {
-		mod, err := dagql.NewID[*Module](modID.ID()).Load(ctx, bootstrap)
+		inst, err := GetModuleFromContentDigest(ctx, bootstrap, modID.Name(), string(modID.ID().Digest()))
 		if err != nil {
-			return nil, fmt.Errorf("load source mod: %w", err)
+			return nil, err
 		}
-		deps = deps.Append(mod.Self())
+		deps = deps.Append(inst.Self())
 	}
 	return deps, nil
 }

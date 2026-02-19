@@ -31,6 +31,16 @@ class ChangesetID(Scalar):
     object of type Changeset."""
 
 
+class CheckGroupID(Scalar):
+    """The `CheckGroupID` scalar type represents an identifier for an
+    object of type CheckGroup."""
+
+
+class CheckID(Scalar):
+    """The `CheckID` scalar type represents an identifier for an object of
+    type Check."""
+
+
 class CloudID(Scalar):
     """The `CloudID` scalar type represents an identifier for an object of
     type Cloud."""
@@ -139,6 +149,16 @@ class FunctionID(Scalar):
 class GeneratedCodeID(Scalar):
     """The `GeneratedCodeID` scalar type represents an identifier for an
     object of type GeneratedCode."""
+
+
+class GeneratorGroupID(Scalar):
+    """The `GeneratorGroupID` scalar type represents an identifier for an
+    object of type GeneratorGroup."""
+
+
+class GeneratorID(Scalar):
+    """The `GeneratorID` scalar type represents an identifier for an
+    object of type Generator."""
 
 
 class GitRefID(Scalar):
@@ -266,6 +286,11 @@ class SourceMapID(Scalar):
     object of type SourceMap."""
 
 
+class StatID(Scalar):
+    """The `StatID` scalar type represents an identifier for an object of
+    type Stat."""
+
+
 class TerminalID(Scalar):
     """The `TerminalID` scalar type represents an identifier for an object
     of type Terminal."""
@@ -299,6 +324,37 @@ class CacheSharingMode(Enum):
     """Shares the cache volume amongst many build pipelines"""
 
 
+class ChangesetMergeConflict(Enum):
+    """Strategy to use when merging changesets with conflicting
+    changes."""
+
+    FAIL = "FAIL"
+    """Attempt the merge and fail if git merge fails due to conflicts"""
+
+    FAIL_EARLY = "FAIL_EARLY"
+    """Fail before attempting merge if file-level conflicts are detected"""
+
+    LEAVE_CONFLICT_MARKERS = "LEAVE_CONFLICT_MARKERS"
+    """Let git create conflict markers in files. For modify/delete conflicts, keeps the modified version. Fails on binary conflicts."""
+
+    PREFER_OURS = "PREFER_OURS"
+    """The conflict is resolved by applying the version of the calling changeset"""
+
+    PREFER_THEIRS = "PREFER_THEIRS"
+    """The conflict is resolved by applying the version of the other changeset"""
+
+
+class ChangesetsMergeConflict(Enum):
+    """Strategy to use when merging multiple changesets with git octopus
+    merge."""
+
+    FAIL = "FAIL"
+    """Attempt the octopus merge and fail if git merge fails due to conflicts"""
+
+    FAIL_EARLY = "FAIL_EARLY"
+    """Fail before attempting merge if file-level conflicts are detected between any changesets"""
+
+
 class ExistsType(Enum):
     """File type."""
 
@@ -310,6 +366,28 @@ class ExistsType(Enum):
 
     SYMLINK_TYPE = "SYMLINK_TYPE"
     """Tests path is a symlink"""
+
+
+class FileType(Enum):
+    """File type."""
+
+    DIRECTORY = "DIRECTORY"
+    """directory file type"""
+    DIRECTORY_TYPE = "DIRECTORY"
+    """directory file type"""
+
+    REGULAR = "REGULAR"
+    """regular file type"""
+    REGULAR_TYPE = "REGULAR"
+    """regular file type"""
+
+    SYMLINK = "SYMLINK"
+    """symlink file type"""
+    SYMLINK_TYPE = "SYMLINK"
+    """symlink file type"""
+
+    UNKNOWN = "UNKNOWN"
+    """unknown file type"""
 
 
 class FunctionCachePolicy(Enum):
@@ -380,10 +458,10 @@ class ReturnType(Enum):
     """Expected return type of an execution"""
 
     ANY = "ANY"
-    """Any execution (exit codes 0-127)"""
+    """Any execution (exit codes 0-127 and 192-255)"""
 
     FAILURE = "FAILURE"
-    """A failed execution (exit codes 1-127)"""
+    """A failed execution (exit codes 1-127 and 192-255)"""
 
     SUCCESS = "SUCCESS"
     """A successful execution (exit code 0)"""
@@ -661,6 +739,18 @@ class Binding(Type):
         _ctx = self._select("asChangeset", _args)
         return Changeset(_ctx)
 
+    def as_check(self) -> "Check":
+        """Retrieve the binding value, as type Check"""
+        _args: list[Arg] = []
+        _ctx = self._select("asCheck", _args)
+        return Check(_ctx)
+
+    def as_check_group(self) -> "CheckGroup":
+        """Retrieve the binding value, as type CheckGroup"""
+        _args: list[Arg] = []
+        _ctx = self._select("asCheckGroup", _args)
+        return CheckGroup(_ctx)
+
     def as_cloud(self) -> "Cloud":
         """Retrieve the binding value, as type Cloud"""
         _args: list[Arg] = []
@@ -696,6 +786,18 @@ class Binding(Type):
         _args: list[Arg] = []
         _ctx = self._select("asFile", _args)
         return File(_ctx)
+
+    def as_generator(self) -> "Generator":
+        """Retrieve the binding value, as type Generator"""
+        _args: list[Arg] = []
+        _ctx = self._select("asGenerator", _args)
+        return Generator(_ctx)
+
+    def as_generator_group(self) -> "GeneratorGroup":
+        """Retrieve the binding value, as type GeneratorGroup"""
+        _args: list[Arg] = []
+        _ctx = self._select("asGeneratorGroup", _args)
+        return GeneratorGroup(_ctx)
 
     def as_git_ref(self) -> "GitRef":
         """Retrieve the binding value, as type GitRef"""
@@ -762,6 +864,12 @@ class Binding(Type):
         _args: list[Arg] = []
         _ctx = self._select("asSocket", _args)
         return Socket(_ctx)
+
+    def as_stat(self) -> "Stat":
+        """Retrieve the binding value, as type Stat"""
+        _args: list[Arg] = []
+        _ctx = self._select("asStat", _args)
+        return Stat(_ctx)
 
     async def as_string(self) -> str | None:
         """Returns the binding's string value
@@ -1106,6 +1214,281 @@ class Changeset(Type):
 
     def __await__(self):
         return self.sync().__await__()
+
+    def with_changeset(
+        self,
+        changes: Self,
+        *,
+        on_conflict: ChangesetMergeConflict | None = ChangesetMergeConflict.FAIL,
+    ) -> Self:
+        """Add changes to an existing changeset
+
+        By default the operation will fail in case of conflicts, for instance
+        a file modified in both changesets. The behavior can be adjusted using
+        onConflict argument
+
+        Parameters
+        ----------
+        changes:
+            Changes to merge into the actual changeset
+        on_conflict:
+            What to do on a merge conflict
+        """
+        _args = [
+            Arg("changes", changes),
+            Arg("onConflict", on_conflict, ChangesetMergeConflict.FAIL),
+        ]
+        _ctx = self._select("withChangeset", _args)
+        return Changeset(_ctx)
+
+    def with_changesets(
+        self,
+        changes: list["Changeset"],
+        *,
+        on_conflict: ChangesetsMergeConflict | None = ChangesetsMergeConflict.FAIL,
+    ) -> Self:
+        """Add changes from multiple changesets using git octopus merge strategy
+
+        This is more efficient than chaining multiple withChangeset calls when
+        merging many changesets.
+
+        Only FAIL and FAIL_EARLY conflict strategies are supported (octopus
+        merge cannot use -X ours/theirs).
+
+        Parameters
+        ----------
+        changes:
+            List of changesets to merge into the actual changeset
+        on_conflict:
+            What to do on a merge conflict
+        """
+        _args = [
+            Arg("changes", changes),
+            Arg("onConflict", on_conflict, ChangesetsMergeConflict.FAIL),
+        ]
+        _ctx = self._select("withChangesets", _args)
+        return Changeset(_ctx)
+
+    def with_(self, cb: Callable[["Changeset"], "Changeset"]) -> "Changeset":
+        """Call the provided callable with current Changeset.
+
+        This is useful for reusability and readability by not breaking the calling chain.
+        """
+        return cb(self)
+
+
+@typecheck
+class Check(Type):
+    async def completed(self) -> bool:
+        """Whether the check completed
+
+        Returns
+        -------
+        bool
+            The `Boolean` scalar type represents `true` or `false`.
+
+        Raises
+        ------
+        ExecuteTimeoutError
+            If the time to execute the query exceeds the configured timeout.
+        QueryError
+            If the API returns an error.
+        """
+        _args: list[Arg] = []
+        _ctx = self._select("completed", _args)
+        return await _ctx.execute(bool)
+
+    async def description(self) -> str:
+        """The description of the check
+
+        Returns
+        -------
+        str
+            The `String` scalar type represents textual data, represented as
+            UTF-8 character sequences. The String type is most often used by
+            GraphQL to represent free-form human-readable text.
+
+        Raises
+        ------
+        ExecuteTimeoutError
+            If the time to execute the query exceeds the configured timeout.
+        QueryError
+            If the API returns an error.
+        """
+        _args: list[Arg] = []
+        _ctx = self._select("description", _args)
+        return await _ctx.execute(str)
+
+    async def id(self) -> CheckID:
+        """A unique identifier for this Check.
+
+        Note
+        ----
+        This is lazily evaluated, no operation is actually run.
+
+        Returns
+        -------
+        CheckID
+            The `CheckID` scalar type represents an identifier for an object
+            of type Check.
+
+        Raises
+        ------
+        ExecuteTimeoutError
+            If the time to execute the query exceeds the configured timeout.
+        QueryError
+            If the API returns an error.
+        """
+        _args: list[Arg] = []
+        _ctx = self._select("id", _args)
+        return await _ctx.execute(CheckID)
+
+    async def name(self) -> str:
+        """Return the fully qualified name of the check
+
+        Returns
+        -------
+        str
+            The `String` scalar type represents textual data, represented as
+            UTF-8 character sequences. The String type is most often used by
+            GraphQL to represent free-form human-readable text.
+
+        Raises
+        ------
+        ExecuteTimeoutError
+            If the time to execute the query exceeds the configured timeout.
+        QueryError
+            If the API returns an error.
+        """
+        _args: list[Arg] = []
+        _ctx = self._select("name", _args)
+        return await _ctx.execute(str)
+
+    async def passed(self) -> bool:
+        """Whether the check passed
+
+        Returns
+        -------
+        bool
+            The `Boolean` scalar type represents `true` or `false`.
+
+        Raises
+        ------
+        ExecuteTimeoutError
+            If the time to execute the query exceeds the configured timeout.
+        QueryError
+            If the API returns an error.
+        """
+        _args: list[Arg] = []
+        _ctx = self._select("passed", _args)
+        return await _ctx.execute(bool)
+
+    async def path(self) -> list[str]:
+        """The path of the check within its module
+
+        Returns
+        -------
+        list[str]
+            The `String` scalar type represents textual data, represented as
+            UTF-8 character sequences. The String type is most often used by
+            GraphQL to represent free-form human-readable text.
+
+        Raises
+        ------
+        ExecuteTimeoutError
+            If the time to execute the query exceeds the configured timeout.
+        QueryError
+            If the API returns an error.
+        """
+        _args: list[Arg] = []
+        _ctx = self._select("path", _args)
+        return await _ctx.execute(list[str])
+
+    async def result_emoji(self) -> str:
+        """An emoji representing the result of the check
+
+        Returns
+        -------
+        str
+            The `String` scalar type represents textual data, represented as
+            UTF-8 character sequences. The String type is most often used by
+            GraphQL to represent free-form human-readable text.
+
+        Raises
+        ------
+        ExecuteTimeoutError
+            If the time to execute the query exceeds the configured timeout.
+        QueryError
+            If the API returns an error.
+        """
+        _args: list[Arg] = []
+        _ctx = self._select("resultEmoji", _args)
+        return await _ctx.execute(str)
+
+    def run(self) -> Self:
+        """Execute the check"""
+        _args: list[Arg] = []
+        _ctx = self._select("run", _args)
+        return Check(_ctx)
+
+    def with_(self, cb: Callable[["Check"], "Check"]) -> "Check":
+        """Call the provided callable with current Check.
+
+        This is useful for reusability and readability by not breaking the calling chain.
+        """
+        return cb(self)
+
+
+@typecheck
+class CheckGroup(Type):
+    async def id(self) -> CheckGroupID:
+        """A unique identifier for this CheckGroup.
+
+        Note
+        ----
+        This is lazily evaluated, no operation is actually run.
+
+        Returns
+        -------
+        CheckGroupID
+            The `CheckGroupID` scalar type represents an identifier for an
+            object of type CheckGroup.
+
+        Raises
+        ------
+        ExecuteTimeoutError
+            If the time to execute the query exceeds the configured timeout.
+        QueryError
+            If the API returns an error.
+        """
+        _args: list[Arg] = []
+        _ctx = self._select("id", _args)
+        return await _ctx.execute(CheckGroupID)
+
+    async def list_(self) -> list[Check]:
+        """Return a list of individual checks and their details"""
+        _args: list[Arg] = []
+        _ctx = self._select("list", _args)
+        return await _ctx.execute_object_list(Check)
+
+    def report(self) -> "File":
+        """Generate a markdown report"""
+        _args: list[Arg] = []
+        _ctx = self._select("report", _args)
+        return File(_ctx)
+
+    def run(self) -> Self:
+        """Execute all selected checks"""
+        _args: list[Arg] = []
+        _ctx = self._select("run", _args)
+        return CheckGroup(_ctx)
+
+    def with_(self, cb: Callable[["CheckGroup"], "CheckGroup"]) -> "CheckGroup":
+        """Call the provided callable with current CheckGroup.
+
+        This is useful for reusability and readability by not breaking the calling chain.
+        """
+        return cb(self)
 
 
 @typecheck
@@ -1871,6 +2254,28 @@ class Container(Type):
         _ctx = self._select("rootfs", _args)
         return Directory(_ctx)
 
+    def stat(
+        self,
+        path: str,
+        *,
+        do_not_follow_symlinks: bool | None = False,
+    ) -> "Stat":
+        """Return file status
+
+        Parameters
+        ----------
+        path:
+            Path to check (e.g., "/file.txt").
+        do_not_follow_symlinks:
+            If specified, do not follow symlinks.
+        """
+        _args = [
+            Arg("path", path),
+            Arg("doNotFollowSymlinks", do_not_follow_symlinks, False),
+        ]
+        _ctx = self._select("stat", _args)
+        return Stat(_ctx)
+
     async def stderr(self) -> str:
         """The buffered standard error stream of the last executed command
 
@@ -2069,7 +2474,7 @@ class Container(Type):
         return await _ctx.execute(str)
 
     def with_annotation(self, name: str, value: str) -> Self:
-        """Retrieves this container plus the given OCI anotation.
+        """Retrieves this container plus the given OCI annotation.
 
         Parameters
         ----------
@@ -2206,6 +2611,20 @@ class Container(Type):
             Arg("keepDefaultArgs", keep_default_args, False),
         ]
         _ctx = self._select("withEntrypoint", _args)
+        return Container(_ctx)
+
+    def with_env_file_variables(self, source: "EnvFile") -> Self:
+        """Export environment variables from an env-file to the container.
+
+        Parameters
+        ----------
+        source:
+            Identifier of the envfile
+        """
+        _args = [
+            Arg("source", source),
+        ]
+        _ctx = self._select("withEnvFileVariables", _args)
         return Container(_ctx)
 
     def with_env_variable(
@@ -3217,6 +3636,42 @@ class Container(Type):
 class CurrentModule(Type):
     """Reflective module API provided to functions at runtime."""
 
+    async def dependencies(self) -> list["Module"]:
+        """The dependencies of the module."""
+        _args: list[Arg] = []
+        _ctx = self._select("dependencies", _args)
+        return await _ctx.execute_object_list(Module)
+
+    def generated_context_directory(self) -> "Directory":
+        """The generated files and directories made on top of the module source's
+        context directory.
+        """
+        _args: list[Arg] = []
+        _ctx = self._select("generatedContextDirectory", _args)
+        return Directory(_ctx)
+
+    def generators(
+        self,
+        *,
+        include: list[str] | None = None,
+    ) -> "GeneratorGroup":
+        """Return all generators defined by the module
+
+        .. caution::
+            Experimental: This API is highly experimental and may be removed
+            or replaced entirely.
+
+        Parameters
+        ----------
+        include:
+            Only include generators matching the specified patterns
+        """
+        _args = [
+            Arg("include", include, None),
+        ]
+        _ctx = self._select("generators", _args)
+        return GeneratorGroup(_ctx)
+
     async def id(self) -> CurrentModuleID:
         """A unique identifier for this CurrentModule.
 
@@ -3474,6 +3929,7 @@ class Directory(Type):
         target: str | None = "",
         secrets: "list[Secret] | None" = None,
         no_init: bool | None = False,
+        ssh: "Socket | None" = None,
     ) -> Container:
         """Use Dockerfile compatibility to build a container from this directory.
         Only use this function for Dockerfile compatibility. Otherwise use the
@@ -3499,6 +3955,11 @@ class Directory(Type):
             This should only be used if the user requires that their exec
             processes be the pid 1 process in the container. Otherwise it may
             result in unexpected behavior.
+        ssh:
+            A socket to use for SSH authentication during the build
+            (e.g., for Dockerfile RUN --mount=type=ssh instructions).
+            Typically obtained via host.unixSocket() pointing to the
+            SSH_AUTH_SOCK.
         """
         _args = [
             Arg("dockerfile", dockerfile, "Dockerfile"),
@@ -3507,6 +3968,7 @@ class Directory(Type):
             Arg("target", target, ""),
             Arg("secrets", [] if secrets is None else secrets, []),
             Arg("noInit", no_init, False),
+            Arg("ssh", ssh, None),
         ]
         _ctx = self._select("dockerBuild", _args)
         return Container(_ctx)
@@ -3829,6 +4291,28 @@ class Directory(Type):
         ]
         _ctx = self._select("search", _args)
         return await _ctx.execute_object_list(SearchResult)
+
+    def stat(
+        self,
+        path: str,
+        *,
+        do_not_follow_symlinks: bool | None = False,
+    ) -> "Stat":
+        """Return file status
+
+        Parameters
+        ----------
+        path:
+            Path to stat (e.g., "/file.txt").
+        do_not_follow_symlinks:
+            If specified, do not follow symlinks.
+        """
+        _args = [
+            Arg("path", path),
+            Arg("doNotFollowSymlinks", do_not_follow_symlinks, False),
+        ]
+        _ctx = self._select("stat", _args)
+        return Stat(_ctx)
 
     async def sync(self) -> Self:
         """Force evaluation in the engine.
@@ -4350,6 +4834,10 @@ class EngineCache(Type):
         self,
         *,
         use_default_policy: bool | None = False,
+        max_used_space: str | None = "",
+        reserved_space: str | None = "",
+        min_free_space: str | None = "",
+        target_space: str | None = "",
     ) -> Void | None:
         """Prune the cache of releaseable entries
 
@@ -4358,6 +4846,18 @@ class EngineCache(Type):
         use_default_policy:
             Use the engine-wide default pruning policy if true, otherwise
             prune the whole cache of any releasable entries.
+        max_used_space:
+            Override the maximum disk space to keep before pruning (e.g.
+            "200GB" or "80%").
+        reserved_space:
+            Override the minimum disk space to retain during pruning (e.g.
+            "500GB" or "10%").
+        min_free_space:
+            Override the minimum free disk space target during pruning (e.g.
+            "20GB" or "20%").
+        target_space:
+            Override the target disk space to keep after pruning (e.g. "200GB"
+            or "50%").
 
         Returns
         -------
@@ -4374,6 +4874,10 @@ class EngineCache(Type):
         """
         _args = [
             Arg("useDefaultPolicy", use_default_policy, False),
+            Arg("maxUsedSpace", max_used_space, ""),
+            Arg("reservedSpace", reserved_space, ""),
+            Arg("minFreeSpace", min_free_space, ""),
+            Arg("targetSpace", target_space, ""),
         ]
         _ctx = self._select("prune", _args)
         await _ctx.execute()
@@ -4752,6 +5256,27 @@ class EnumTypeDef(Type):
 class EnumValueTypeDef(Type):
     """A definition of a value in a custom enum defined in a Module."""
 
+    async def deprecated(self) -> str | None:
+        """The reason this enum member is deprecated, if any.
+
+        Returns
+        -------
+        str | None
+            The `String` scalar type represents textual data, represented as
+            UTF-8 character sequences. The String type is most often used by
+            GraphQL to represent free-form human-readable text.
+
+        Raises
+        ------
+        ExecuteTimeoutError
+            If the time to execute the query exceeds the configured timeout.
+        QueryError
+            If the API returns an error.
+        """
+        _args: list[Arg] = []
+        _ctx = self._select("deprecated", _args)
+        return await _ctx.execute(str | None)
+
     async def description(self) -> str:
         """A doc string for the enum member, if any.
 
@@ -4848,6 +5373,47 @@ class EnumValueTypeDef(Type):
 
 @typecheck
 class Env(Type):
+    def check(self, name: str) -> Check:
+        """Return the check with the given name from the installed modules. Must
+        match exactly one check.
+
+        .. caution::
+            Experimental: Checks API is highly experimental and may be removed
+            or replaced entirely.
+
+        Parameters
+        ----------
+        name:
+            The name of the check to retrieve
+        """
+        _args = [
+            Arg("name", name),
+        ]
+        _ctx = self._select("check", _args)
+        return Check(_ctx)
+
+    def checks(
+        self,
+        *,
+        include: list[str] | None = None,
+    ) -> CheckGroup:
+        """Return all checks defined by the installed modules
+
+        .. caution::
+            Experimental: Checks API is highly experimental and may be removed
+            or replaced entirely.
+
+        Parameters
+        ----------
+        include:
+            Only include checks matching the specified patterns
+        """
+        _args = [
+            Arg("include", include, None),
+        ]
+        _ctx = self._select("checks", _args)
+        return CheckGroup(_ctx)
+
     async def id(self) -> EnvID:
         """A unique identifier for this Env.
 
@@ -5024,6 +5590,90 @@ class Env(Type):
             Arg("description", description),
         ]
         _ctx = self._select("withChangesetOutput", _args)
+        return Env(_ctx)
+
+    def with_check_group_input(
+        self,
+        name: str,
+        value: CheckGroup,
+        description: str,
+    ) -> Self:
+        """Create or update a binding of type CheckGroup in the environment
+
+        Parameters
+        ----------
+        name:
+            The name of the binding
+        value:
+            The CheckGroup value to assign to the binding
+        description:
+            The purpose of the input
+        """
+        _args = [
+            Arg("name", name),
+            Arg("value", value),
+            Arg("description", description),
+        ]
+        _ctx = self._select("withCheckGroupInput", _args)
+        return Env(_ctx)
+
+    def with_check_group_output(self, name: str, description: str) -> Self:
+        """Declare a desired CheckGroup output to be assigned in the environment
+
+        Parameters
+        ----------
+        name:
+            The name of the binding
+        description:
+            A description of the desired value of the binding
+        """
+        _args = [
+            Arg("name", name),
+            Arg("description", description),
+        ]
+        _ctx = self._select("withCheckGroupOutput", _args)
+        return Env(_ctx)
+
+    def with_check_input(
+        self,
+        name: str,
+        value: Check,
+        description: str,
+    ) -> Self:
+        """Create or update a binding of type Check in the environment
+
+        Parameters
+        ----------
+        name:
+            The name of the binding
+        value:
+            The Check value to assign to the binding
+        description:
+            The purpose of the input
+        """
+        _args = [
+            Arg("name", name),
+            Arg("value", value),
+            Arg("description", description),
+        ]
+        _ctx = self._select("withCheckInput", _args)
+        return Env(_ctx)
+
+    def with_check_output(self, name: str, description: str) -> Self:
+        """Declare a desired Check output to be assigned in the environment
+
+        Parameters
+        ----------
+        name:
+            The name of the binding
+        description:
+            A description of the desired value of the binding
+        """
+        _args = [
+            Arg("name", name),
+            Arg("description", description),
+        ]
+        _ctx = self._select("withCheckOutput", _args)
         return Env(_ctx)
 
     def with_cloud_input(
@@ -5289,6 +5939,91 @@ class Env(Type):
         _ctx = self._select("withFileOutput", _args)
         return Env(_ctx)
 
+    def with_generator_group_input(
+        self,
+        name: str,
+        value: "GeneratorGroup",
+        description: str,
+    ) -> Self:
+        """Create or update a binding of type GeneratorGroup in the environment
+
+        Parameters
+        ----------
+        name:
+            The name of the binding
+        value:
+            The GeneratorGroup value to assign to the binding
+        description:
+            The purpose of the input
+        """
+        _args = [
+            Arg("name", name),
+            Arg("value", value),
+            Arg("description", description),
+        ]
+        _ctx = self._select("withGeneratorGroupInput", _args)
+        return Env(_ctx)
+
+    def with_generator_group_output(self, name: str, description: str) -> Self:
+        """Declare a desired GeneratorGroup output to be assigned in the
+        environment
+
+        Parameters
+        ----------
+        name:
+            The name of the binding
+        description:
+            A description of the desired value of the binding
+        """
+        _args = [
+            Arg("name", name),
+            Arg("description", description),
+        ]
+        _ctx = self._select("withGeneratorGroupOutput", _args)
+        return Env(_ctx)
+
+    def with_generator_input(
+        self,
+        name: str,
+        value: "Generator",
+        description: str,
+    ) -> Self:
+        """Create or update a binding of type Generator in the environment
+
+        Parameters
+        ----------
+        name:
+            The name of the binding
+        value:
+            The Generator value to assign to the binding
+        description:
+            The purpose of the input
+        """
+        _args = [
+            Arg("name", name),
+            Arg("value", value),
+            Arg("description", description),
+        ]
+        _ctx = self._select("withGeneratorInput", _args)
+        return Env(_ctx)
+
+    def with_generator_output(self, name: str, description: str) -> Self:
+        """Declare a desired Generator output to be assigned in the environment
+
+        Parameters
+        ----------
+        name:
+            The name of the binding
+        description:
+            A description of the desired value of the binding
+        """
+        _args = [
+            Arg("name", name),
+            Arg("description", description),
+        ]
+        _ctx = self._select("withGeneratorOutput", _args)
+        return Env(_ctx)
+
     def with_git_ref_input(
         self,
         name: str,
@@ -5416,13 +6151,34 @@ class Env(Type):
         _ctx = self._select("withJSONValueOutput", _args)
         return Env(_ctx)
 
+    def with_main_module(self, module: "Module") -> Self:
+        """Sets the main module for this environment (the project being worked
+        on)
+
+        Contextual path arguments will be populated using the environment's
+        workspace.
+        """
+        _args = [
+            Arg("module", module),
+        ]
+        _ctx = self._select("withMainModule", _args)
+        return Env(_ctx)
+
     def with_module(self, module: "Module") -> Self:
         """Installs a module into the environment, exposing its functions to the
         model
 
         Contextual path arguments will be populated using the environment's
         workspace.
+
+        .. deprecated::
+            Use withMainModule instead
         """
+        warnings.warn(
+            'Method "with_module" is deprecated: Use withMainModule instead',
+            DeprecationWarning,
+            stacklevel=4,
+        )
         _args = [
             Arg("module", module),
         ]
@@ -5768,6 +6524,48 @@ class Env(Type):
             Arg("description", description),
         ]
         _ctx = self._select("withSocketOutput", _args)
+        return Env(_ctx)
+
+    def with_stat_input(
+        self,
+        name: str,
+        value: "Stat",
+        description: str,
+    ) -> Self:
+        """Create or update a binding of type Stat in the environment
+
+        Parameters
+        ----------
+        name:
+            The name of the binding
+        value:
+            The Stat value to assign to the binding
+        description:
+            The purpose of the input
+        """
+        _args = [
+            Arg("name", name),
+            Arg("value", value),
+            Arg("description", description),
+        ]
+        _ctx = self._select("withStatInput", _args)
+        return Env(_ctx)
+
+    def with_stat_output(self, name: str, description: str) -> Self:
+        """Declare a desired Stat output to be assigned in the environment
+
+        Parameters
+        ----------
+        name:
+            The name of the binding
+        description:
+            A description of the desired value of the binding
+        """
+        _args = [
+            Arg("name", name),
+            Arg("description", description),
+        ]
+        _ctx = self._select("withStatOutput", _args)
         return Env(_ctx)
 
     def with_string_input(
@@ -6280,6 +7078,27 @@ class FieldTypeDef(Type):
     object whose value is computed by invoking code (and can accept
     arguments)."""
 
+    async def deprecated(self) -> str | None:
+        """The reason this enum member is deprecated, if any.
+
+        Returns
+        -------
+        str | None
+            The `String` scalar type represents textual data, represented as
+            UTF-8 character sequences. The String type is most often used by
+            GraphQL to represent free-form human-readable text.
+
+        Raises
+        ------
+        ExecuteTimeoutError
+            If the time to execute the query exceeds the configured timeout.
+        QueryError
+            If the API returns an error.
+        """
+        _args: list[Arg] = []
+        _ctx = self._select("deprecated", _args)
+        return await _ctx.execute(str | None)
+
     async def description(self) -> str:
         """A doc string for the field, if any.
 
@@ -6370,12 +7189,19 @@ class File(Type):
         ----------
         expand:
             Replace "${VAR}" or "$VAR" with the value of other vars
+            .. deprecated:: Variable expansion is now enabled by default
         """
         _args = [
             Arg("expand", expand, None),
         ]
         _ctx = self._select("asEnvFile", _args)
         return EnvFile(_ctx)
+
+    def as_json(self) -> "JSONValue":
+        """Parse the file contents as JSON."""
+        _args: list[Arg] = []
+        _ctx = self._select("asJSON", _args)
+        return JSONValue(_ctx)
 
     def chown(self, owner: str) -> Self:
         """Change the owner of the file recursively.
@@ -6629,6 +7455,12 @@ class File(Type):
         _ctx = self._select("size", _args)
         return await _ctx.execute(int)
 
+    def stat(self) -> "Stat":
+        """Return file status"""
+        _args: list[Arg] = []
+        _ctx = self._select("stat", _args)
+        return Stat(_ctx)
+
     async def sync(self) -> Self:
         """Force evaluation in the engine.
 
@@ -6735,6 +7567,27 @@ class Function(Type):
         _ctx = self._select("args", _args)
         return await _ctx.execute_object_list(FunctionArg)
 
+    async def deprecated(self) -> str | None:
+        """The reason this function is deprecated, if any.
+
+        Returns
+        -------
+        str | None
+            The `String` scalar type represents textual data, represented as
+            UTF-8 character sequences. The String type is most often used by
+            GraphQL to represent free-form human-readable text.
+
+        Raises
+        ------
+        ExecuteTimeoutError
+            If the time to execute the query exceeds the configured timeout.
+        QueryError
+            If the API returns an error.
+        """
+        _args: list[Arg] = []
+        _ctx = self._select("deprecated", _args)
+        return await _ctx.execute(str | None)
+
     async def description(self) -> str:
         """A doc string for the function, if any.
 
@@ -6823,6 +7676,8 @@ class Function(Type):
         default_path: str | None = "",
         ignore: list[str] | None = None,
         source_map: "SourceMap | None" = None,
+        deprecated: str | None = None,
+        default_address: str | None = "",
     ) -> Self:
         """Returns the function with the provided argument
 
@@ -6844,6 +7699,9 @@ class Function(Type):
             Patterns to ignore when loading the contextual argument value.
         source_map:
             The source map for the argument definition.
+        deprecated:
+            If deprecated, the reason or migration path.
+        default_address:
         """
         _args = [
             Arg("name", name),
@@ -6853,6 +7711,8 @@ class Function(Type):
             Arg("defaultPath", default_path, ""),
             Arg("ignore", [] if ignore is None else ignore, []),
             Arg("sourceMap", source_map, None),
+            Arg("deprecated", deprecated, None),
+            Arg("defaultAddress", default_address, ""),
         ]
         _ctx = self._select("withArg", _args)
         return Function(_ctx)
@@ -6880,6 +7740,26 @@ class Function(Type):
         _ctx = self._select("withCachePolicy", _args)
         return Function(_ctx)
 
+    def with_check(self) -> Self:
+        """Returns the function with a flag indicating it's a check."""
+        _args: list[Arg] = []
+        _ctx = self._select("withCheck", _args)
+        return Function(_ctx)
+
+    def with_deprecated(self, *, reason: str | None = None) -> Self:
+        """Returns the function with the provided deprecation reason.
+
+        Parameters
+        ----------
+        reason:
+            Reason or migration path describing the deprecation.
+        """
+        _args = [
+            Arg("reason", reason, None),
+        ]
+        _ctx = self._select("withDeprecated", _args)
+        return Function(_ctx)
+
     def with_description(self, description: str) -> Self:
         """Returns the function with the given doc string.
 
@@ -6892,6 +7772,12 @@ class Function(Type):
             Arg("description", description),
         ]
         _ctx = self._select("withDescription", _args)
+        return Function(_ctx)
+
+    def with_generator(self) -> Self:
+        """Returns the function with a flag indicating it's a generator."""
+        _args: list[Arg] = []
+        _ctx = self._select("withGenerator", _args)
         return Function(_ctx)
 
     def with_source_map(self, source_map: "SourceMap") -> Self:
@@ -6921,6 +7807,28 @@ class FunctionArg(Type):
     """An argument accepted by a function.  This is a specification for an
     argument at function definition time, not an argument passed at
     function call time."""
+
+    async def default_address(self) -> str:
+        """Only applies to arguments of type Container. If the argument is not
+        set, load it from the given address (e.g. alpine:latest)
+
+        Returns
+        -------
+        str
+            The `String` scalar type represents textual data, represented as
+            UTF-8 character sequences. The String type is most often used by
+            GraphQL to represent free-form human-readable text.
+
+        Raises
+        ------
+        ExecuteTimeoutError
+            If the time to execute the query exceeds the configured timeout.
+        QueryError
+            If the API returns an error.
+        """
+        _args: list[Arg] = []
+        _ctx = self._select("defaultAddress", _args)
+        return await _ctx.execute(str)
 
     async def default_path(self) -> str:
         """Only applies to arguments of type File or Directory. If the argument
@@ -6963,6 +7871,27 @@ class FunctionArg(Type):
         _args: list[Arg] = []
         _ctx = self._select("defaultValue", _args)
         return await _ctx.execute(JSON)
+
+    async def deprecated(self) -> str | None:
+        """The reason this function is deprecated, if any.
+
+        Returns
+        -------
+        str | None
+            The `String` scalar type represents textual data, represented as
+            UTF-8 character sequences. The String type is most often used by
+            GraphQL to represent free-form human-readable text.
+
+        Raises
+        ------
+        ExecuteTimeoutError
+            If the time to execute the query exceeds the configured timeout.
+        QueryError
+            If the API returns an error.
+        """
+        _args: list[Arg] = []
+        _ctx = self._select("deprecated", _args)
+        return await _ctx.execute(str | None)
 
     async def description(self) -> str:
         """A doc string for the argument, if any.
@@ -7384,6 +8313,225 @@ class GeneratedCode(Type):
         self, cb: Callable[["GeneratedCode"], "GeneratedCode"]
     ) -> "GeneratedCode":
         """Call the provided callable with current GeneratedCode.
+
+        This is useful for reusability and readability by not breaking the calling chain.
+        """
+        return cb(self)
+
+
+@typecheck
+class Generator(Type):
+    def changes(self) -> Changeset:
+        """The generated changeset"""
+        _args: list[Arg] = []
+        _ctx = self._select("changes", _args)
+        return Changeset(_ctx)
+
+    async def completed(self) -> bool:
+        """Whether the generator complete
+
+        Returns
+        -------
+        bool
+            The `Boolean` scalar type represents `true` or `false`.
+
+        Raises
+        ------
+        ExecuteTimeoutError
+            If the time to execute the query exceeds the configured timeout.
+        QueryError
+            If the API returns an error.
+        """
+        _args: list[Arg] = []
+        _ctx = self._select("completed", _args)
+        return await _ctx.execute(bool)
+
+    async def description(self) -> str:
+        """Return the description of the generator
+
+        Returns
+        -------
+        str
+            The `String` scalar type represents textual data, represented as
+            UTF-8 character sequences. The String type is most often used by
+            GraphQL to represent free-form human-readable text.
+
+        Raises
+        ------
+        ExecuteTimeoutError
+            If the time to execute the query exceeds the configured timeout.
+        QueryError
+            If the API returns an error.
+        """
+        _args: list[Arg] = []
+        _ctx = self._select("description", _args)
+        return await _ctx.execute(str)
+
+    async def id(self) -> GeneratorID:
+        """A unique identifier for this Generator.
+
+        Note
+        ----
+        This is lazily evaluated, no operation is actually run.
+
+        Returns
+        -------
+        GeneratorID
+            The `GeneratorID` scalar type represents an identifier for an
+            object of type Generator.
+
+        Raises
+        ------
+        ExecuteTimeoutError
+            If the time to execute the query exceeds the configured timeout.
+        QueryError
+            If the API returns an error.
+        """
+        _args: list[Arg] = []
+        _ctx = self._select("id", _args)
+        return await _ctx.execute(GeneratorID)
+
+    async def is_empty(self) -> bool:
+        """Wether changeset from the generator execution is empty or not
+
+        Returns
+        -------
+        bool
+            The `Boolean` scalar type represents `true` or `false`.
+
+        Raises
+        ------
+        ExecuteTimeoutError
+            If the time to execute the query exceeds the configured timeout.
+        QueryError
+            If the API returns an error.
+        """
+        _args: list[Arg] = []
+        _ctx = self._select("isEmpty", _args)
+        return await _ctx.execute(bool)
+
+    async def name(self) -> str:
+        """Return the fully qualified name of the generator
+
+        Returns
+        -------
+        str
+            The `String` scalar type represents textual data, represented as
+            UTF-8 character sequences. The String type is most often used by
+            GraphQL to represent free-form human-readable text.
+
+        Raises
+        ------
+        ExecuteTimeoutError
+            If the time to execute the query exceeds the configured timeout.
+        QueryError
+            If the API returns an error.
+        """
+        _args: list[Arg] = []
+        _ctx = self._select("name", _args)
+        return await _ctx.execute(str)
+
+    def run(self) -> Self:
+        """Execute the generator"""
+        _args: list[Arg] = []
+        _ctx = self._select("run", _args)
+        return Generator(_ctx)
+
+    def with_(self, cb: Callable[["Generator"], "Generator"]) -> "Generator":
+        """Call the provided callable with current Generator.
+
+        This is useful for reusability and readability by not breaking the calling chain.
+        """
+        return cb(self)
+
+
+@typecheck
+class GeneratorGroup(Type):
+    def changes(
+        self,
+        *,
+        on_conflict: ChangesetsMergeConflict
+        | None = ChangesetsMergeConflict.FAIL_EARLY,
+    ) -> Changeset:
+        """The combined changes from the generators execution
+
+        If any conflict occurs, for instance if the same file is modified by
+        multiple generators, or if a file is both modified and deleted, an
+        error is raised and the merge of the changesets will failed.
+
+        Set 'continueOnConflicts' flag to force to merge the changes in a
+        'last write wins' strategy.
+
+        Parameters
+        ----------
+        on_conflict:
+            Strategy to apply on conflicts between generators
+        """
+        _args = [
+            Arg("onConflict", on_conflict, ChangesetsMergeConflict.FAIL_EARLY),
+        ]
+        _ctx = self._select("changes", _args)
+        return Changeset(_ctx)
+
+    async def id(self) -> GeneratorGroupID:
+        """A unique identifier for this GeneratorGroup.
+
+        Note
+        ----
+        This is lazily evaluated, no operation is actually run.
+
+        Returns
+        -------
+        GeneratorGroupID
+            The `GeneratorGroupID` scalar type represents an identifier for an
+            object of type GeneratorGroup.
+
+        Raises
+        ------
+        ExecuteTimeoutError
+            If the time to execute the query exceeds the configured timeout.
+        QueryError
+            If the API returns an error.
+        """
+        _args: list[Arg] = []
+        _ctx = self._select("id", _args)
+        return await _ctx.execute(GeneratorGroupID)
+
+    async def is_empty(self) -> bool:
+        """Whether the generated changeset is empty or not
+
+        Returns
+        -------
+        bool
+            The `Boolean` scalar type represents `true` or `false`.
+
+        Raises
+        ------
+        ExecuteTimeoutError
+            If the time to execute the query exceeds the configured timeout.
+        QueryError
+            If the API returns an error.
+        """
+        _args: list[Arg] = []
+        _ctx = self._select("isEmpty", _args)
+        return await _ctx.execute(bool)
+
+    async def list_(self) -> list[Generator]:
+        """Return a list of individual generators and their details"""
+        _args: list[Arg] = []
+        _ctx = self._select("list", _args)
+        return await _ctx.execute_object_list(Generator)
+
+    def run(self) -> Self:
+        """Execute all selected generators"""
+        _args: list[Arg] = []
+        _ctx = self._select("run", _args)
+        return GeneratorGroup(_ctx)
+
+    def with_(
+        self, cb: Callable[["GeneratorGroup"], "GeneratorGroup"]
+    ) -> "GeneratorGroup":
+        """Call the provided callable with current GeneratorGroup.
 
         This is useful for reusability and readability by not breaking the calling chain.
         """
@@ -8665,6 +9813,18 @@ class LLM(Type):
         _ctx = self._select("withoutDefaultSystemPrompt", _args)
         return LLM(_ctx)
 
+    def without_message_history(self) -> Self:
+        """Clear the message history, leaving only the system prompts"""
+        _args: list[Arg] = []
+        _ctx = self._select("withoutMessageHistory", _args)
+        return LLM(_ctx)
+
+    def without_system_prompts(self) -> Self:
+        """Clear the system prompts, leaving only the default system prompt"""
+        _args: list[Arg] = []
+        _ctx = self._select("withoutSystemPrompts", _args)
+        return LLM(_ctx)
+
     def with_(self, cb: Callable[["LLM"], "LLM"]) -> "LLM":
         """Call the provided callable with current LLM.
 
@@ -8905,6 +10065,47 @@ class ListTypeDef(Type):
 class Module(Type):
     """A Dagger module."""
 
+    def check(self, name: str) -> Check:
+        """Return the check defined by the module with the given name. Must match
+        to exactly one check.
+
+        .. caution::
+            Experimental: This API is highly experimental and may be removed
+            or replaced entirely.
+
+        Parameters
+        ----------
+        name:
+            The name of the check to retrieve
+        """
+        _args = [
+            Arg("name", name),
+        ]
+        _ctx = self._select("check", _args)
+        return Check(_ctx)
+
+    def checks(
+        self,
+        *,
+        include: list[str] | None = None,
+    ) -> CheckGroup:
+        """Return all checks defined by the module
+
+        .. caution::
+            Experimental: This API is highly experimental and may be removed
+            or replaced entirely.
+
+        Parameters
+        ----------
+        include:
+            Only include checks matching the specified patterns
+        """
+        _args = [
+            Arg("include", include, None),
+        ]
+        _ctx = self._select("checks", _args)
+        return CheckGroup(_ctx)
+
     async def dependencies(self) -> list["Module"]:
         """The dependencies of the module."""
         _args: list[Arg] = []
@@ -8945,6 +10146,47 @@ class Module(Type):
         _args: list[Arg] = []
         _ctx = self._select("generatedContextDirectory", _args)
         return Directory(_ctx)
+
+    def generator(self, name: str) -> Generator:
+        """Return the generator defined by the module with the given name. Must
+        match to exactly one generator.
+
+        .. caution::
+            Experimental: This API is highly experimental and may be removed
+            or replaced entirely.
+
+        Parameters
+        ----------
+        name:
+            The name of the generator to retrieve
+        """
+        _args = [
+            Arg("name", name),
+        ]
+        _ctx = self._select("generator", _args)
+        return Generator(_ctx)
+
+    def generators(
+        self,
+        *,
+        include: list[str] | None = None,
+    ) -> GeneratorGroup:
+        """Return all generators defined by the module
+
+        .. caution::
+            Experimental: This API is highly experimental and may be removed
+            or replaced entirely.
+
+        Parameters
+        ----------
+        include:
+            Only include generators matching the specified patterns
+        """
+        _args = [
+            Arg("include", include, None),
+        ]
+        _ctx = self._select("generators", _args)
+        return GeneratorGroup(_ctx)
 
     async def id(self) -> ModuleID:
         """A unique identifier for this Module.
@@ -10011,6 +11253,27 @@ class ObjectTypeDef(Type):
         _ctx = self._select("constructor", _args)
         return Function(_ctx)
 
+    async def deprecated(self) -> str | None:
+        """The reason this enum member is deprecated, if any.
+
+        Returns
+        -------
+        str | None
+            The `String` scalar type represents textual data, represented as
+            UTF-8 character sequences. The String type is most often used by
+            GraphQL to represent free-form human-readable text.
+
+        Raises
+        ------
+        ExecuteTimeoutError
+            If the time to execute the query exceeds the configured timeout.
+        QueryError
+            If the API returns an error.
+        """
+        _args: list[Arg] = []
+        _ctx = self._select("deprecated", _args)
+        return await _ctx.execute(str | None)
+
     async def description(self) -> str:
         """The doc string for the object, if any.
 
@@ -10395,6 +11658,7 @@ class Client(Root):
         ----------
         expand:
             Replace "${VAR}" or "$VAR" with the value of other vars
+            .. deprecated:: Variable expansion is now enabled by default
         """
         _args = [
             Arg("expand", expand, None),
@@ -10493,6 +11757,7 @@ class Client(Root):
             Suffix ".git" is optional.
         keep_git_dir:
             DEPRECATED: Set to true to keep .git directory.
+            .. deprecated:: Set to true to keep .git directory.
         ssh_known_hosts:
             Set SSH known hosts
         ssh_auth_socket:
@@ -10624,6 +11889,22 @@ class Client(Root):
         ]
         _ctx = self._select("loadChangesetFromID", _args)
         return Changeset(_ctx)
+
+    def load_check_from_id(self, id: CheckID) -> Check:
+        """Load a Check from its ID."""
+        _args = [
+            Arg("id", id),
+        ]
+        _ctx = self._select("loadCheckFromID", _args)
+        return Check(_ctx)
+
+    def load_check_group_from_id(self, id: CheckGroupID) -> CheckGroup:
+        """Load a CheckGroup from its ID."""
+        _args = [
+            Arg("id", id),
+        ]
+        _ctx = self._select("loadCheckGroupFromID", _args)
+        return CheckGroup(_ctx)
 
     def load_cloud_from_id(self, id: CloudID) -> Cloud:
         """Load a Cloud from its ID."""
@@ -10808,6 +12089,22 @@ class Client(Root):
         ]
         _ctx = self._select("loadGeneratedCodeFromID", _args)
         return GeneratedCode(_ctx)
+
+    def load_generator_from_id(self, id: GeneratorID) -> Generator:
+        """Load a Generator from its ID."""
+        _args = [
+            Arg("id", id),
+        ]
+        _ctx = self._select("loadGeneratorFromID", _args)
+        return Generator(_ctx)
+
+    def load_generator_group_from_id(self, id: GeneratorGroupID) -> GeneratorGroup:
+        """Load a GeneratorGroup from its ID."""
+        _args = [
+            Arg("id", id),
+        ]
+        _ctx = self._select("loadGeneratorGroupFromID", _args)
+        return GeneratorGroup(_ctx)
 
     def load_git_ref_from_id(self, id: GitRefID) -> GitRef:
         """Load a GitRef from its ID."""
@@ -10996,6 +12293,14 @@ class Client(Root):
         ]
         _ctx = self._select("loadSourceMapFromID", _args)
         return SourceMap(_ctx)
+
+    def load_stat_from_id(self, id: StatID) -> "Stat":
+        """Load a Stat from its ID."""
+        _args = [
+            Arg("id", id),
+        ]
+        _ctx = self._select("loadStatFromID", _args)
+        return Stat(_ctx)
 
     def load_terminal_from_id(self, id: TerminalID) -> "Terminal":
         """Load a Terminal from its ID."""
@@ -11197,6 +12502,26 @@ class Client(Root):
 @typecheck
 class SDKConfig(Type):
     """The SDK config of the module."""
+
+    async def debug(self) -> bool:
+        """Whether to start the SDK runtime in debug mode with an interactive
+        terminal.
+
+        Returns
+        -------
+        bool
+            The `Boolean` scalar type represents `true` or `false`.
+
+        Raises
+        ------
+        ExecuteTimeoutError
+            If the time to execute the query exceeds the configured timeout.
+        QueryError
+            If the API returns an error.
+        """
+        _args: list[Arg] = []
+        _ctx = self._select("debug", _args)
+        return await _ctx.execute(bool)
 
     async def id(self) -> SDKConfigID:
         """A unique identifier for this SDKConfig.
@@ -12020,6 +13345,117 @@ class SourceMap(Type):
 
 
 @typecheck
+class Stat(Type):
+    """A file or directory status object."""
+
+    async def file_type(self) -> FileType | None:
+        """file type
+
+        Returns
+        -------
+        FileType | None
+            File type.
+
+        Raises
+        ------
+        ExecuteTimeoutError
+            If the time to execute the query exceeds the configured timeout.
+        QueryError
+            If the API returns an error.
+        """
+        _args: list[Arg] = []
+        _ctx = self._select("fileType", _args)
+        return await _ctx.execute(FileType | None)
+
+    async def id(self) -> StatID:
+        """A unique identifier for this Stat.
+
+        Note
+        ----
+        This is lazily evaluated, no operation is actually run.
+
+        Returns
+        -------
+        StatID
+            The `StatID` scalar type represents an identifier for an object of
+            type Stat.
+
+        Raises
+        ------
+        ExecuteTimeoutError
+            If the time to execute the query exceeds the configured timeout.
+        QueryError
+            If the API returns an error.
+        """
+        _args: list[Arg] = []
+        _ctx = self._select("id", _args)
+        return await _ctx.execute(StatID)
+
+    async def name(self) -> str:
+        """file name
+
+        Returns
+        -------
+        str
+            The `String` scalar type represents textual data, represented as
+            UTF-8 character sequences. The String type is most often used by
+            GraphQL to represent free-form human-readable text.
+
+        Raises
+        ------
+        ExecuteTimeoutError
+            If the time to execute the query exceeds the configured timeout.
+        QueryError
+            If the API returns an error.
+        """
+        _args: list[Arg] = []
+        _ctx = self._select("name", _args)
+        return await _ctx.execute(str)
+
+    async def permissions(self) -> int:
+        """permission bits
+
+        Returns
+        -------
+        int
+            The `Int` scalar type represents non-fractional signed whole
+            numeric values. Int can represent values between -(2^31) and 2^31
+            - 1.
+
+        Raises
+        ------
+        ExecuteTimeoutError
+            If the time to execute the query exceeds the configured timeout.
+        QueryError
+            If the API returns an error.
+        """
+        _args: list[Arg] = []
+        _ctx = self._select("permissions", _args)
+        return await _ctx.execute(int)
+
+    async def size(self) -> int:
+        """file size
+
+        Returns
+        -------
+        int
+            The `Int` scalar type represents non-fractional signed whole
+            numeric values. Int can represent values between -(2^31) and 2^31
+            - 1.
+
+        Raises
+        ------
+        ExecuteTimeoutError
+            If the time to execute the query exceeds the configured timeout.
+        QueryError
+            If the API returns an error.
+        """
+        _args: list[Arg] = []
+        _ctx = self._select("size", _args)
+        return await _ctx.execute(int)
+
+
+@typecheck
 class Terminal(Type):
     """An interactive terminal that clients can connect to."""
 
@@ -12227,6 +13663,7 @@ class TypeDef(Type):
         value: str | None = "",
         description: str | None = "",
         source_map: SourceMap | None = None,
+        deprecated: str | None = None,
     ) -> Self:
         """Adds a static value for an Enum TypeDef, failing if the type is not an
         enum.
@@ -12241,12 +13678,15 @@ class TypeDef(Type):
             A doc string for the member, if any
         source_map:
             The source map for the enum member definition.
+        deprecated:
+            If deprecated, the reason or migration path.
         """
         _args = [
             Arg("name", name),
             Arg("value", value, ""),
             Arg("description", description, ""),
             Arg("sourceMap", source_map, None),
+            Arg("deprecated", deprecated, None),
         ]
         _ctx = self._select("withEnumMember", _args)
         return TypeDef(_ctx)
@@ -12257,6 +13697,7 @@ class TypeDef(Type):
         *,
         description: str | None = "",
         source_map: SourceMap | None = None,
+        deprecated: str | None = None,
     ) -> Self:
         """Adds a static value for an Enum TypeDef, failing if the type is not an
         enum.
@@ -12272,6 +13713,8 @@ class TypeDef(Type):
             A doc string for the value, if any
         source_map:
             The source map for the enum value definition.
+        deprecated:
+            If deprecated, the reason or migration path.
         """
         warnings.warn(
             'Method "with_enum_value" is deprecated: Use "with_enum_member" instead',
@@ -12282,6 +13725,7 @@ class TypeDef(Type):
             Arg("value", value),
             Arg("description", description, ""),
             Arg("sourceMap", source_map, None),
+            Arg("deprecated", deprecated, None),
         ]
         _ctx = self._select("withEnumValue", _args)
         return TypeDef(_ctx)
@@ -12293,6 +13737,7 @@ class TypeDef(Type):
         *,
         description: str | None = "",
         source_map: SourceMap | None = None,
+        deprecated: str | None = None,
     ) -> Self:
         """Adds a static field for an Object TypeDef, failing if the type is not
         an object.
@@ -12307,12 +13752,15 @@ class TypeDef(Type):
             A doc string for the field, if any
         source_map:
             The source map for the field definition.
+        deprecated:
+            If deprecated, the reason or migration path.
         """
         _args = [
             Arg("name", name),
             Arg("typeDef", type_def),
             Arg("description", description, ""),
             Arg("sourceMap", source_map, None),
+            Arg("deprecated", deprecated, None),
         ]
         _ctx = self._select("withField", _args)
         return TypeDef(_ctx)
@@ -12367,6 +13815,7 @@ class TypeDef(Type):
         *,
         description: str | None = "",
         source_map: SourceMap | None = None,
+        deprecated: str | None = None,
     ) -> Self:
         """Returns a TypeDef of kind Object with the provided name.
 
@@ -12378,6 +13827,7 @@ class TypeDef(Type):
             Arg("name", name),
             Arg("description", description, ""),
             Arg("sourceMap", source_map, None),
+            Arg("deprecated", deprecated, None),
         ]
         _ctx = self._select("withObject", _args)
         return TypeDef(_ctx)
@@ -12458,6 +13908,12 @@ __all__ = [
     "CacheVolumeID",
     "Changeset",
     "ChangesetID",
+    "ChangesetMergeConflict",
+    "ChangesetsMergeConflict",
+    "Check",
+    "CheckGroup",
+    "CheckGroupID",
+    "CheckID",
     "Client",
     "Cloud",
     "CloudID",
@@ -12494,6 +13950,7 @@ __all__ = [
     "FieldTypeDefID",
     "File",
     "FileID",
+    "FileType",
     "Function",
     "FunctionArg",
     "FunctionArgID",
@@ -12505,6 +13962,10 @@ __all__ = [
     "FunctionID",
     "GeneratedCode",
     "GeneratedCodeID",
+    "Generator",
+    "GeneratorGroup",
+    "GeneratorGroupID",
+    "GeneratorID",
     "GitRef",
     "GitRefID",
     "GitRepository",
@@ -12558,6 +14019,8 @@ __all__ = [
     "SocketID",
     "SourceMap",
     "SourceMapID",
+    "Stat",
+    "StatID",
     "Terminal",
     "TerminalID",
     "TypeDef",

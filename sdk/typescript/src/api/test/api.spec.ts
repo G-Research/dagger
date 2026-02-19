@@ -1,3 +1,4 @@
+import { describe, it } from "@otel-test-runner/mocha-test"
 import assert from "assert"
 import { randomUUID } from "crypto"
 import fs from "fs"
@@ -9,7 +10,7 @@ import {
 import { buildQuery, queryFlatten } from "../../common/graphql/compute_query.js"
 import {
   Client,
-  ClientContainerOpts,
+  type ClientContainerOpts,
   connect,
   Container,
   NetworkProtocol,
@@ -243,7 +244,7 @@ describe("TypeScript SDK api", function () {
         await ctr.sync()
       } catch (e) {
         if (e instanceof ExecError) {
-          assert(e.message.includes("did not complete successfully"))
+          assert(e.message.includes("exit code: 127"))
           assert.strictEqual(e.exitCode, 127)
           assert.strictEqual(e.stdout, stdout)
           assert.strictEqual(e.stderr, stderr)

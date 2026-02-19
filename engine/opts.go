@@ -13,6 +13,7 @@ import (
 	"unicode"
 
 	controlapi "github.com/dagger/dagger/internal/buildkit/api/services/control"
+	"github.com/dagger/dagger/internal/cloud/auth"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -87,6 +88,21 @@ type ClientMetadata struct {
 
 	// Modules permitted to access LLM APIs or "all" to bypass restrictions for any loaded module.
 	AllowedLLMModules []string `json:"allowed_llm_modules"`
+
+	// Disable lazy loading on module runtime.
+	EagerRuntime bool `json:"eager_runtime"`
+
+	// If set, the auth for cloud requests; used for PARC and scale-out
+	CloudAuth *auth.Cloud `json:"cloud_auth,omitempty"`
+
+	// If true, this client enables scaling checks out to cloud engines
+	EnableCloudScaleOut bool `json:"enable_cloud_scale_out,omitempty"`
+
+	// if set, this client is another engine scaling out to the current one, and the current
+	// one has this ID. Should be included in OTEL span sttrs so we can correlate spans to engine.
+	// TODO: This is a bit convoluted; it would be nicer if an engine could figure out its own ID
+	// rather than being told what it is by the client connecting to it.
+	CloudScaleOutEngineID string `json:"cloud_scale_out_engine_id,omitempty"`
 }
 
 type clientMetadataCtxKey struct{}

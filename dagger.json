@@ -1,90 +1,160 @@
 {
   "name": "dagger-dev",
-  "engineVersion": "v0.19.4",
+  "engineVersion": "v0.19.11",
   "sdk": {
     "source": "go"
   },
+  "toolchains": [
+    {
+      "name": "changelog",
+      "source": "toolchains/changelog"
+    },
+    {
+      "name": "ci",
+      "source": "toolchains/ci"
+    },
+    {
+      "name": "cli",
+      "source": "toolchains/cli-dev"
+    },
+    {
+      "name": "docs",
+      "source": "toolchains/docs-dev"
+    },
+    {
+      "name": "elixir-sdk",
+      "source": "toolchains/elixir-sdk-dev"
+    },
+    {
+      "name": "engine-dev",
+      "source": "toolchains/engine-dev"
+    },
+    {
+      "name": "go",
+      "source": "toolchains/go",
+      "customizations": [
+        {
+          "argument": "source",
+          "ignore": [
+            "bin",
+            ".git",
+            "**/node_modules",
+            "**/.venv",
+            "**/__pycache__",
+            "**/sdk/runtime/**",
+            "docs/node_modules",
+            "sdk/typescript/node_modules",
+            "sdk/typescript/dist",
+            "sdk/rust/examples/backend/target",
+            "sdk/rust/target",
+            "sdk/php/vendor",
+            "docs/**",
+            "dagql/idtui/viztest/broken/**",
+            "modules/evals/**",
+            "**/broken*/**",
+            "core/integration/testdata/checks/hello-with-checks/",
+            "core/integration/testdata/generators/hello-with-generators/"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "go-sdk",
+      "source": "toolchains/go-sdk-dev"
+    },
+    {
+      "name": "helm",
+      "source": "toolchains/helm-dev"
+    },
+    {
+      "name": "installers",
+      "source": "toolchains/installers"
+    },
+    {
+      "name": "java-sdk",
+      "source": "toolchains/java-sdk-dev"
+    },
+    {
+      "name": "php-sdk",
+      "source": "toolchains/php-sdk-dev"
+    },
+    {
+      "name": "python-sdk",
+      "source": "toolchains/python-sdk-dev"
+    },
+    {
+      "name": "release",
+      "source": "toolchains/release"
+    },
+    {
+      "name": "rust-sdk",
+      "source": "toolchains/rust-sdk-dev"
+    },
+    {
+      "name": "sdks",
+      "source": "toolchains/all-sdks"
+    },
+    {
+      "name": "security",
+      "source": "toolchains/security",
+      "customizations": [
+        {
+          "function": [
+            "scanSource"
+          ],
+          "argument": "source",
+          "ignore": [
+            "bin",
+            ".git",
+            "docs",
+            "sdk/rust/examples",
+            "sdk/rust/crates/dagger-sdk/examples",
+            "core/integration/testdata",
+            "dagql/idtui/viztest"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "test-split",
+      "source": "toolchains/test-split"
+    },
+    {
+      "name": "typescript-sdk",
+      "source": "toolchains/typescript-sdk-dev"
+    }
+  ],
   "include": [
-    "engine/distconsts/**/*",
     "sdk/typescript/runtime/**/*",
+    "engine/distconsts",
     "go.mod",
     "go.sum",
     "util/parallel"
   ],
   "dependencies": [
     {
-      "name": "alpine",
-      "source": "modules/alpine"
-    },
-    {
       "name": "changelog",
-      "source": ".changes"
-    },
-    {
-      "name": "ci",
-      "source": ".github"
-    },
-    {
-      "name": "dagger-cli",
-      "source": "cmd/dagger"
-    },
-    {
-      "name": "dagger-engine",
-      "source": "cmd/engine"
+      "source": "toolchains/changelog"
     },
     {
       "name": "docs",
-      "source": "docs"
-    },
-    {
-      "name": "dotnet-sdk-dev",
-      "source": "sdk/dotnet/dev"
-    },
-    {
-      "name": "doug",
-      "source": "github.com/vito/daggerverse/doug@main",
-      "pin": "776610fc77055f983a3dca99f5f55946616c624e"
-    },
-    {
-      "name": "elixir-sdk-dev",
-      "source": "sdk/elixir/dev"
-    },
-    {
-      "name": "go",
-      "source": "modules/go"
+      "source": "toolchains/docs-dev"
     },
     {
       "name": "helm",
-      "source": "helm"
+      "source": "toolchains/helm-dev"
     },
     {
-      "name": "notify",
-      "source": "github.com/gerhard/daggerverse/notify@main",
-      "pin": "e4ee5778b10345d09a65a9655022d8ec40fc489f"
+      "name": "sdks",
+      "source": "toolchains/all-sdks"
     },
     {
-      "name": "php-sdk-dev",
-      "source": "sdk/php/dev"
+      "name": "engine-dev",
+      "source": "toolchains/engine-dev"
     },
     {
-      "name": "ps-analyzer",
-      "source": "modules/ps-analyzer"
-    },
-    {
-      "name": "python-sdk-dev",
-      "source": "sdk/python/dev"
-    },
-    {
-      "name": "shellcheck",
-      "source": "modules/shellcheck"
-    },
-    {
-      "name": "version",
-      "source": "version"
-    },
-    {
-      "name": "wolfi",
-      "source": "modules/wolfi"
+      "name": "cli",
+      "source": "toolchains/cli-dev"
     }
   ],
   "source": ".dagger"

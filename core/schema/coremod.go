@@ -66,6 +66,8 @@ func (m *CoreMod) Install(ctx context.Context, dag *dagql.Server) error {
 		&jsonvalueSchema{},
 		&envfileSchema{},
 		&addressSchema{},
+		&checksSchema{},
+		&generatorsSchema{},
 	} {
 		schema.Install(dag)
 	}
@@ -202,10 +204,22 @@ func (m *CoreMod) TypeDefs(ctx context.Context, dag *dagql.Server) ([]*core.Type
 		schema.QueryType.Name = *queryName
 	}
 	for _, dagqlType := range dagqlSchema.Types() {
-		schema.Types = append(schema.Types, dagqlToCodegenType(dagqlType))
+		codeGenType, err := dagqlToCodegenType(dagqlType)
+		if err != nil {
+			return nil, err
+		}
+		schema.Types = append(schema.Types, codeGenType)
 	}
-	for _, dagqlDirective := range dagqlSchema.Directives() {
-		schema.Directives = append(schema.Directives, dagqlToCodegenDirectiveDef(dagqlDirective))
+	directives, err := dagqlSchema.Directives()
+	if err != nil {
+		return nil, err
+	}
+	for _, dagqlDirective := range directives {
+		dd, err := dagqlToCodegenDirectiveDef(dagqlDirective)
+		if err != nil {
+			return nil, err
+		}
+		schema.Directives = append(schema.Directives, dd)
 	}
 
 	typeDefs := make([]*core.TypeDef, 0, len(schema.Types))
@@ -232,6 +246,7 @@ func (m *CoreMod) TypeDefs(ctx context.Context, dag *dagql.Server) ([]*core.Type
 				fn := &core.Function{
 					Name:        introspectionField.Name,
 					Description: introspectionField.Description,
+					Deprecated:  introspectionField.DeprecationReason,
 				}
 
 				rtType, ok, err := introspectionRefToTypeDef(introspectionField.TypeRef, false, false)
@@ -247,6 +262,7 @@ func (m *CoreMod) TypeDefs(ctx context.Context, dag *dagql.Server) ([]*core.Type
 					fnArg := &core.FunctionArg{
 						Name:        introspectionArg.Name,
 						Description: introspectionArg.Description,
+						Deprecated:  introspectionArg.DeprecationReason,
 					}
 
 					if introspectionArg.DefaultValue != nil {
@@ -286,6 +302,7 @@ func (m *CoreMod) TypeDefs(ctx context.Context, dag *dagql.Server) ([]*core.Type
 				field := &core.FieldTypeDef{
 					Name:        introspectionField.Name,
 					Description: introspectionField.Description,
+					Deprecated:  introspectionField.DeprecationReason,
 				}
 				fieldType, ok, err := introspectionRefToTypeDef(introspectionField.TypeRef, false, false)
 				if err != nil {
@@ -325,6 +342,7 @@ func (m *CoreMod) TypeDefs(ctx context.Context, dag *dagql.Server) ([]*core.Type
 					Name:        value.Name,
 					Value:       value.Directives.EnumValue(),
 					Description: value.Description,
+					Deprecated:  value.DeprecationReason,
 				})
 			}
 
@@ -402,7 +420,7 @@ var _ core.ModType = (*CoreModObject)(nil)
 func (obj *CoreModObject) ConvertFromSDKResult(ctx context.Context, value any) (dagql.AnyResult, error) {
 	if value == nil {
 		// TODO remove if this is OK. Why is this not handled by a wrapping Nullable instead?
-		slog.Warn("CoreModObject.ConvertFromSDKResult: got nil value")
+		slog.ExtraDebug("CoreModObject.ConvertFromSDKResult: got nil value")
 		return nil, nil
 	}
 	id, ok := value.(string)
@@ -426,7 +444,7 @@ func (obj *CoreModObject) ConvertFromSDKResult(ctx context.Context, value any) (
 
 	val, err := dag.Load(ctx, &idp)
 	if err != nil {
-		return nil, fmt.Errorf("CoreModObject.load %s: %w", idp.Display(), err)
+		return nil, fmt.Errorf("CoreModObject.load %s: %w", idp.DisplaySelf(), err)
 	}
 	return val, nil
 }

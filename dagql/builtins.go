@@ -111,10 +111,7 @@ func (d DynamicArrayOutput) NthValue(i int, enumID *call.ID) (AnyResult, error) 
 	if err != nil {
 		return nil, err
 	}
-	return Result[Typed]{
-		constructor: enumID.SelectNth(i),
-		self:        t,
-	}, nil
+	return newDetachedResult(enumID.SelectNth(i), t), nil
 }
 
 func (d DynamicArrayOutput) MarshalJSON() ([]byte, error) {
@@ -162,6 +159,9 @@ func (d DynamicResultArrayOutput) Nth(i int) (Typed, error) {
 	val, err := d.NthValue(i, nil)
 	if err != nil {
 		return nil, err
+	}
+	if val == nil {
+		return nil, nil
 	}
 	return val.Unwrap(), nil
 }
@@ -348,8 +348,5 @@ func (d DynamicArrayInput) NthValue(i int, enumID *call.ID) (AnyResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Result[Typed]{
-		constructor: enumID.SelectNth(i),
-		self:        t,
-	}, nil
+	return newDetachedResult(enumID.SelectNth(i), t), nil
 }

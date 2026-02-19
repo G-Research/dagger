@@ -2,12 +2,12 @@ package server
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"runtime"
 	"runtime/debug"
 	"slices"
@@ -26,6 +26,7 @@ import (
 	bksolver "github.com/dagger/dagger/internal/buildkit/solver"
 	"github.com/dagger/dagger/internal/buildkit/solver/llbsolver"
 	"github.com/dagger/dagger/internal/buildkit/util/bklog"
+	"github.com/dagger/dagger/internal/buildkit/util/flightcontrol"
 	"github.com/dagger/dagger/internal/buildkit/util/leaseutil"
 	"github.com/dagger/dagger/internal/buildkit/util/progress/progressui"
 	"github.com/koron-go/prefixw"
@@ -51,6 +52,7 @@ import (
 	"github.com/dagger/dagger/engine"
 	"github.com/dagger/dagger/engine/buildkit"
 	"github.com/dagger/dagger/engine/cache/cachemanager"
+	engineclient "github.com/dagger/dagger/engine/client"
 	"github.com/dagger/dagger/engine/clientdb"
 	"github.com/dagger/dagger/engine/server/resource"
 	"github.com/dagger/dagger/engine/slog"
@@ -159,10 +161,20 @@ type daggerClient struct {
 	bkClient        *buildkit.Client
 
 	// SQLite database storing telemetry + anything else
-	db             *sql.DB
 	tracerProvider *sdktrace.TracerProvider
+	spanExporter   sdktrace.SpanExporter
+
 	loggerProvider *sdklog.LoggerProvider
+	logExporter    sdklog.Exporter
+
 	meterProvider  *sdkmetric.MeterProvider
+	metricExporter sdkmetric.Exporter
+
+	// NOTE: do not use this field directly as it may not be open
+	// after the client has shutdown; use TelemetryDB() instead
+	// This field exists to "keepalive" the db while the client
+	// is around to avoid perf overhead of closing/reopening a lot
+	keepAliveTelemetryDB *clientdb.DB
 }
 
 type daggerClientState string
@@ -176,18 +188,16 @@ func (client *daggerClient) String() string {
 	return fmt.Sprintf("<Client %s: %s>", client.clientID, client.state)
 }
 
+// NOTE: be sure to defer closing the DB when done with it, otherwise it may leak
+func (client *daggerClient) TelemetryDB(ctx context.Context) (*clientdb.DB, error) {
+	return client.daggerSession.telemetryPubSub.srv.clientDBs.Open(ctx, client.clientID)
+}
+
 func (client *daggerClient) FlushTelemetry(ctx context.Context) error {
 	slog := slog.With("client", client.clientID)
 	var errs error
 	if client.tracerProvider != nil {
 		slog.ExtraDebug("force flushing client traces")
-		// FIXME: mitigation for goroutine leak fixed upstream in
-		// https://github.com/open-telemetry/opentelemetry-go/pull/6363
-		// Just give this context a real generous timeout for now so if we
-		// are canceled we don't leak
-		// Can undo this once we've picked up the upstream fix.
-		ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 60*time.Second)
-		defer cancel()
 		errs = errors.Join(errs, client.tracerProvider.ForceFlush(ctx))
 	}
 	if client.loggerProvider != nil {
@@ -241,8 +251,8 @@ func (srv *Server) initializeDaggerSession(
 	sess *daggerSession,
 	failureCleanups *cleanups.Cleanups,
 ) error {
-	slog.ExtraDebug("initializing new session", "session", clientMetadata.SessionID)
-	defer slog.ExtraDebug("initialized new session", "session", clientMetadata.SessionID)
+	slog.Info("initializing new session", "session", clientMetadata.SessionID)
+	defer slog.Debug("initialized new session", "session", clientMetadata.SessionID)
 
 	sess.sessionID = clientMetadata.SessionID
 	sess.mainClientCallerID = clientMetadata.ClientID
@@ -261,7 +271,7 @@ func (srv *Server) initializeDaggerSession(
 
 	sess.analytics = analytics.New(analytics.Config{
 		DoNotTrack: clientMetadata.DoNotTrack || analytics.DoNotTrack(),
-		Labels: enginetel.Labels(clientMetadata.Labels).
+		Labels: enginetel.NewLabels(clientMetadata.Labels, nil, nil).
 			WithEngineLabel(srv.engineName).
 			WithServerLabels(
 				engine.Version,
@@ -310,7 +320,7 @@ func (sess *daggerSession) withShutdownCancel(ctx context.Context) context.Conte
 func (srv *Server) removeDaggerSession(ctx context.Context, sess *daggerSession) error {
 	slog := slog.With("session", sess.sessionID)
 
-	slog.Debug("removing session; stopping client services and flushing")
+	slog.Info("removing session; stopping client services and flushing")
 	defer slog.Debug("session removed")
 
 	// check if the local cache needs pruning after session is removed, prune if so
@@ -369,8 +379,8 @@ func (srv *Server) removeDaggerSession(ctx context.Context, sess *daggerSession)
 			// Flush all telemetry.
 			errs = errors.Join(errs, client.ShutdownTelemetry(ctx))
 
-			// Close client DB for writing; subscribers will have their own connection
-			errs = errors.Join(errs, client.db.Close())
+			// Close client DB; subscribers may re-open as needed with client.TelemetryDB()
+			errs = errors.Join(errs, client.keepAliveTelemetryDB.Close())
 
 			return errs
 		})
@@ -394,9 +404,16 @@ func (srv *Server) removeDaggerSession(ctx context.Context, sess *daggerSession)
 	// cleanup analytics and telemetry
 	errs = errors.Join(errs, sess.analytics.Close())
 
+	beforeDagqlEntries := srv.baseDagqlCache.Size()
 	if err := sess.dagqlCache.ReleaseAndClose(ctx); err != nil {
 		slog.Error("error releasing dagql cache", "error", err)
 		errs = errors.Join(errs, fmt.Errorf("release dagql cache: %w", err))
+	}
+	afterDagqlEntries := srv.baseDagqlCache.Size()
+	if afterDagqlEntries != beforeDagqlEntries {
+		slog.Debug("released dagql cache refs for session", "beforeEntries", beforeDagqlEntries, "afterEntries", afterDagqlEntries)
+	} else {
+		slog.Debug("session dagql cache release did not change base cache size", "entries", afterDagqlEntries)
 	}
 
 	// ensure this chan is closed even if the client never explicitly called the /shutdown endpoint
@@ -439,6 +456,14 @@ func (srv *Server) initializeDaggerClient(
 	failureCleanups *cleanups.Cleanups,
 	opts *ClientInitOpts,
 ) error {
+	slog := slog.With(
+		"isMainClient", client.clientID == client.daggerSession.mainClientCallerID,
+		"sessionID", client.daggerSession.sessionID,
+		"clientID", client.clientID,
+		"mainClientID", client.daggerSession.mainClientCallerID,
+	)
+	slog.Info("initializing new client")
+
 	// initialize all the buildkit+session attachable state for the client
 	client.secretStore = core.NewSecretStore(srv.bkSessionManager)
 	client.socketStore = core.NewSocketStore(srv.bkSessionManager)
@@ -640,6 +665,7 @@ func (srv *Server) initializeDaggerClient(
 	}
 
 	// configure OTel providers that export to SQLite
+	client.spanExporter = srv.telemetryPubSub.Spans(client)
 	tracerOpts := []sdktrace.TracerProviderOption{
 		// install a span processor that modifies spans created by Buildkit to
 		// fit our ideal format
@@ -648,20 +674,24 @@ func (srv *Server) initializeDaggerClient(
 		)),
 		// save to our own client's DB
 		sdktrace.WithSpanProcessor(telemetry.NewLiveSpanProcessor(
-			srv.telemetryPubSub.Spans(client),
+			client.spanExporter,
 		)),
 	}
+
+	logs := srv.telemetryPubSub.Logs(client)
+	client.logExporter = logs
 	loggerOpts := []sdklog.LoggerProviderOption{
 		sdklog.WithResource(telemetry.Resource),
-		sdklog.WithProcessor(clientLogs{client: client}),
+		sdklog.WithProcessor(logs),
 	}
 
-	const metricReaderInterval = 1 * time.Second
+	const metricReaderInterval = 5 * time.Second
 
+	client.metricExporter = srv.telemetryPubSub.Metrics(client)
 	meterOpts := []sdkmetric.Option{
 		sdkmetric.WithResource(telemetry.Resource),
 		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(
-			srv.telemetryPubSub.Metrics(client),
+			client.metricExporter,
 			sdkmetric.WithInterval(metricReaderInterval),
 		)),
 	}
@@ -714,7 +744,12 @@ func (srv *Server) clientFromIDs(sessID, clientID string) (*daggerClient, error)
 	defer srv.daggerSessionsMu.RUnlock()
 	sess, ok := srv.daggerSessions[sessID]
 	if !ok {
-		return nil, fmt.Errorf("session %q not found", sessID)
+		// This error can happen due to per-LLB-vertex deduplication in the buildkit solver,
+		// where for instance the first client cancels and closes its session while others
+		// are waiting on the result. In this case its safe to retry the operation again with
+		// the still connected client metadata.
+		err := flightcontrol.RetryableError{Err: fmt.Errorf("session %q not found", sessID)}
+		return nil, err
 	}
 
 	sess.clientMu.RLock()
@@ -804,10 +839,17 @@ func (srv *Server) getOrInitClient(
 		sess.clients[clientID] = client
 
 		// initialize SQLite DB early so we can subscribe to it immediately
-		var err error
-		client.db, err = srv.clientDBs.Create(client.clientID)
-		if err != nil {
-			return nil, nil, fmt.Errorf("open client DB: %w", err)
+		if db, err := srv.clientDBs.Open(ctx, client.clientID); err != nil {
+			slog.Warn("failed to open client DB; continuing without keepalive",
+				"sessionID", sessionID,
+				"clientID", client.clientID,
+				"error", err,
+			)
+		} else {
+			client.keepAliveTelemetryDB = db
+			failureCleanups.Add("close client telemetry DB", func() error {
+				return db.Close()
+			})
 		}
 
 		parent, parentExists := sess.clients[opts.CallerClientID]
@@ -837,6 +879,13 @@ func (srv *Server) getOrInitClient(
 		if token != client.secretToken {
 			return nil, nil, fmt.Errorf("client %q already exists with different secret token", clientID)
 		}
+
+		// for nested clients running the dagger cli, the session attachable
+		// connection may not have all of the client metadata yet, so we
+		// fill in some missing fields here that may be set later by the cli
+		if client.clientMetadata.AllowedLLMModules == nil {
+			client.clientMetadata.AllowedLLMModules = opts.AllowedLLMModules
+		}
 	}
 
 	// increment the number of active connections from this client
@@ -851,6 +900,12 @@ func (srv *Server) getOrInitClient(
 			return nil
 		}
 
+		slog := slog.With(
+			"sessionID", sess.sessionID,
+			"clientID", client.clientID,
+		)
+		slog.Info("all client connections closed")
+
 		// if the main client caller has no more active calls, cleanup the whole session
 		if clientID != sess.mainClientCallerID {
 			return nil
@@ -864,7 +919,6 @@ func (srv *Server) getOrInitClient(
 		default:
 			// this should never happen unless there's a bug
 			slog.Error("session state being removed not in initialized state",
-				"session", sess.sessionID,
 				"state", sess.state,
 			)
 			return nil
@@ -899,6 +953,7 @@ func (srv *Server) ServeHTTPToNestedClient(w http.ResponseWriter, r *http.Reques
 	if clientVersion == "" {
 		clientVersion = engine.Version
 	}
+
 	allowedLLMModules := execMD.AllowedLLMModules
 	if md, _ := engine.ClientMetadataFromHTTPHeaders(r.Header); md != nil {
 		clientVersion = md.ClientVersion
@@ -946,9 +1001,18 @@ func (srv *Server) serveHTTPToClient(w http.ResponseWriter, r *http.Request, opt
 	}
 
 	ctx = bklog.WithLogger(ctx, bklog.G(ctx).
+		WithField("trace", trace.SpanContextFromContext(ctx).TraceID().String()).
+		WithField("span", trace.SpanContextFromContext(ctx).SpanID().String()).
 		WithField("client_id", clientMetadata.ClientID).
 		WithField("client_hostname", clientMetadata.ClientHostname).
 		WithField("session_id", clientMetadata.SessionID))
+	ctx = slog.WithLogger(ctx, slog.FromContext(ctx).With(
+		"client_id", clientMetadata.ClientID,
+		"client_hostname", clientMetadata.ClientHostname,
+		"session_id", clientMetadata.SessionID,
+		"trace", trace.SpanContextFromContext(ctx).TraceID().String(),
+		"span", trace.SpanContextFromContext(ctx).SpanID().String(),
+	))
 
 	// Debug https://github.com/dagger/dagger/issues/7592 by logging method and some headers, which
 	// are checked by gqlgen's handler
@@ -1096,11 +1160,17 @@ func (srv *Server) serveQuery(w http.ResponseWriter, r *http.Request, client *da
 		// downstream components must use otel.SpanFromContext(ctx).TracerProvider()
 		clientTracer := client.tracerProvider.Tracer(InstrumentationLibrary)
 		var span trace.Span
+		attrs := []attribute.KeyValue{
+			attribute.Bool(telemetry.UIPassthroughAttr, true),
+		}
+		if engineID := client.clientMetadata.CloudScaleOutEngineID; engineID != "" {
+			attrs = append(attrs, attribute.String(telemetry.EngineIDAttr, engineID))
+		}
 		ctx, span = clientTracer.Start(ctx,
 			fmt.Sprintf("%s %s", r.Method, r.URL.Path),
-			trace.WithAttributes(attribute.Bool(telemetry.UIPassthroughAttr, true)),
+			trace.WithAttributes(attrs...),
 		)
-		defer telemetry.End(span, func() error { return rerr })
+		defer telemetry.EndWithCause(span, &rerr)
 	}
 
 	// install a logger+meter provider that records to the client's DB
@@ -1172,11 +1242,11 @@ func (srv *Server) serveShutdown(w http.ResponseWriter, r *http.Request, client 
 		"clientID", client.clientID,
 		"mainClientID", sess.mainClientCallerID)
 
-	slog.Trace("shutting down server")
-	defer slog.Trace("done shutting down server")
+	slog.Info("client shutdown")
+	defer slog.Debug("client shutdown done")
 
 	if client.clientID == sess.mainClientCallerID {
-		slog.Debug("main client is shutting down")
+		slog.Info("main client is shutting down")
 
 		// Stop services, since the main client is going away, and we
 		// want the client to see them stop.
@@ -1191,7 +1261,7 @@ func (srv *Server) serveShutdown(w http.ResponseWriter, r *http.Request, client 
 			// create an internal span so we hide exporter children spans which are quite noisy
 			ctx, cInternal := t.Start(ctx, "cache export internal", telemetry.Internal())
 			defer cInternal.End()
-			bklog.G(ctx).Debugf("running cache export for client %s", client.clientID)
+			bklog.G(ctx).Infof("running cache export for client %s", client.clientID)
 			cacheExporterFuncs := make([]buildkit.ResolveCacheExporterFunc, len(sess.cacheExporterCfgs))
 			for i, cacheExportCfg := range sess.cacheExporterCfgs {
 				cacheExporterFuncs[i] = func(ctx context.Context, sessionGroup bksession.Group) (remotecache.Exporter, error) {
@@ -1206,7 +1276,7 @@ func (srv *Server) serveShutdown(w http.ResponseWriter, r *http.Request, client 
 			if err != nil {
 				bklog.G(ctx).WithError(err).Errorf("error running cache export for client %s", client.clientID)
 			}
-			bklog.G(ctx).Debugf("done running cache export for client %s", client.clientID)
+			bklog.G(ctx).Infof("done running cache export for client %s", client.clientID)
 		}
 
 		defer func() {
@@ -1312,6 +1382,24 @@ func (srv *Server) CurrentModule(ctx context.Context) (*core.Module, error) {
 		return client.mod, nil
 	}
 
+	return nil, core.ErrNoCurrentModule
+}
+
+// If the current client is a module client or a client created by a module function, returns that module.
+func (srv *Server) ModuleParent(ctx context.Context) (*core.Module, error) {
+	client, err := srv.clientFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if client.mod != nil {
+		return client.mod, nil
+	}
+	for i := len(client.parents) - 1; i >= 0; i-- {
+		parent := client.parents[i]
+		if parent.mod != nil {
+			return parent.mod, nil
+		}
+	}
 	return nil, core.ErrNoCurrentModule
 }
 
@@ -1493,19 +1581,72 @@ func (srv *Server) SecretSalt() []byte {
 }
 
 // Provides access to the client's telemetry database.
-func (srv *Server) ClientTelemetry(ctx context.Context, sessID, clientID string) (*clientdb.Queries, func() error, error) {
+func (srv *Server) ClientTelemetry(ctx context.Context, sessID, clientID string) (*clientdb.DB, error) {
 	client, err := srv.clientFromIDs(sessID, clientID)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	if err := client.FlushTelemetry(ctx); err != nil {
-		return nil, nil, fmt.Errorf("flush telemetry: %w", err)
+		return nil, fmt.Errorf("flush telemetry: %w", err)
 	}
-	db, err := srv.clientDBs.Open(clientID)
+	return client.TelemetryDB(ctx)
+}
+
+// Return a client connected to a cloud engine. If bool return is false, the local engine should be used. Session attachables for the returned client will be proxied back to the calling client.
+func (srv *Server) CloudEngineClient(
+	ctx context.Context,
+	module string,
+	function string,
+	execCmd []string,
+) (*engineclient.Client, bool, error) {
+	parentClient, err := srv.nonModuleParentClient(ctx)
 	if err != nil {
-		return nil, nil, err
+		return nil, false, err
 	}
-	return clientdb.New(db), db.Close, nil
+	parentCallerCtx := engine.ContextWithClientMetadata(ctx, parentClient.clientMetadata)
+	parentSession, err := parentClient.bkClient.GetSessionCaller(parentCallerCtx, false)
+	if err != nil {
+		return nil, false, err
+	}
+
+	// TODO: cloud support for "run on yourself", return (nil, false, nil) in that case
+
+	engineClient, err := engineclient.ConnectEngineToEngine(ctx, engineclient.EngineToEngineParams{
+		Params: engineclient.Params{
+			RunnerHost: engine.DefaultCloudRunnerHost,
+
+			Module:   module,
+			Function: function,
+			ExecCmd:  execCmd,
+
+			CloudAuth: parentClient.clientMetadata.CloudAuth,
+
+			EngineTrace:   parentClient.spanExporter,
+			EngineLogs:    parentClient.logExporter,
+			EngineMetrics: []sdkmetric.Exporter{parentClient.metricExporter},
+
+			// FIXME: for now, disable recursive scale out to prevent any
+			// surprise "fork-bomb" scenarios. Eventually this should be
+			// permitted.
+			EnableCloudScaleOut: false,
+		},
+		CallerSessionConn: parentSession.Conn(),
+		Labels:            enginetel.NewLabels(parentClient.clientMetadata.Labels, nil, nil),
+		StableClientID:    parentClient.clientMetadata.ClientStableID,
+	})
+	if err != nil {
+		return nil, false, err
+	}
+
+	return engineClient, true, nil
+}
+
+// A mount namespace guaranteed to not have any mounts created by engine operations.
+// Should be used when creating goroutines/processes that unshare a mount namespace,
+// otherwise those unshared mnt namespaces may inherit mounts from engine operations
+// and leak them.
+func (srv *Server) CleanMountNS() *os.File {
+	return srv.cleanMntNS
 }
 
 type httpError struct {

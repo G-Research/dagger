@@ -13,6 +13,7 @@ import (
 	"github.com/dagger/dagger/engine/distconsts"
 	"github.com/dagger/dagger/engine/slog"
 	enginetel "github.com/dagger/dagger/engine/telemetry"
+	"github.com/dagger/dagger/internal/cloud/auth"
 	"github.com/dagger/dagger/util/cleanups"
 	"go.opentelemetry.io/otel"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
@@ -24,6 +25,7 @@ const (
 	GPUSupportEnv        = "_EXPERIMENTAL_DAGGER_GPU_SUPPORT"
 	RunnerHostEnv        = "_EXPERIMENTAL_DAGGER_RUNNER_HOST"
 	RunnerImageLoaderEnv = "_EXPERIMENTAL_DAGGER_RUNNER_IMAGESTORE"
+	TraceNameEnv         = "DAGGER_TRACE_NAME"
 )
 
 var (
@@ -90,7 +92,7 @@ func withEngine(
 		}
 
 		if useCloudEngine {
-			params.RunnerHost = "dagger-cloud://default-engine-config.dagger.cloud"
+			params.RunnerHost = engine.DefaultCloudRunnerHost
 		} else if params.RunnerHost == "" {
 			params.RunnerHost = RunnerHost
 		}
@@ -125,8 +127,14 @@ func withEngine(
 			params.PromptHandler = Frontend
 		}
 
+		ca, err := auth.GetCloudAuth(ctx)
+		if err != nil {
+			return cleanup.Run, err
+		}
+		params.CloudAuth = ca
+
 		// Connect to and run with the engine
-		sess, ctx, err := client.Connect(ctx, params)
+		sess, err := client.Connect(ctx, params)
 		if err != nil {
 			return cleanup.Run, err
 		}
@@ -160,7 +168,11 @@ func initEngineTelemetry(ctx context.Context) (context.Context, func(error)) {
 	// If you pass credentials in plaintext, yes, they will be leaked; don't do
 	// that, since they will also be leaked in various other places (like the
 	// process tree). Use Secret arguments instead.
-	ctx, span := Tracer().Start(ctx, spanName(os.Args))
+	name := spanName(os.Args)
+	if os.Getenv(TraceNameEnv) != "" {
+		name = os.Getenv(TraceNameEnv)
+	}
+	ctx, span := Tracer().Start(ctx, name)
 
 	// Set up global slog to log to the primary span output.
 	slog.SetDefault(slog.SpanLogger(ctx, InstrumentationLibrary))
@@ -178,7 +190,7 @@ func initEngineTelemetry(ctx context.Context) (context.Context, func(error)) {
 
 	return ctx, func(rerr error) {
 		stdio.Close()
-		telemetry.End(span, func() error { return rerr })
+		telemetry.EndWithCause(span, &rerr)
 		telemetry.Close()
 	}
 }

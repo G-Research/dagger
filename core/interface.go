@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
 	"github.com/dagger/dagger/internal/buildkit/util/bklog"
 	"github.com/opencontainers/go-digest"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -88,7 +87,7 @@ func (iface *InterfaceType) loadImpl(ctx context.Context, id *call.ID) (*loadedI
 	}
 	val, err := dag.Load(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("load interface ID %s: %w", id.Display(), err)
+		return nil, fmt.Errorf("load interface ID %s: %w", id.DisplaySelf(), err)
 	}
 
 	typeName := val.ObjectType().TypeName()
@@ -228,10 +227,11 @@ func (iface *InterfaceType) Install(ctx context.Context, dag *dagql.Server) erro
 		}
 
 		fieldDef := &dagql.FieldSpec{
-			Name:        fnName,
-			Description: formatGqlDescription(fnTypeDef.Description),
-			Type:        fnTypeDef.ReturnType.ToTyped(),
-			Module:      iface.mod.IDModule(),
+			Name:             fnName,
+			Description:      formatGqlDescription(fnTypeDef.Description),
+			Type:             fnTypeDef.ReturnType.ToTyped(),
+			Module:           iface.mod.IDModule(),
+			DeprecatedReason: fnTypeDef.Deprecated,
 		}
 		if fnTypeDef.SourceMap.Valid {
 			fieldDef.Directives = append(fieldDef.Directives, fnTypeDef.SourceMap.Value.TypeDirective())
@@ -260,9 +260,10 @@ func (iface *InterfaceType) Install(ctx context.Context, dag *dagql.Server) erro
 			}
 
 			inputSpec := dagql.InputSpec{
-				Name:        gqlArgName(argMetadata.Name),
-				Description: formatGqlDescription(argMetadata.Description),
-				Type:        argMetadata.TypeDef.ToInput(),
+				Name:             gqlArgName(argMetadata.Name),
+				Description:      formatGqlDescription(argMetadata.Description),
+				Type:             argMetadata.TypeDef.ToInput(),
+				DeprecatedReason: argMetadata.Deprecated,
 			}
 			if argMetadata.SourceMap.Valid {
 				inputSpec.Directives = append(inputSpec.Directives, argMetadata.SourceMap.Value.TypeDirective())
@@ -331,11 +332,8 @@ func (iface *InterfaceType) Install(ctx context.Context, dag *dagql.Server) erro
 					return nil, fmt.Errorf("failed to call interface function %s.%s: %w", ifaceName, fieldDef.Name, err)
 				}
 
-				postCall := res.GetPostCall()
-				if postCall != nil {
-					if err := postCall(ctx); err != nil {
-						return nil, fmt.Errorf("failed to run post-call for %s.%s: %w", ifaceName, fieldDef.Name, err)
-					}
+				if err := res.PostCall(ctx); err != nil {
+					return nil, fmt.Errorf("failed to run post-call for %s.%s: %w", ifaceName, fieldDef.Name, err)
 				}
 
 				if fnTypeDef.ReturnType.Underlying().Kind != TypeDefKindInterface {
@@ -492,47 +490,4 @@ func (iface *InterfaceAnnotatedValue) TypeDefinition(view call.View) *ast.Defini
 		def.Directives = append(def.Directives, iface.TypeDef.SourceMap.Value.TypeDirective())
 	}
 	return def
-}
-
-var _ HasPBDefinitions = (*InterfaceAnnotatedValue)(nil)
-
-func (iface *InterfaceAnnotatedValue) PBDefinitions(ctx context.Context) ([]*pb.Definition, error) {
-	defs := []*pb.Definition{}
-	objDef := iface.UnderlyingType.TypeDef().AsObject.Value
-	for _, field := range objDef.Fields {
-		// TODO: we skip over private fields, we can't convert them anyways (this is a bug)
-		name := field.OriginalName
-		val, ok := iface.Fields[name]
-		if !ok {
-			// missing field
-			continue
-		}
-		fieldType, ok, err := iface.UnderlyingType.SourceMod().ModTypeFor(ctx, field.TypeDef, true)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get mod type for field %q: %w", name, err)
-		}
-		if !ok {
-			return nil, fmt.Errorf("failed to find mod type for field %q", name)
-		}
-
-		curID := dagql.CurrentID(ctx)
-		fieldID := curID.Append(
-			field.TypeDef.ToType(),
-			field.Name,
-			call.WithView(curID.View()),
-			call.WithModule(curID.Module()),
-		)
-		ctx := dagql.ContextWithID(ctx, fieldID)
-
-		converted, err := fieldType.ConvertFromSDKResult(ctx, val)
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert arg %q: %w", name, err)
-		}
-		fieldDefs, err := collectPBDefinitions(ctx, converted.Unwrap())
-		if err != nil {
-			return nil, err
-		}
-		defs = append(defs, fieldDefs...)
-	}
-	return defs, nil
 }

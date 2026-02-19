@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -20,6 +21,7 @@ import (
 	"golang.org/x/crypto/ssh/agent"
 
 	"dagger.io/dagger"
+	gitsession "github.com/dagger/dagger/engine/session/git"
 	"github.com/dagger/dagger/util/gitutil"
 	"github.com/dagger/testctx"
 )
@@ -1367,6 +1369,31 @@ func (GitSuite) TestIsRemotePublic(ctx context.Context, t *testctx.T) {
 	}
 }
 
+func (GitSuite) TestGitLsRemoteSessionCache(ctx context.Context, t *testctx.T) {
+	c := connect(ctx, t)
+	defer func() {
+		require.NoError(t, c.Close())
+	}()
+
+	const repoURL = "https://github.com/dagger/dagger-test-modules"
+	repo := c.Git(repoURL)
+
+	commit, err := repo.Head().Commit(ctx)
+	require.NoError(t, err)
+	require.NotEmpty(t, commit)
+
+	branchCommit, err := repo.Branch("main").Commit(ctx)
+	require.NoError(t, err)
+	require.Equal(t, commit, branchCommit, "both selections should resolve the same commit in a single session")
+
+	// Resolve the same ref through a fresh Git node so the second call exercises the
+	// per-session ls-remote cache (the first one warmed it).
+	repo2 := c.Git(repoURL, dagger.GitOpts{KeepGitDir: true})
+	commit2, err := repo2.Head().Commit(ctx)
+	require.NoError(t, err)
+	require.Equal(t, commit, commit2)
+}
+
 func (GitSuite) TestGitUncommittedRemote(ctx context.Context, t *testctx.T) {
 	c := connect(ctx, t)
 
@@ -1462,4 +1489,328 @@ func gitUserConfig(ctr *dagger.Container) *dagger.Container {
 		WithExec([]string{"git", "config", "--global", "user.email", "test@dagger.io"}).
 		WithExec([]string{"git", "config", "--global", "user.name", "Test User"}).
 		WithExec([]string{"git", "config", "--global", "init.defaultBranch", "main"})
+}
+
+// High-level test strategy:
+// 1. Use Dagger to create isolated container environments for testing
+// 2. Mount gitcredential implementation + generated proto inside container as the session package
+// 3. Run tests and collect output through container stdout
+func (GitSuite) TestGitCredentialProto(ctx context.Context, t *testctx.T) {
+	tests := []struct {
+		name             string
+		setup            func(*dagger.Container) *dagger.Container
+		request          *gitsession.GitCredentialRequest
+		expectedError    gitsession.ErrorInfo_ErrorType
+		expectedReason   string
+		expectedResponse *gitsession.CredentialInfo
+	}{
+		// Test case 1: Happy path - credential helper returns valid credentials
+		// Verifies that when a credential helper returns properly formatted credentials,
+		// they are correctly parsed and returned
+		{
+			name: "VALID_CREDENTIALS",
+			setup: func(c *dagger.Container) *dagger.Container {
+				return c.WithNewFile("/usr/local/bin/git-credential-valid", `#!/bin/sh
+echo "protocol=https"
+echo "host=github.com"
+echo "username=testuser"
+echo "password=testpass"
+`).
+					WithExec([]string{"chmod", "+x", "/usr/local/bin/git-credential-valid"}).
+					WithExec([]string{"git", "config", "--global", "credential.helper", "valid"})
+			},
+			request: &gitsession.GitCredentialRequest{
+				Protocol: "https",
+				Host:     "github.com",
+			},
+			expectedResponse: &gitsession.CredentialInfo{
+				Protocol: "https",
+				Host:     "github.com",
+				Username: "testuser",
+				Password: "testpass",
+			},
+		},
+		{
+			// Test case 2: Input validation - empty required fields
+			// Verifies that the service properly validates input before attempting
+			// to query Git
+			name: "INVALID_REQUEST",
+			request: &gitsession.GitCredentialRequest{
+				Protocol: "",
+				Host:     "",
+			},
+			expectedError:  gitsession.INVALID_REQUEST,
+			expectedReason: "Host and protocol are required",
+		},
+		{
+			// Test case 3: Environment check - Git not available
+			// Verifies that the service properly handles cases where Git is not
+			// installed or not in PATH
+			name: "NOT_FOUND",
+			setup: func(c *dagger.Container) *dagger.Container {
+				return c.WithExec([]string{"mv", "/usr/bin/git", "/usr/bin/git_temp"})
+			},
+			request: &gitsession.GitCredentialRequest{
+				Protocol: "https",
+				Host:     "github.com",
+			},
+			expectedError:  gitsession.NOT_FOUND,
+			expectedReason: "Git is not installed or not in PATH",
+		},
+		{
+			// Test case 4: Malformed helper output
+			// Verifies that invalid output format from credential helper
+			// is properly handled as a credential retrieval failure
+			name: "INVALID_FORMAT_FROM_HELPER",
+			setup: func(c *dagger.Container) *dagger.Container {
+				return c.WithNewFile("/usr/local/bin/git-credential-invalid", `#!/bin/sh
+while read line; do
+    case "$line" in
+        "") break ;;
+    esac
+done
+echo "this is not a key value pair"
+exit 1
+`).
+					WithExec([]string{"chmod", "+x", "/usr/local/bin/git-credential-invalid"}).
+					WithExec([]string{"git", "config", "--global", "credential.helper", "invalid"}).
+					// Prevent Git from falling back to interactive prompts in no-tty environment
+					WithEnvVariable("GIT_ASKPASS", "")
+			},
+			request: &gitsession.GitCredentialRequest{
+				Protocol: "https",
+				Host:     "github.com",
+			},
+			expectedError:  gitsession.CREDENTIAL_RETRIEVAL_FAILED,
+			expectedReason: "Failed to retrieve credentials: exit status 128",
+		},
+		{
+			// Test case 5: No credentials found
+			// Verifies that when Git can't find credentials, it's handled as
+			// a credential retrieval failure (Git's standard behavior)
+			name: "MISSING_CREDENTIALS",
+			setup: func(c *dagger.Container) *dagger.Container {
+				return c.WithNewFile("/usr/local/bin/git-credential-missing", `#!/bin/sh
+# Read input silently
+while read line; do
+    case "$line" in
+        "") break ;;
+    esac
+done
+# Exit with status 128 to indicate no credentials found
+# This is Git's expected behavior when no credentials are found
+exit 128
+`).
+					WithExec([]string{"chmod", "+x", "/usr/local/bin/git-credential-missing"}).
+					WithExec([]string{"git", "config", "--global", "credential.helper", "missing"}).
+					WithEnvVariable("GIT_ASKPASS", "").
+					WithEnvVariable("GIT_TERMINAL_PROMPT", "0")
+			},
+			request: &gitsession.GitCredentialRequest{
+				Protocol: "https",
+				Host:     "github.com",
+			},
+			expectedError:  gitsession.CREDENTIAL_RETRIEVAL_FAILED,
+			expectedReason: "Failed to retrieve credentials: exit status 128",
+		},
+		{
+			// Test case 6: Timeout handling
+			// Verifies that the service properly handles credential helpers
+			// that take too long to respond
+			name: "TIMEOUT",
+			setup: func(c *dagger.Container) *dagger.Container {
+				return c.WithNewFile("/usr/local/bin/git-credential-slow", `#!/bin/sh
+# Read all input first
+while read line; do
+    case "$line" in
+        "") break ;;
+    esac
+done
+# Sleep longer than the 30s timeout
+sleep 31
+`).
+					WithExec([]string{"chmod", "+x", "/usr/local/bin/git-credential-slow"}).
+					WithExec([]string{"git", "config", "--global", "credential.helper", "slow"})
+			},
+			request: &gitsession.GitCredentialRequest{
+				Protocol: "https",
+				Host:     "github.com",
+			},
+			expectedError:  gitsession.TIMEOUT,
+			expectedReason: "Git credential command timed out",
+		},
+		{
+			name: "netrc",
+			setup: func(c *dagger.Container) *dagger.Container {
+				return c.WithNewFile("/root/.netrc", `
+machine github.com
+login netrcuser
+password netrcpass
+`)
+			},
+			request: &gitsession.GitCredentialRequest{
+				Protocol: "https",
+				Host:     "github.com",
+			},
+			expectedResponse: &gitsession.CredentialInfo{
+				Protocol: "https",
+				Host:     "github.com",
+				Username: "netrcuser",
+				Password: "netrcpass",
+			},
+		},
+		{
+			// Test case: GIT_ASKPASS is ignored
+			// Verifies that even when GIT_ASKPASS is set in the environment (e.g., by VS Code),
+			// credentials are retrieved from the credential helper without triggering askpass.
+			// This prevents unwanted GUI prompts in IDE environments.
+			// See: https://git-scm.com/docs/gitcredentials
+			name: "GIT_ASKPASS_IGNORED",
+			setup: func(c *dagger.Container) *dagger.Container {
+				return c.
+					WithNewFile("/usr/local/bin/git-credential-valid", `#!/bin/sh
+echo "protocol=https"
+echo "host=github.com"
+echo "username=helperuser"
+echo "password=helperpass"
+`).
+					WithExec([]string{"chmod", "+x", "/usr/local/bin/git-credential-valid"}).
+					WithExec([]string{"git", "config", "--global", "credential.helper", "valid"}).
+					WithNewFile("/usr/local/bin/fake-askpass", `#!/bin/sh
+# This script should never be called - if it is, the test fails
+echo "ASKPASS_WAS_CALLED" >&2
+exit 1
+`).
+					WithExec([]string{"chmod", "+x", "/usr/local/bin/fake-askpass"}).
+					WithEnvVariable("GIT_ASKPASS", "/usr/local/bin/fake-askpass")
+			},
+			request: &gitsession.GitCredentialRequest{
+				Protocol: "https",
+				Host:     "github.com",
+			},
+			expectedResponse: &gitsession.CredentialInfo{
+				Protocol: "https",
+				Host:     "github.com",
+				Username: "helperuser",
+				Password: "helperpass",
+			},
+		},
+	}
+
+	// setup dagger
+	client := connect(ctx, t)
+
+	wd, err := os.Getwd()
+	require.NoError(t, err)
+
+	// Create base container with all dependencies
+	baseContainer := client.Container().
+		From("golang:1.25").
+		WithExec([]string{"apt-get", "update"}).
+		WithExec([]string{"apt-get", "install", "-y", "git"}).
+		WithExec([]string{"mkdir", "-p", "/app/git"}).
+		WithWorkdir("/app").
+		// create go.mod so that below main() can test our proto handling
+		WithNewFile("/app/go.mod", `
+module testapp
+
+go 1.24
+
+require (
+    github.com/gogo/protobuf v1.3.2
+    google.golang.org/grpc v1.59.0
+)
+
+replace github.com/dagger/dagger => .
+`).
+		// Mount git implementation as the session pkg
+		WithMountedDirectory("./git/", client.Host().Directory(filepath.Join(wd, "../../engine/session/git"))).
+		WithMountedDirectory("./util/netrc/", client.Host().Directory(filepath.Join(wd, "../../util/netrc"))).
+		WithMountedDirectory("./util/grpcutil/", client.Host().Directory(filepath.Join(wd, "../../util/grpcutil"))).
+
+		// Create test harness that:
+		// 1. Reads request from JSON file
+		// 2. Calls our implementation
+		// 3. Outputs response as JSON
+		WithNewFile("/app/test.go", `
+package main
+
+import (
+    "context"
+    "encoding/json"
+    "fmt"
+    "io/ioutil"
+
+    "testapp/git"
+)
+
+func main() {
+    data, err := ioutil.ReadFile("/request.json")
+    if err != nil {
+        panic(err)
+    }
+
+        var request git.GitCredentialRequest
+    if err := json.Unmarshal(data, &request); err != nil {
+        panic(err)
+    }
+
+    s := git.NewGitAttachable(context.Background())
+    response, err := s.GetCredential(context.Background(), &request)
+    if err != nil {
+        panic(err)
+    }
+
+    responseJSON, err := json.Marshal(response)
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println(string(responseJSON))
+}
+`).
+		WithNewFile("/request.json", "{}").
+		WithWorkdir("/app").
+		WithExec([]string{"go", "mod", "tidy"})
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(ctx context.Context, t *testctx.T) {
+			// Start from the base container
+			container := baseContainer
+
+			// Apply test-specific setup
+			if tt.setup != nil {
+				container = tt.setup(container)
+			}
+
+			// Create a file with the request
+			requestJSON, err := json.Marshal(tt.request)
+			require.NoError(t, err)
+
+			container = container.
+				WithNewFile("/request.json", string(requestJSON)).
+				WithExec([]string{"go", "run", "test.go"})
+
+			// assert response
+			output, err := container.Stdout(ctx)
+			require.NoError(t, err)
+
+			t.Logf("Raw output: %s", output)
+
+			var wrapper struct {
+				Result struct {
+					Error struct {
+						Type    gitsession.ErrorInfo_ErrorType `json:"type"`
+						Message string                         `json:"message"`
+					} `json:"error"`
+				} `json:"Result"`
+			}
+
+			err = json.Unmarshal([]byte(output), &wrapper)
+			require.NoError(t, err)
+
+			// Check error response
+			require.Equal(t, tt.expectedError, wrapper.Result.Error.Type)
+			require.Equal(t, tt.expectedReason, wrapper.Result.Error.Message)
+		})
+	}
 }

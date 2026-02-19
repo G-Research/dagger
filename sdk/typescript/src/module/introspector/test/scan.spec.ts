@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { describe, it } from "@otel-test-runner/mocha-test"
 import assert from "assert"
 import * as fs from "fs"
 import path from "path"
@@ -87,6 +88,10 @@ describe("scan by reference TypeScript", function () {
       directory: "coreEnums",
     },
     {
+      name: "Should correctly scan core enum defaults",
+      directory: "coreEnumDefault",
+    },
+    {
       name: "Should correctly scan constructor",
       directory: "constructor",
     },
@@ -97,6 +102,22 @@ describe("scan by reference TypeScript", function () {
     {
       name: "Should correctly scan minimal",
       directory: "minimal",
+    },
+    {
+      name: "Should correctly scan deprecated objects",
+      directory: "deprecatedObject",
+    },
+    {
+      name: "Should correctly scan deprecated functions",
+      directory: "deprecatedFunction",
+    },
+    {
+      name: "Should correctly scan deprecated arguments",
+      directory: "deprecatedArgument",
+    },
+    {
+      name: "Should correctly scan deprecated fields",
+      directory: "deprecatedField",
     },
     {
       name: "Should correctly scan interfaces",

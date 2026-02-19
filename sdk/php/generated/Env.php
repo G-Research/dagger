@@ -11,6 +11,28 @@ namespace Dagger;
 class Env extends Client\AbstractObject implements Client\IdAble
 {
     /**
+     * Return the check with the given name from the installed modules. Must match exactly one check.
+     */
+    public function check(string $name): Check
+    {
+        $innerQueryBuilder = new \Dagger\Client\QueryBuilder('check');
+        $innerQueryBuilder->setArgument('name', $name);
+        return new \Dagger\Check($this->client, $this->queryBuilderChain->chain($innerQueryBuilder));
+    }
+
+    /**
+     * Return all checks defined by the installed modules
+     */
+    public function checks(?array $include = null): CheckGroup
+    {
+        $innerQueryBuilder = new \Dagger\Client\QueryBuilder('checks');
+        if (null !== $include) {
+        $innerQueryBuilder->setArgument('include', $include);
+        }
+        return new \Dagger\CheckGroup($this->client, $this->queryBuilderChain->chain($innerQueryBuilder));
+    }
+
+    /**
      * A unique identifier for this Env.
      */
     public function id(): EnvId
@@ -121,6 +143,52 @@ class Env extends Client\AbstractObject implements Client\IdAble
     public function withChangesetOutput(string $name, string $description): Env
     {
         $innerQueryBuilder = new \Dagger\Client\QueryBuilder('withChangesetOutput');
+        $innerQueryBuilder->setArgument('name', $name);
+        $innerQueryBuilder->setArgument('description', $description);
+        return new \Dagger\Env($this->client, $this->queryBuilderChain->chain($innerQueryBuilder));
+    }
+
+    /**
+     * Create or update a binding of type CheckGroup in the environment
+     */
+    public function withCheckGroupInput(string $name, CheckGroupId|CheckGroup $value, string $description): Env
+    {
+        $innerQueryBuilder = new \Dagger\Client\QueryBuilder('withCheckGroupInput');
+        $innerQueryBuilder->setArgument('name', $name);
+        $innerQueryBuilder->setArgument('value', $value);
+        $innerQueryBuilder->setArgument('description', $description);
+        return new \Dagger\Env($this->client, $this->queryBuilderChain->chain($innerQueryBuilder));
+    }
+
+    /**
+     * Declare a desired CheckGroup output to be assigned in the environment
+     */
+    public function withCheckGroupOutput(string $name, string $description): Env
+    {
+        $innerQueryBuilder = new \Dagger\Client\QueryBuilder('withCheckGroupOutput');
+        $innerQueryBuilder->setArgument('name', $name);
+        $innerQueryBuilder->setArgument('description', $description);
+        return new \Dagger\Env($this->client, $this->queryBuilderChain->chain($innerQueryBuilder));
+    }
+
+    /**
+     * Create or update a binding of type Check in the environment
+     */
+    public function withCheckInput(string $name, CheckId|Check $value, string $description): Env
+    {
+        $innerQueryBuilder = new \Dagger\Client\QueryBuilder('withCheckInput');
+        $innerQueryBuilder->setArgument('name', $name);
+        $innerQueryBuilder->setArgument('value', $value);
+        $innerQueryBuilder->setArgument('description', $description);
+        return new \Dagger\Env($this->client, $this->queryBuilderChain->chain($innerQueryBuilder));
+    }
+
+    /**
+     * Declare a desired Check output to be assigned in the environment
+     */
+    public function withCheckOutput(string $name, string $description): Env
+    {
+        $innerQueryBuilder = new \Dagger\Client\QueryBuilder('withCheckOutput');
         $innerQueryBuilder->setArgument('name', $name);
         $innerQueryBuilder->setArgument('description', $description);
         return new \Dagger\Env($this->client, $this->queryBuilderChain->chain($innerQueryBuilder));
@@ -276,6 +344,55 @@ class Env extends Client\AbstractObject implements Client\IdAble
     }
 
     /**
+     * Create or update a binding of type GeneratorGroup in the environment
+     */
+    public function withGeneratorGroupInput(
+        string $name,
+        GeneratorGroupId|GeneratorGroup $value,
+        string $description,
+    ): Env {
+        $innerQueryBuilder = new \Dagger\Client\QueryBuilder('withGeneratorGroupInput');
+        $innerQueryBuilder->setArgument('name', $name);
+        $innerQueryBuilder->setArgument('value', $value);
+        $innerQueryBuilder->setArgument('description', $description);
+        return new \Dagger\Env($this->client, $this->queryBuilderChain->chain($innerQueryBuilder));
+    }
+
+    /**
+     * Declare a desired GeneratorGroup output to be assigned in the environment
+     */
+    public function withGeneratorGroupOutput(string $name, string $description): Env
+    {
+        $innerQueryBuilder = new \Dagger\Client\QueryBuilder('withGeneratorGroupOutput');
+        $innerQueryBuilder->setArgument('name', $name);
+        $innerQueryBuilder->setArgument('description', $description);
+        return new \Dagger\Env($this->client, $this->queryBuilderChain->chain($innerQueryBuilder));
+    }
+
+    /**
+     * Create or update a binding of type Generator in the environment
+     */
+    public function withGeneratorInput(string $name, GeneratorId|Generator $value, string $description): Env
+    {
+        $innerQueryBuilder = new \Dagger\Client\QueryBuilder('withGeneratorInput');
+        $innerQueryBuilder->setArgument('name', $name);
+        $innerQueryBuilder->setArgument('value', $value);
+        $innerQueryBuilder->setArgument('description', $description);
+        return new \Dagger\Env($this->client, $this->queryBuilderChain->chain($innerQueryBuilder));
+    }
+
+    /**
+     * Declare a desired Generator output to be assigned in the environment
+     */
+    public function withGeneratorOutput(string $name, string $description): Env
+    {
+        $innerQueryBuilder = new \Dagger\Client\QueryBuilder('withGeneratorOutput');
+        $innerQueryBuilder->setArgument('name', $name);
+        $innerQueryBuilder->setArgument('description', $description);
+        return new \Dagger\Env($this->client, $this->queryBuilderChain->chain($innerQueryBuilder));
+    }
+
+    /**
      * Create or update a binding of type GitRef in the environment
      */
     public function withGitRefInput(string $name, GitRefId|GitRef $value, string $description): Env
@@ -344,6 +461,18 @@ class Env extends Client\AbstractObject implements Client\IdAble
         $innerQueryBuilder = new \Dagger\Client\QueryBuilder('withJSONValueOutput');
         $innerQueryBuilder->setArgument('name', $name);
         $innerQueryBuilder->setArgument('description', $description);
+        return new \Dagger\Env($this->client, $this->queryBuilderChain->chain($innerQueryBuilder));
+    }
+
+    /**
+     * Sets the main module for this environment (the project being worked on)
+     *
+     * Contextual path arguments will be populated using the environment's workspace.
+     */
+    public function withMainModule(ModuleId|Module $module): Env
+    {
+        $innerQueryBuilder = new \Dagger\Client\QueryBuilder('withMainModule');
+        $innerQueryBuilder->setArgument('module', $module);
         return new \Dagger\Env($this->client, $this->queryBuilderChain->chain($innerQueryBuilder));
     }
 
@@ -544,6 +673,29 @@ class Env extends Client\AbstractObject implements Client\IdAble
     public function withSocketOutput(string $name, string $description): Env
     {
         $innerQueryBuilder = new \Dagger\Client\QueryBuilder('withSocketOutput');
+        $innerQueryBuilder->setArgument('name', $name);
+        $innerQueryBuilder->setArgument('description', $description);
+        return new \Dagger\Env($this->client, $this->queryBuilderChain->chain($innerQueryBuilder));
+    }
+
+    /**
+     * Create or update a binding of type Stat in the environment
+     */
+    public function withStatInput(string $name, StatId|Stat $value, string $description): Env
+    {
+        $innerQueryBuilder = new \Dagger\Client\QueryBuilder('withStatInput');
+        $innerQueryBuilder->setArgument('name', $name);
+        $innerQueryBuilder->setArgument('value', $value);
+        $innerQueryBuilder->setArgument('description', $description);
+        return new \Dagger\Env($this->client, $this->queryBuilderChain->chain($innerQueryBuilder));
+    }
+
+    /**
+     * Declare a desired Stat output to be assigned in the environment
+     */
+    public function withStatOutput(string $name, string $description): Env
+    {
+        $innerQueryBuilder = new \Dagger\Client\QueryBuilder('withStatOutput');
         $innerQueryBuilder->setArgument('name', $name);
         $innerQueryBuilder->setArgument('description', $description);
         return new \Dagger\Env($this->client, $this->queryBuilderChain->chain($innerQueryBuilder));

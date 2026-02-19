@@ -16,6 +16,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/containerd/containerd/v2/core/mount"
 	containerdfs "github.com/containerd/continuity/fs"
 	bkcache "github.com/dagger/dagger/internal/buildkit/cache"
 	bkclient "github.com/dagger/dagger/internal/buildkit/client"
@@ -374,7 +375,7 @@ func (svc *Service) startContainer(
 	cleanup.Add("detach deps", cleanups.Infallible(detachDeps))
 
 	var domain string
-	if mod, err := query.CurrentModule(ctx); err == nil && svc.CustomHostname != "" {
+	if mod, err := query.ModuleParent(ctx); err == nil && svc.CustomHostname != "" {
 		domain = network.ModuleDomain(mod.ResultID, clientMetadata.SessionID)
 		if !slices.Contains(execMD.ExtraSearchDomains, domain) {
 			// ensure a service can reach other services in the module that started
@@ -503,7 +504,7 @@ func (svc *Service) startContainer(
 		if rerr != nil {
 			// NB: this is intentionally conditional; we only complete if there was
 			// an error starting. span.End is called when the service exits.
-			telemetry.End(span, func() error { return rerr })
+			telemetry.EndWithCause(span, &rerr)
 		}
 	}()
 
@@ -585,13 +586,14 @@ func (svc *Service) startContainer(
 
 		// show the exit status; doing so won't fail anything, and is
 		// helpful for troubleshooting
-		defer telemetry.End(span, func() error {
-			if stopped.Load() {
-				// stopped; we don't care about the exit result (likely 137)
-				return nil
+		var telemetryErr error
+		defer telemetry.EndWithCause(span, &telemetryErr)
+		defer func() {
+			if !stopped.Load() {
+				// we only care about the exit result (likely 137) if we weren't stopped
+				telemetryErr = exitErr
 			}
-			return exitErr
-		})
+		}()
 
 		// run all cleanups, discarding container
 		cleanup.Run()
@@ -689,8 +691,7 @@ func (svc *Service) startContainer(
 			if errors.As(exitErr, &gwErr) {
 				// Create ExecError with available service information
 				return nil, &buildkit.ExecError{
-					Err:      gwErr,
-					Origin:   svc.Creator,
+					Err:      telemetry.TrackOrigin(gwErr, svc.Creator),
 					Cmd:      meta.Args,
 					ExitCode: int(gwErr.ExitCode),
 					Stdout:   stdoutBuf.String(),
@@ -921,7 +922,7 @@ func (svc *Service) startReverseTunnel(ctx context.Context, id *call.ID) (runnin
 		if rerr != nil {
 			// NB: this is intentionally conditional; we only complete if there was
 			// an error starting. span.End is called when the service exits.
-			telemetry.End(span, func() error { return rerr })
+			telemetry.EndWithCause(span, &rerr)
 		}
 	}()
 
@@ -960,7 +961,7 @@ func (svc *Service) startReverseTunnel(ctx context.Context, id *call.ID) (runnin
 			Host:  fullHost,
 			Ports: checkPorts,
 			Stop: func(context.Context, bool) (rerr error) {
-				defer telemetry.End(span, func() error { return rerr })
+				defer telemetry.EndWithCause(span, &rerr)
 				stop(errors.New("service stop called"))
 				waitCtx, waitCancel := context.WithTimeout(context.WithoutCancel(svcCtx), 10*time.Second)
 				defer waitCancel()
@@ -1023,7 +1024,7 @@ func (svc *Service) runAndSnapshotChanges(
 	}
 	defer mutableRef.Release(ctx)
 
-	err = MountRef(ctx, mutableRef, nil, func(root string) (rerr error) {
+	err = MountRef(ctx, mutableRef, nil, func(root string, _ *mount.Mount) (rerr error) {
 		resolvedDir, err := containerdfs.RootPath(root, source.Dir)
 		if err != nil {
 			return err
@@ -1077,7 +1078,7 @@ func (svc *Service) runAndSnapshotChanges(
 	}()
 
 	// Mount the mutable ref of their changes over the target path.
-	err = MountRef(ctx, abandonedRef, nil, func(root string) (rerr error) {
+	err = MountRef(ctx, abandonedRef, nil, func(root string, _ *mount.Mount) (rerr error) {
 		resolvedDir, err := containerdfs.RootPath(root, source.Dir)
 		if err != nil {
 			return err

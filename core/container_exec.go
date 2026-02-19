@@ -33,6 +33,7 @@ import (
 	"github.com/dagger/dagger/dagql/call"
 	"github.com/dagger/dagger/engine"
 	"github.com/dagger/dagger/engine/buildkit"
+	"github.com/dagger/dagger/engine/slog"
 	"github.com/dagger/dagger/network"
 )
 
@@ -75,16 +76,15 @@ type ContainerExecOpts struct {
 }
 
 func (container *Container) execMeta(ctx context.Context, opts ContainerExecOpts, parent *buildkit.ExecutionMetadata) (*buildkit.ExecutionMetadata, error) {
-	query, err := CurrentQuery(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("get current query: %w", err)
-	}
-
 	execMD := buildkit.ExecutionMetadata{}
 	if parent != nil {
 		execMD = *parent
 	}
 
+	query, err := CurrentQuery(ctx)
+	if err != nil {
+		return nil, err
+	}
 	clientMetadata, err := engine.ClientMetadataFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -99,22 +99,6 @@ func (container *Container) execMeta(ctx context.Context, opts ContainerExecOpts
 	if execMD.ExecID == "" {
 		execMD.ExecID = identity.NewID()
 	}
-	if execMD.EncodedModuleID == "" {
-		mod, err := query.CurrentModule(ctx)
-		if err != nil {
-			if !errors.Is(err, ErrNoCurrentModule) {
-				return nil, err
-			}
-		} else {
-			if mod.ResultID == nil {
-				return nil, fmt.Errorf("current module has no instance ID")
-			}
-			execMD.EncodedModuleID, err = mod.ResultID.Encode()
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
 
 	if execMD.HostAliases == nil {
 		execMD.HostAliases = make(map[string][]string)
@@ -128,14 +112,19 @@ func (container *Container) execMeta(ctx context.Context, opts ContainerExecOpts
 		execMD.NoInit = true
 	}
 
+	var callerModID *call.ID
 	if execMD.EncodedModuleID != "" {
-		modID := new(call.ID)
-		if err := modID.Decode(execMD.EncodedModuleID); err != nil {
+		callerModID = new(call.ID)
+		if err := callerModID.Decode(execMD.EncodedModuleID); err != nil {
 			return nil, fmt.Errorf("failed to decode module ID: %w", err)
 		}
+	} else if callerMod, err := query.CurrentModule(ctx); err == nil && callerMod != nil {
+		callerModID = callerMod.ResultID
+	}
 
+	if callerModID != nil {
 		// allow the exec to reach services scoped to the module that installed it
-		execMD.ExtraSearchDomains = append(execMD.ExtraSearchDomains, network.ModuleDomain(modID, clientMetadata.SessionID))
+		execMD.ExtraSearchDomains = append(execMD.ExtraSearchDomains, network.ModuleDomain(callerModID, clientMetadata.SessionID))
 	}
 
 	// if GPU parameters are set for this container pass them over:
@@ -225,7 +214,7 @@ func (container *Container) secretEnvs() (secretEnvs []*pb.SecretEnv) {
 	for _, secret := range container.Secrets {
 		if secret.EnvName != "" {
 			secretEnvs = append(secretEnvs, &pb.SecretEnv{
-				ID:   secret.Secret.ID().Digest().String(),
+				ID:   SecretIDDigest(secret.Secret.ID()).String(),
 				Name: secret.EnvName,
 			})
 		}
@@ -295,11 +284,18 @@ func (container *Container) WithExec(
 		desc := fmt.Sprintf("mount %s from exec %s", m.Dest, strings.Join(metaSpec.Args, " "))
 		return cache.New(ctx, ref, bkSessionGroup, bkcache.WithDescription(desc))
 	}, runtime.GOOS)
+	if err != nil {
+		return nil, err
+	}
 	defer func() {
 		if rerr != nil {
 			execInputs := make([]bksolver.Result, len(mounts.Mounts))
 			for i, m := range mounts.Mounts {
 				if m.Input == pb.Empty {
+					continue
+				}
+				if m.Input < 0 || int(m.Input) >= len(mounts.Inputs) {
+					rerr = errors.Join(rerr, fmt.Errorf("mount index %d references input %d outside available inputs (%d)", i, m.Input, len(mounts.Inputs)))
 					continue
 				}
 				execInputs[i] = mounts.Inputs[m.Input].Clone()
@@ -310,8 +306,25 @@ func (container *Container) WithExec(
 			if err != nil {
 				return
 			}
+
+			// FIXME there was an out of range panic that occurred when accessing execMounts below; however it's not clear why
+			if len(results) > 0 && len(execInputs) == 0 {
+				slog.Warn("results were returned without execMounts",
+					"num_results", len(results),
+					"error", rerr)
+			}
+
 			for i, res := range results {
-				execMounts[p.OutputRefs[i].MountIndex] = res
+				if i >= len(p.OutputRefs) {
+					rerr = errors.Join(rerr, fmt.Errorf("missing output ref for result index %d (results=%d, output refs=%d)", i, len(results), len(p.OutputRefs)))
+					continue
+				}
+				mountIdx := p.OutputRefs[i].MountIndex
+				if mountIdx < 0 || mountIdx >= len(execMounts) {
+					rerr = errors.Join(rerr, fmt.Errorf("result index %d has output mount index %d outside exec mounts (%d)", i, mountIdx, len(execMounts)))
+					continue
+				}
+				execMounts[mountIdx] = res
 			}
 			for _, active := range p.Actives {
 				if active.NoCommit {
@@ -320,6 +333,10 @@ func (container *Container) WithExec(
 					ref, cerr := active.Ref.Commit(ctx)
 					if cerr != nil {
 						rerr = errors.Join(rerr, fmt.Errorf("error committing %s: %w: %w", active.Ref.ID(), cerr, err))
+						continue
+					}
+					if active.MountIndex < 0 || active.MountIndex >= len(execMounts) {
+						rerr = errors.Join(rerr, fmt.Errorf("active mount index %d outside exec mounts (%d)", active.MountIndex, len(execMounts)))
 						continue
 					}
 					execMounts[active.MountIndex] = worker.NewWorkerRefResult(ref, opt.Worker)
@@ -354,8 +371,8 @@ func (container *Container) WithExec(
 				default:
 					mountIdx := i - 2
 					if mountIdx >= len(container.Mounts) {
-						// something is disastourously wrong, panic!
-						panic(fmt.Sprintf("index %d escapes number of mounts %d", mountIdx, len(container.Mounts)))
+						rerr = errors.Join(rerr, fmt.Errorf("result index %d maps to mount index %d outside container mounts (%d)", i, mountIdx, len(container.Mounts)))
+						continue
 					}
 					ctrMnt := container.Mounts[mountIdx]
 
@@ -424,9 +441,6 @@ func (container *Container) WithExec(
 			}
 		}
 	}()
-	if err != nil {
-		return nil, err
-	}
 
 	// NOTE: seems to be a longstanding bug in buildkit that selector on root mount doesn't work, fix here
 	for _, mnt := range mounts.Mounts {
@@ -518,9 +532,8 @@ func (container *Container) WithExec(
 
 		default:
 			mountIdx := ref.MountIndex - 2
-			if mountIdx >= len(container.Mounts) {
-				// something is disastourously wrong, panic!
-				panic(fmt.Sprintf("index %d escapes number of mounts %d", mountIdx, len(container.Mounts)))
+			if mountIdx < 0 || mountIdx >= len(container.Mounts) {
+				return nil, errors.Join(rerr, fmt.Errorf("output mount index %d maps outside container mounts (%d)", ref.MountIndex, len(container.Mounts)))
 			}
 			ctrMnt := container.Mounts[mountIdx]
 
@@ -570,7 +583,10 @@ func (container *Container) WithExec(
 	}
 
 	if execErr != nil {
-		return nil, fmt.Errorf("process %q did not complete successfully: %w", strings.Join(metaSpec.Args, " "), execErr)
+		slog.Warn("process did not complete successfully",
+			"process", strings.Join(metaSpec.Args, " "),
+			"error", execErr)
+		return nil, execErr
 	}
 
 	return container, nil
@@ -628,6 +644,9 @@ func (container *Container) metaFileContents(ctx context.Context, filePath strin
 	)
 	content, err := file.Contents(ctx, nil, nil)
 	if err != nil {
+		if errors.Is(err, errEmptyResultRef) {
+			return "", ErrNoCommand
+		}
 		return "", err
 	}
 	return string(content), nil

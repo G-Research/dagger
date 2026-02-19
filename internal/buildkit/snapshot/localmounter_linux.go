@@ -3,9 +3,9 @@ package snapshot
 import (
 	"os"
 	"path/filepath"
-	"syscall"
 
 	"github.com/containerd/containerd/v2/core/mount"
+	"github.com/dagger/dagger/internal/buildkit/util/overlay"
 	rootlessmountopts "github.com/dagger/dagger/internal/buildkit/util/rootless/mountopts"
 	"github.com/moby/sys/userns"
 	"github.com/pkg/errors"
@@ -55,21 +55,24 @@ func (lm *localMounter) Mount() (string, error) {
 		}
 	}
 
+	lm.overlayIncompatDirs = overlay.VolatileIncompatDirs(lm.mounts)
+
 	dest, err := os.MkdirTemp("", "buildkit-mount")
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create temp dir")
 	}
+	lm.tmpDir = dest
 
 	if isFile {
 		dest = filepath.Join(dest, "file")
 		if err := os.WriteFile(dest, []byte{}, 0644); err != nil {
-			os.RemoveAll(dest)
+			os.RemoveAll(lm.tmpDir)
 			return "", errors.Wrap(err, "failed to create temp file")
 		}
 	}
 
 	if err := mount.All(lm.mounts, dest); err != nil {
-		os.RemoveAll(dest)
+		os.RemoveAll(lm.tmpDir)
 		return "", errors.Wrapf(err, "failed to mount %s: %+v", dest, lm.mounts)
 	}
 	lm.target = dest
@@ -81,11 +84,16 @@ func (lm *localMounter) Unmount() error {
 	defer lm.mu.Unlock()
 
 	if lm.target != "" {
-		if err := mount.Unmount(lm.target, syscall.MNT_DETACH); err != nil {
+		if err := mount.Unmount(lm.target, 0); err != nil {
 			return err
 		}
-		os.RemoveAll(lm.target)
+		os.RemoveAll(lm.tmpDir)
 		lm.target = ""
+
+		for _, dir := range lm.overlayIncompatDirs {
+			os.RemoveAll(dir)
+		}
+		lm.overlayIncompatDirs = nil
 	}
 
 	if lm.release != nil {

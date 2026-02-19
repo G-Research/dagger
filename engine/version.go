@@ -2,7 +2,6 @@ package engine
 
 import (
 	"os"
-	"slices"
 	"strings"
 
 	"golang.org/x/mod/semver"
@@ -135,8 +134,16 @@ func BaseVersion(version string) string {
 }
 
 func IsDevVersion(version string) bool {
+	if _, ok := os.LookupEnv(DaggerDevEngine); ok {
+		return true
+	}
+
 	if version == "" {
 		return true
 	}
-	return slices.Contains(strings.Split(semver.Prerelease(version), "-"), "dev")
+	// dev versions have -dev- in their prerelease (e.g. v0.19.9-241210-dev-abc123)
+	if strings.Contains(semver.Prerelease(version), "-dev-") {
+		return true
+	}
+	return false
 }

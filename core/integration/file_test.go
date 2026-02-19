@@ -13,6 +13,7 @@ import (
 
 	"github.com/dagger/dagger/internal/buildkit/identity"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/sync/errgroup"
 
 	"dagger.io/dagger"
 	"github.com/dagger/dagger/engine/buildkit"
@@ -92,7 +93,7 @@ func (FileSuite) TestNewFileInvalid(ctx context.Context, t *testctx.T) {
 
 	file := c.File("dir/some-file", "some-content")
 
-	_, err := file.ID(ctx)
+	_, err := file.Sync(ctx)
 	require.ErrorContains(t, err, "not contain a directory")
 }
 
@@ -178,7 +179,13 @@ func (FileSuite) TestName(ctx context.Context, t *testctx.T) {
 
 	t.Run("not found file", func(ctx context.Context, t *testctx.T) {
 		_, err := c.Directory().File("to/file.txt").Name(ctx)
-		requireErrOut(t, err, "no such file or directory")
+		requireErrOut(t, err, "to/file.txt: no such file or directory")
+	})
+
+	t.Run("not found file displays full path in error", func(ctx context.Context, t *testctx.T) {
+		_, err := c.Directory().File("keep/../this").Name(ctx)
+		require.Error(t, err)
+		requireErrOut(t, err, "keep/../this: no such file or directory")
 	})
 }
 
@@ -209,6 +216,14 @@ func (FileSuite) TestWithName(ctx context.Context, t *testctx.T) {
 		mountedFileNameContent, err := mountedFile.Contents(ctx)
 		require.NoError(t, err)
 		require.Equal(t, "content", mountedFileNameContent)
+	})
+
+	// regression test for https://github.com/dagger/dagger/issues/11660
+	t.Run("contents", func(ctx context.Context, t *testctx.T) {
+		f := c.File("test", "hello").WithName("tset")
+		s, err := f.Contents(ctx)
+		require.NoError(t, err)
+		require.Equal(t, "hello", s)
 	})
 }
 
@@ -857,11 +872,11 @@ func (FileSuite) TestSync(ctx context.Context, t *testctx.T) {
 	t.Run("triggers error", func(ctx context.Context, t *testctx.T) {
 		_, err := c.Directory().File("baz").Sync(ctx)
 		require.Error(t, err)
-		requireErrOut(t, err, "no such file")
+		requireErrOut(t, err, "baz: no such file or directory")
 
 		_, err = c.Container().From(alpineImage).File("/bar").Sync(ctx)
 		require.Error(t, err)
-		requireErrOut(t, err, "no such file")
+		requireErrOut(t, err, "bar: no such file or directory")
 	})
 
 	t.Run("allows chaining", func(ctx context.Context, t *testctx.T) {
@@ -1062,4 +1077,106 @@ func (FileSuite) TestWithReplaced(ctx context.Context, t *testctx.T) {
 		require.NoError(t, err)
 		require.Equal(t, "Hello, World!", contents) // Content should be unchanged
 	})
+}
+
+func (FileSuite) TestFileAsJSON(ctx context.Context, t *testctx.T) {
+	c := connect(ctx, t)
+
+	t.Run("it converts json file contents to JSON", func(ctx context.Context, t *testctx.T) {
+		jsonValue, err := c.Directory().
+			WithNewFile("test.json", `{ "somekey": "somevalue" }`).
+			File("test.json").
+			AsJSON().
+			Field([]string{"somekey"}).
+			AsString(ctx)
+
+		require.NoError(t, err)
+		require.Equal(t, "somevalue", jsonValue)
+	})
+
+	t.Run("it returns error with non-json", func(ctx context.Context, t *testctx.T) {
+		_, err := c.Directory().
+			WithNewFile("test.txt", `this is not json`).
+			File("test.txt").
+			AsJSON().
+			Field([]string{"sdk", "source"}).
+			AsString(ctx)
+
+		require.Error(t, err)
+		require.ErrorContains(t, err, "invalid JSON")
+	})
+}
+
+func (FileSuite) TestFileRespectsSymlinks(ctx context.Context, t *testctx.T) {
+	c := connect(ctx, t)
+	t.Run("root-level", func(ctx context.Context, t *testctx.T) {
+		s, err := c.Container().
+			From(alpineImage).
+			WithExec([]string{"sh", "-c", "echo -n 'important' > data && ln -s data d"}).
+			File("d").
+			Contents(ctx)
+
+		require.NoError(t, err)
+		require.Equal(t, "important", s)
+	})
+	t.Run("target-in-subdir", func(ctx context.Context, t *testctx.T) {
+		s, err := c.Container().
+			From(alpineImage).
+			WithExec([]string{"sh", "-c", "mkdir data-store && echo -n 'important' > data-store/data && ln -s data-store/data d"}).
+			File("d").
+			Contents(ctx)
+
+		require.NoError(t, err)
+		require.Equal(t, "important", s)
+	})
+	t.Run("target-in-parent-dir", func(ctx context.Context, t *testctx.T) {
+		d := c.Container().
+			From(alpineImage).
+			WithExec([]string{"sh", "-c", "mkdir subdir && echo -n 'important' > data && cd subdir && ln -s ../data d"})
+
+		s, err := d.
+			File("subdir/d").
+			Contents(ctx)
+
+		require.NoError(t, err)
+		require.Equal(t, "important", s)
+
+		s, err = d.
+			Directory("subdir").
+			File("d").
+			Contents(ctx)
+
+		require.NoError(t, err)
+		require.Equal(t, "important", s)
+	})
+}
+
+// regression test for https://github.com/dagger/dagger/issues/11552
+func (FileSuite) TestFileCachingContents(ctx context.Context, t *testctx.T) {
+	wd := t.TempDir()
+	c := connect(ctx, t, dagger.WithWorkdir(wd))
+
+	var eg errgroup.Group
+	startCh := make(chan struct{})
+	for i := 0; i < 10; i++ {
+		filename := fmt.Sprintf("file%d.txt", i)
+		contents := fmt.Sprintf("%d", i)
+		err := os.WriteFile(filepath.Join(wd, filename), []byte(contents), 0o600)
+		require.NoError(t, err)
+
+		eg.Go(func() error {
+			<-startCh
+			file := c.Host().Directory(".").File(filename)
+
+			actualContents, err := c.Directory().
+				WithFile("the-file", file).
+				File("the-file").
+				Contents(ctx)
+			require.NoError(t, err)
+			require.Equal(t, contents, actualContents)
+			return nil
+		})
+	}
+	close(startCh)
+	require.NoError(t, eg.Wait())
 }

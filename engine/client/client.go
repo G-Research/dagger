@@ -24,7 +24,11 @@ import (
 	bkclient "github.com/dagger/dagger/internal/buildkit/client"
 	"github.com/dagger/dagger/internal/buildkit/identity"
 	bksession "github.com/dagger/dagger/internal/buildkit/session"
+	bkauth "github.com/dagger/dagger/internal/buildkit/session/auth"
 	"github.com/dagger/dagger/internal/buildkit/session/auth/authprovider"
+	"github.com/dagger/dagger/internal/buildkit/session/filesync"
+	"github.com/dagger/dagger/internal/buildkit/session/secrets"
+	"github.com/dagger/dagger/internal/buildkit/session/sshforward"
 	"github.com/dagger/dagger/internal/buildkit/util/grpcerrors"
 	"github.com/docker/cli/cli/config"
 	"github.com/google/uuid"
@@ -63,6 +67,19 @@ import (
 	"github.com/dagger/dagger/internal/cloud/auth"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+)
+
+const (
+	// cache configs that should be applied to be import and export
+	cacheConfigEnvName = "_EXPERIMENTAL_DAGGER_CACHE_CONFIG"
+	// cache configs for imports only
+	cacheImportsConfigEnvName = "_EXPERIMENTAL_DAGGER_CACHE_IMPORT_CONFIG"
+	// cache configs for exports only
+	cacheExportsConfigEnvName = "_EXPERIMENTAL_DAGGER_CACHE_EXPORT_CONFIG"
+	// allow enabling scale-out of checks to support cloud
+	enableChecksScaleOutEnvName = "_EXPERIMENTAL_DAGGER_CHECKS_SCALE_OUT"
+	// shutdown timeout, default is 10s
+	shutdownTimeoutEnvName = "_EXPERIMENTAL_DAGGER_SHUTDOWN_TIMEOUT"
 )
 
 type Params struct {
@@ -107,6 +124,11 @@ type Params struct {
 	Module   string
 	Function string
 	ExecCmd  []string
+
+	EagerRuntime bool
+
+	CloudAuth           *auth.Cloud
+	EnableCloudScaleOut bool
 }
 
 type Client struct {
@@ -130,6 +152,7 @@ type Client struct {
 	bkClient   *bkclient.Client
 	bkVersion  string
 	bkName     string
+	numCPU     int
 	sessionSrv *BuildkitSessionServer
 
 	// A client for the dagger API that is directly hooked up to this engine client.
@@ -145,9 +168,11 @@ type Client struct {
 	nestedSessionPort int
 
 	labels enginetel.Labels
+
+	isCloudScaleOutClient bool
 }
 
-func Connect(ctx context.Context, params Params) (_ *Client, _ context.Context, rerr error) {
+func Connect(ctx context.Context, params Params) (_ *Client, rerr error) {
 	c := &Client{Params: params}
 
 	if c.ID == "" {
@@ -157,6 +182,151 @@ func Connect(ctx context.Context, params Params) (_ *Client, _ context.Context, 
 		c.ID = identity.NewID()
 	}
 	configuredSessionID := c.SessionID
+	if c.SessionID == "" {
+		c.SessionID = identity.NewID()
+	}
+	if c.SecretToken == "" {
+		c.SecretToken = uuid.New().String()
+	}
+
+	c.EnableCloudScaleOut = c.EnableCloudScaleOut || os.Getenv(enableChecksScaleOutEnvName) != ""
+
+	// NB: decouple from the originator's cancel ctx
+	c.internalCtx, c.internalCancel = context.WithCancelCause(context.WithoutCancel(ctx))
+	c.closeCtx, c.closeRequests = context.WithCancelCause(context.WithoutCancel(ctx))
+
+	c.eg, c.internalCtx = errgroup.WithContext(c.internalCtx)
+
+	defer func() {
+		if rerr != nil {
+			c.internalCancel(errors.New("Connect failed"))
+		}
+	}()
+
+	workdir, err := os.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf("get workdir: %w", err)
+	}
+
+	c.labels = enginetel.LoadDefaultLabels(workdir, engine.Version)
+
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil, fmt.Errorf("get hostname: %w", err)
+	}
+	c.hostname = hostname
+
+	connectSpanOpts := []trace.SpanStartOption{}
+	if configuredSessionID != "" {
+		// infer that this is not a main client caller, server ID is never set for those currently
+		connectSpanOpts = append(connectSpanOpts, telemetry.Internal())
+	}
+
+	// NB: don't propagate this ctx, we don't want everything tucked beneath connect
+	connectCtx, span := Tracer(ctx).Start(ctx, "connect", connectSpanOpts...)
+	defer telemetry.EndWithCause(span, &rerr)
+	slog := slog.SpanLogger(connectCtx, InstrumentationLibrary)
+
+	nestedSessionPortVal, isNestedSession := os.LookupEnv("DAGGER_SESSION_PORT")
+	if isNestedSession {
+		nestedSessionPort, err := strconv.Atoi(nestedSessionPortVal)
+		if err != nil {
+			return nil, fmt.Errorf("parse DAGGER_SESSION_PORT: %w", err)
+		}
+		c.nestedSessionPort = nestedSessionPort
+		c.SecretToken = os.Getenv("DAGGER_SESSION_TOKEN")
+		numCPUVal := os.Getenv("DAGGER_ENGINE_NUM_CPU")
+		if numCPUVal != "" {
+			numCPU, err := strconv.Atoi(numCPUVal)
+			if err != nil {
+				return nil, fmt.Errorf("parse DAGGER_ENGINE_NUM_CPU: %w", err)
+			}
+			c.numCPU = numCPU
+		}
+		c.httpClient = c.newHTTPClient()
+		if err := c.init(connectCtx); err != nil {
+			return nil, fmt.Errorf("initialize nested client: %w", err)
+		}
+		if err := c.subscribeTelemetry(connectCtx); err != nil {
+			return nil, fmt.Errorf("subscribe to telemetry: %w", err)
+		}
+		if err := c.daggerConnect(connectCtx); err != nil {
+			return nil, fmt.Errorf("failed to connect to dagger: %w", err)
+		}
+		return c, nil
+	}
+
+	// Check if any of the upstream cache importers/exporters are enabled.
+	// Note that this is not the cache service support in engine/cache/, that
+	// is a different feature which is configured in the engine daemon.
+	c.upstreamCacheImportOptions, c.upstreamCacheExportOptions, err = allCacheConfigsFromEnv()
+	if err != nil {
+		return nil, fmt.Errorf("cache config from env: %w", err)
+	}
+
+	c.stableClientID = GetHostStableID(slog)
+
+	if err := c.startEngine(connectCtx, params); err != nil {
+		return nil, fmt.Errorf("start engine: %w", err)
+	}
+	if !engine.CheckVersionCompatibility(engine.NormalizeVersion(c.bkVersion), engine.MinimumEngineVersion) {
+		return nil, fmt.Errorf("incompatible engine version %s", engine.NormalizeVersion(c.bkVersion))
+	}
+
+	defer func() {
+		if rerr != nil {
+			c.bkClient.Close()
+		}
+	}()
+
+	if err := c.startSession(connectCtx); err != nil {
+		return nil, fmt.Errorf("start session: %w", err)
+	}
+
+	defer func() {
+		if rerr != nil {
+			c.sessionSrv.Stop()
+		}
+	}()
+
+	if err := c.subscribeTelemetry(connectCtx); err != nil {
+		return nil, fmt.Errorf("subscribe to telemetry: %w", err)
+	}
+
+	if err := c.daggerConnect(ctx); err != nil {
+		return nil, fmt.Errorf("failed to connect to dagger: %w", err)
+	}
+
+	return c, nil
+}
+
+type EngineToEngineParams struct {
+	Params
+
+	// The caller's session grpc conn, which will be proxied back to
+	CallerSessionConn *grpc.ClientConn
+
+	// important we forward the original client's stable id so that filesync
+	// caching can work as expected
+	StableClientID string
+
+	Labels enginetel.Labels
+}
+
+// ConnectEngineToEngine connects a Dagger client to another Dagger engine using an existing session connection.
+// Session attachables are proxied back to the original client.
+func ConnectEngineToEngine(ctx context.Context, params EngineToEngineParams) (_ *Client, rerr error) {
+	c := &Client{
+		Params:                params.Params,
+		isCloudScaleOutClient: true,
+	}
+
+	if c.ID == "" {
+		c.ID = os.Getenv("DAGGER_SESSION_CLIENT_ID")
+	}
+	if c.ID == "" {
+		c.ID = identity.NewID()
+	}
 	if c.SessionID == "" {
 		c.SessionID = identity.NewID()
 	}
@@ -176,66 +346,25 @@ func Connect(ctx context.Context, params Params) (_ *Client, _ context.Context, 
 		}
 	}()
 
-	workdir, err := os.Getwd()
-	if err != nil {
-		return nil, nil, fmt.Errorf("get workdir: %w", err)
-	}
-
-	c.labels = enginetel.LoadDefaultLabels(workdir, engine.Version)
+	c.labels = params.Labels
 
 	hostname, err := os.Hostname()
 	if err != nil {
-		return nil, nil, fmt.Errorf("get hostname: %w", err)
+		return nil, fmt.Errorf("get hostname: %w", err)
 	}
 	c.hostname = hostname
 
-	connectSpanOpts := []trace.SpanStartOption{}
-	if configuredSessionID != "" {
-		// infer that this is not a main client caller, server ID is never set for those currently
-		connectSpanOpts = append(connectSpanOpts, telemetry.Internal())
-	}
+	c.stableClientID = params.StableClientID
 
 	// NB: don't propagate this ctx, we don't want everything tucked beneath connect
-	connectCtx, span := Tracer(ctx).Start(ctx, "connect", connectSpanOpts...)
-	defer telemetry.End(span, func() error { return rerr })
-	slog := slog.SpanLogger(connectCtx, InstrumentationLibrary)
+	connectCtx, span := Tracer(ctx).Start(ctx, "connect to cloud engine")
+	defer telemetry.EndWithCause(span, &rerr)
 
-	nestedSessionPortVal, isNestedSession := os.LookupEnv("DAGGER_SESSION_PORT")
-	if isNestedSession {
-		nestedSessionPort, err := strconv.Atoi(nestedSessionPortVal)
-		if err != nil {
-			return nil, nil, fmt.Errorf("parse DAGGER_SESSION_PORT: %w", err)
-		}
-		c.nestedSessionPort = nestedSessionPort
-		c.SecretToken = os.Getenv("DAGGER_SESSION_TOKEN")
-		c.httpClient = c.newHTTPClient()
-		if err := c.init(connectCtx); err != nil {
-			return nil, nil, fmt.Errorf("initialize nested client: %w", err)
-		}
-		if err := c.subscribeTelemetry(connectCtx); err != nil {
-			return nil, nil, fmt.Errorf("subscribe to telemetry: %w", err)
-		}
-		if err := c.daggerConnect(connectCtx); err != nil {
-			return nil, nil, fmt.Errorf("failed to connect to dagger: %w", err)
-		}
-		return c, ctx, nil
-	}
-
-	// Check if any of the upstream cache importers/exporters are enabled.
-	// Note that this is not the cache service support in engine/cache/, that
-	// is a different feature which is configured in the engine daemon.
-	c.upstreamCacheImportOptions, c.upstreamCacheExportOptions, err = allCacheConfigsFromEnv()
-	if err != nil {
-		return nil, nil, fmt.Errorf("cache config from env: %w", err)
-	}
-
-	c.stableClientID = GetHostStableID(slog)
-
-	if err := c.startEngine(connectCtx, params); err != nil {
-		return nil, nil, fmt.Errorf("start engine: %w", err)
+	if err := c.startEngine(connectCtx, params.Params); err != nil {
+		return nil, fmt.Errorf("start engine: %w", err)
 	}
 	if !engine.CheckVersionCompatibility(engine.NormalizeVersion(c.bkVersion), engine.MinimumEngineVersion) {
-		return nil, nil, fmt.Errorf("incompatible engine version %s", engine.NormalizeVersion(c.bkVersion))
+		return nil, fmt.Errorf("incompatible engine version %s", engine.NormalizeVersion(c.bkVersion))
 	}
 
 	defer func() {
@@ -244,8 +373,8 @@ func Connect(ctx context.Context, params Params) (_ *Client, _ context.Context, 
 		}
 	}()
 
-	if err := c.startSession(connectCtx); err != nil {
-		return nil, nil, fmt.Errorf("start session: %w", err)
+	if err := c.startE2ESession(connectCtx, params.CallerSessionConn); err != nil {
+		return nil, fmt.Errorf("start session: %w", err)
 	}
 
 	defer func() {
@@ -255,14 +384,14 @@ func Connect(ctx context.Context, params Params) (_ *Client, _ context.Context, 
 	}()
 
 	if err := c.subscribeTelemetry(connectCtx); err != nil {
-		return nil, nil, fmt.Errorf("subscribe to telemetry: %w", err)
+		return nil, fmt.Errorf("subscribe to telemetry: %w", err)
 	}
 
 	if err := c.daggerConnect(ctx); err != nil {
-		return nil, nil, fmt.Errorf("failed to connect to dagger: %w", err)
+		return nil, fmt.Errorf("failed to connect to dagger: %w", err)
 	}
 
-	return c, ctx, nil
+	return c, nil
 }
 
 func (c *Client) startEngine(ctx context.Context, params Params) (rerr error) {
@@ -300,28 +429,30 @@ func (c *Client) startEngine(ctx context.Context, params Params) (rerr error) {
 		Function:         params.Function,
 		ExecCmd:          params.ExecCmd,
 		ClientID:         c.ID,
+		CloudAuth:        params.CloudAuth,
 	})
 	provisionCancel()
-	telemetry.End(provisionSpan, func() error { return err })
+	telemetry.EndWithCause(provisionSpan, &err)
 	if err != nil {
 		return err
 	}
 
 	ctx, span := Tracer(ctx).Start(ctx, "connecting to engine", telemetry.Encapsulate())
-	defer telemetry.End(span, func() error { return rerr })
+	defer telemetry.EndWithCause(span, &rerr)
 
 	slog := slog.SpanLogger(ctx, InstrumentationLibrary)
 	slog.Debug("connecting", "runner", c.RunnerHost)
 
 	bkCtx, span := Tracer(ctx).Start(ctx, "creating client")
 	bkClient, bkInfo, err := newBuildkitClient(bkCtx, remote, c.connector)
-	telemetry.End(span, func() error { return err })
+	telemetry.EndWithCause(span, &err)
 	if err != nil {
 		return fmt.Errorf("new client: %w", err)
 	}
 	c.bkClient = bkClient
 	c.bkVersion = bkInfo.BuildkitVersion.Version
 	c.bkName = bkInfo.BuildkitVersion.Revision
+	c.numCPU = bkInfo.SystemInfo.NumCPU
 
 	slog.Info("connected", "name", c.bkName, "client-version", engine.Version, "server-version", c.bkVersion)
 
@@ -335,7 +466,7 @@ func (c *Client) startEngine(ctx context.Context, params Params) (rerr error) {
 		if err != nil {
 			err = fmt.Errorf("failed to get image loader: %w", err)
 		}
-		telemetry.End(span, func() error { return err })
+		telemetry.EndWithCause(span, &err)
 		if err != nil {
 			return err
 		}
@@ -347,7 +478,7 @@ func (c *Client) startEngine(ctx context.Context, params Params) (rerr error) {
 func (c *Client) subscribeTelemetry(ctx context.Context) (rerr error) {
 	ctx, span := Tracer(ctx).Start(ctx, "subscribing to telemetry",
 		telemetry.Encapsulated())
-	defer telemetry.End(span, func() error { return rerr })
+	defer telemetry.EndWithCause(span, &rerr)
 
 	slog := slog.With("client", c.ID)
 
@@ -367,8 +498,7 @@ func (c *Client) subscribeTelemetry(ctx context.Context) (rerr error) {
 	}
 	if c.EngineMetrics != nil {
 		if err := c.exportMetrics(ctx, httpClient); err != nil {
-			// metrics are best effort and only in newer engines, so don't fail the client if they aren't found
-			slog.Error("export metrics failed", "err", err)
+			return fmt.Errorf("export metrics: %w", err)
 		}
 	}
 	return nil
@@ -376,7 +506,7 @@ func (c *Client) subscribeTelemetry(ctx context.Context) (rerr error) {
 
 func (c *Client) startSession(ctx context.Context) (rerr error) {
 	ctx, sessionSpan := Tracer(ctx).Start(ctx, "starting session", telemetry.Encapsulate())
-	defer telemetry.End(sessionSpan, func() error { return rerr })
+	defer telemetry.EndWithCause(sessionSpan, &rerr)
 
 	clientMetadata := c.clientMetadata()
 	c.internalCtx = engine.ContextWithClientMetadata(c.internalCtx, &clientMetadata)
@@ -419,6 +549,69 @@ func (c *Client) startSession(ctx context.Context) (rerr error) {
 			return err
 		}
 		attachables = append(attachables, attachable)
+	}
+
+	sessionConn, err := c.DialContext(ctx, "", "")
+	if err != nil {
+		return fmt.Errorf("dial for session attachables: %w", err)
+	}
+	defer func() {
+		if rerr != nil {
+			sessionConn.Close()
+		}
+	}()
+
+	c.sessionSrv, err = ConnectBuildkitSession(ctx,
+		sessionConn,
+		c.AppendHTTPRequestHeaders(http.Header{}),
+		attachables...,
+	)
+	if err != nil {
+		return fmt.Errorf("connect buildkit session: %w", err)
+	}
+
+	c.eg.Go(func() error {
+		ctx, cancel, err := c.withClientCloseCancel(ctx)
+		if err != nil {
+			return err
+		}
+		go func() {
+			<-ctx.Done()
+			cancel(errors.New("startSession context done"))
+		}()
+		c.sessionSrv.Run(ctx)
+		return nil
+	})
+
+	c.httpClient = c.newHTTPClient()
+	return nil
+}
+
+func (c *Client) startE2ESession(ctx context.Context, callerSessionConn *grpc.ClientConn) (rerr error) {
+	ctx, span := Tracer(ctx).Start(ctx, "starting scale-out session",
+		telemetry.Encapsulated())
+	defer telemetry.EndWithCause(span, &rerr)
+
+	clientMetadata := c.clientMetadata()
+	c.internalCtx = engine.ContextWithClientMetadata(c.internalCtx, &clientMetadata)
+
+	// session attachables that proxy back to the original caller's session
+	attachables := []bksession.Attachable{
+		FilesyncSourceProxy{
+			Client: filesync.NewFileSyncClient(callerSessionConn),
+		},
+		FilesyncTargetProxy{
+			Client: filesync.NewFileSendClient(callerSessionConn),
+		},
+		secretprovider.NewSecretProviderProxy(secrets.NewSecretsClient(callerSessionConn)),
+		NewSocketSessionProxy(sshforward.NewSSHClient(callerSessionConn)),
+		NewAuthProxy(bkauth.NewAuthClient(callerSessionConn)),
+		h2c.NewTunnelListenerProxy(h2c.NewTunnelListenerClient(callerSessionConn)),
+		terminal.NewTerminalProxy(terminal.NewTerminalClient(callerSessionConn)),
+		git.NewGitAttachableProxy(git.NewGitClient(callerSessionConn)),
+		pipe.NewPipeProxy(pipe.NewPipeClient(callerSessionConn)),
+		prompt.NewPromptProxy(prompt.NewPromptClient(callerSessionConn)),
+		store.NewStoreProxy(callerSessionConn),
 	}
 
 	sessionConn, err := c.DialContext(ctx, "", "")
@@ -642,7 +835,7 @@ type otlpConsumer struct {
 
 func (c *otlpConsumer) Consume(ctx context.Context, cb func([]byte) error) (rerr error) {
 	ctx, span := Tracer(ctx).Start(ctx, "consuming "+c.path)
-	defer telemetry.End(span, func() error { return rerr })
+	defer telemetry.EndWithCause(span, &rerr)
 
 	slog := slog.With("path", c.path, "traceID", c.traceID, "clientID", c.clientID)
 
@@ -679,7 +872,7 @@ func (c *otlpConsumer) Consume(ctx context.Context, cb func([]byte) error) (rerr
 				}
 				return fmt.Errorf("decode: %w", err)
 			}
-			if event.Name == "attached" {
+			if event.Name == "subscribed" {
 				continue
 			}
 
@@ -804,7 +997,7 @@ func (c *Client) init(ctx context.Context) error {
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("do shutdown: %w", err)
+		return fmt.Errorf("do init: %w", err)
 	}
 
 	return resp.Body.Close()
@@ -815,7 +1008,15 @@ func (c *Client) shutdownServer() error {
 	// canceled
 	ctx := context.WithoutCancel(c.internalCtx)
 
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	timeout := 10 * time.Second
+	if timeoutStr, ok := os.LookupEnv(shutdownTimeoutEnvName); ok {
+		if interval, err := time.ParseDuration(timeoutStr); err == nil {
+			timeout = interval
+		} else {
+			slog.Warn("invalid "+shutdownTimeoutEnvName+" value, using default 10 seconds", "error", err)
+		}
+	}
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, "POST", "http://dagger"+engine.ShutdownEndpoint, nil)
@@ -1075,14 +1276,10 @@ func (c *Client) Dagger() *dagger.Client {
 	return c.daggerClient
 }
 
-const (
-	// cache configs that should be applied to be import and export
-	cacheConfigEnvName = "_EXPERIMENTAL_DAGGER_CACHE_CONFIG"
-	// cache configs for imports only
-	cacheImportsConfigEnvName = "_EXPERIMENTAL_DAGGER_CACHE_IMPORT_CONFIG"
-	// cache configs for exports only
-	cacheExportsConfigEnvName = "_EXPERIMENTAL_DAGGER_CACHE_EXPORT_CONFIG"
-)
+// NumCPU returns the number of CPUs available on the engine host.
+func (c *Client) NumCPU() int {
+	return c.numCPU
+}
 
 // env is in form k1=v1,k2=v2;k3=v3... with ';' used to separate multiple cache configs.
 // any value that itself needs ';' can use '\;' to escape it.
@@ -1177,6 +1374,11 @@ func (c *Client) clientMetadata() engine.ClientMetadata {
 		cloudOrg = o
 	}
 
+	var remoteEngineID string
+	if c.connector != nil {
+		remoteEngineID = c.connector.EngineID()
+	}
+
 	return engine.ClientMetadata{
 		ClientID:                  c.ID,
 		ClientVersion:             clientVersion,
@@ -1186,13 +1388,17 @@ func (c *Client) clientMetadata() engine.ClientMetadata {
 		ClientStableID:            c.stableClientID,
 		UpstreamCacheImportConfig: c.upstreamCacheImportOptions,
 		UpstreamCacheExportConfig: c.upstreamCacheExportOptions,
-		Labels:                    c.labels,
+		Labels:                    c.labels.AsMap(),
 		CloudOrg:                  cloudOrg,
 		DoNotTrack:                analytics.DoNotTrack(),
 		Interactive:               c.Interactive,
 		InteractiveCommand:        c.InteractiveCommand,
 		SSHAuthSocketPath:         sshAuthSock,
 		AllowedLLMModules:         c.AllowedLLMModules,
+		EagerRuntime:              c.EagerRuntime,
+		CloudAuth:                 c.CloudAuth,
+		EnableCloudScaleOut:       c.EnableCloudScaleOut,
+		CloudScaleOutEngineID:     remoteEngineID,
 	}
 }
 

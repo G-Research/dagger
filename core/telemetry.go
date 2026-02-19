@@ -15,27 +15,12 @@ import (
 	"github.com/dagger/dagger/dagql"
 	"github.com/dagger/dagger/dagql/call"
 	"github.com/dagger/dagger/engine/slog"
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
-	"github.com/opencontainers/go-digest"
 )
 
 const (
 	// name of arg indicating whether the op should execute the "unlazy" dagop impl
 	IsDagOpArgName = "isDagOp"
 )
-
-func collectDefs(ctx context.Context, val dagql.AnyResult) []*pb.Definition {
-	if hasPBs, ok := dagql.UnwrapAs[HasPBDefinitions](val); ok {
-		ctx := dagql.ContextWithID(ctx, val.ID())
-		if defs, err := hasPBs.PBDefinitions(ctx); err != nil {
-			slog.Warn("failed to get LLB definitions", "err", err)
-			return nil
-		} else {
-			return defs
-		}
-	}
-	return nil
-}
 
 var _ dagql.AroundFunc = AroundFunc
 
@@ -45,9 +30,9 @@ func AroundFunc(
 	id *call.ID,
 ) (
 	context.Context,
-	func(res dagql.AnyResult, cached bool, rerr error),
+	func(res dagql.AnyResult, cached bool, rerr *error),
 ) {
-	if dagql.IsSkipped(ctx) || isIntrospection(id) || isMeta(id) || isDagOp(id) {
+	if dagql.IsSkipped(ctx) || isIntrospection(ctx, id) || isMeta(id) || isDagOp(id) {
 		// introspection+meta are very uninteresting spans
 		// dagops are all self calls, no need to emit additional spans here
 		return ctx, dagql.NoopDone
@@ -61,9 +46,14 @@ func AroundFunc(
 	}
 	spanName := fmt.Sprintf("%s.%s", base, id.Field())
 
+	slog.InfoContext(ctx, "start call",
+		"field", spanName,
+		"digest", id.Digest().String(),
+	)
+
 	callAttr, err := id.Call().Encode()
 	if err != nil {
-		slog.Warn("failed to encode call", "id", id.Display(), "err", err)
+		slog.WarnContext(ctx, "failed to encode call", "id", id.DisplaySelf(), "err", err)
 		return ctx, dagql.NoopDone
 	}
 	attrs := []attribute.KeyValue{
@@ -103,7 +93,7 @@ func AroundFunc(
 	}
 
 	if idInputs, err := id.Inputs(); err != nil {
-		slog.Warn("failed to compute inputs(id)", "id", id.Display(), "err", err)
+		slog.WarnContext(ctx, "failed to compute inputs(id)", "id", id.DisplaySelf(), "err", err)
 	} else {
 		inputs := make([]string, len(idInputs))
 		for i, input := range idInputs {
@@ -118,11 +108,16 @@ func AroundFunc(
 
 	ctx, span := Tracer(ctx).Start(ctx, spanName, trace.WithAttributes(attrs...))
 
-	return ctx, func(res dagql.AnyResult, cached bool, err error) {
-		defer telemetry.End(span, func() error { return err })
-		recordStatus(ctx, res, span, cached, err, id)
+	return ctx, func(res dagql.AnyResult, cached bool, err *error) {
+		slog.InfoContext(ctx, "end call",
+			"field", spanName,
+			"digest", id.Digest().String(),
+		)
+
+		defer telemetry.EndWithCause(span, err)
+		recordStatus(ctx, res, span, cached, id)
 		logResult(ctx, res, self, id)
-		collectEffects(ctx, res, span, self)
+		collectEffects(res, span, self)
 	}
 }
 
@@ -135,6 +130,9 @@ type moduleCallRef struct {
 
 func parseCallerCalleeRefs(ctx context.Context, q *Query, callID *call.ID) (*moduleCallRef, *moduleCallRef) {
 	cm, _ := q.MainClientCallerMetadata(ctx)
+	if cm == nil {
+		return nil, nil
+	}
 	fc, _ := q.CurrentFunctionCall(ctx)
 	m, _ := q.CurrentModule(ctx)
 	sd, _ := q.CurrentServedDeps(ctx)
@@ -160,7 +158,13 @@ func parseCallerCalleeRefs(ctx context.Context, q *Query, callID *call.ID) (*mod
 		callerRef.functionName = fc.Name
 		callerRef.typeName = fc.ParentName
 		if ms.Git != nil {
-			callerRef.ref, callerRef.version, _ = strings.Cut(ms.AsString(), "@")
+			str := ms.AsString()
+			idx := strings.LastIndex(str, "@")
+			if idx != -1 {
+				callerRef.ref, callerRef.version = str[:idx], str[idx+1:]
+			} else {
+				callerRef.ref = str
+			}
 		} else if gremote, ok := cm.Labels["dagger.io/git.remote"]; ok {
 			callerRef.ref = path.Join(gremote, ms.SourceRootSubpath)
 			if gref, ok := cm.Labels["dagger.io/git.ref"]; ok {
@@ -173,15 +177,11 @@ func parseCallerCalleeRefs(ctx context.Context, q *Query, callID *call.ID) (*mod
 		}
 	}
 
+	callerRef.ref = normalizeRef(callerRef.ref)
+
 	calleeRef.functionName = call.Field
 	calleeRef.version = call.Module.Pin
-	if strings.HasPrefix(call.Module.Ref, "git@") {
-		calleeRef.ref = call.Module.Ref[:strings.LastIndex(call.Module.Ref, "@")]
-		calleeRef.ref = strings.ReplaceAll(strings.TrimPrefix(calleeRef.ref, "git@"), ":", "/")
-	} else {
-		calleeRef.ref, _, _ = strings.Cut(call.Module.Ref, "@")
-		calleeRef.ref = strings.TrimSuffix(calleeRef.ref, "/.")
-	}
+	calleeRef.ref = normalizeRef(call.Module.Ref)
 
 	var voidType Void
 	if callID.Receiver() != nil {
@@ -222,8 +222,21 @@ func parseCallerCalleeRefs(ctx context.Context, q *Query, callID *call.ID) (*mod
 	return callerRef, calleeRef
 }
 
+func normalizeRef(ref string) string {
+	if strings.HasPrefix(ref, "git@") {
+		if strings.Count(ref, "@") > 1 {
+			ref = ref[:strings.LastIndex(ref, "@")]
+		}
+		ref = strings.ReplaceAll(strings.TrimPrefix(ref, "git@"), ":", "/")
+	} else {
+		ref, _, _ = strings.Cut(ref, "@")
+		ref = strings.TrimSuffix(ref, "/.")
+	}
+	return ref
+}
+
 // recordStatus records the status of a call on a span.
-func recordStatus(ctx context.Context, res dagql.AnyResult, span trace.Span, cached bool, err error, id *call.ID) {
+func recordStatus(ctx context.Context, res dagql.AnyResult, span trace.Span, cached bool, id *call.ID) {
 	if cached {
 		span.SetAttributes(attribute.Bool(telemetry.CachedAttr, true))
 	}
@@ -250,15 +263,6 @@ func recordStatus(ctx context.Context, res dagql.AnyResult, span trace.Span, cac
 			objDigest := obj.ID().Digest()
 			span.SetAttributes(attribute.String(telemetry.DagOutputAttr, objDigest.String()))
 		}
-	}
-
-	if err != nil {
-		var receiver *string
-		if id.Receiver() != nil {
-			recv := id.Receiver().Type().ToAST().String()
-			receiver = &recv
-		}
-		slog.Warn("error resolving", "receiver", receiver, "field", id.Field(), "error", err)
 	}
 }
 
@@ -288,50 +292,43 @@ func logResult(ctx context.Context, res dagql.AnyResult, self dagql.AnyObjectRes
 //
 // Effects will become complete as spans appear from Buildkit with a
 // corresponding effect ID.
-func collectEffects(ctx context.Context, res dagql.AnyResult, span trace.Span, self dagql.AnyObjectResult) {
-	// Keep track of which effects were already installed prior to the call so we
-	// only see new ones.
-	seenEffects := make(map[digest.Digest]bool)
-	for _, def := range collectDefs(ctx, self) {
-		if def == nil {
-			continue
-		}
-		for _, op := range def.Def {
-			seenEffects[digest.FromBytes(op)] = true
-		}
+func collectEffects(res dagql.AnyResult, span trace.Span, self dagql.AnyObjectResult) {
+	var parentEffects []string
+	if self != nil && self.ID() != nil {
+		parentEffects = self.ID().AllEffectIDs()
 	}
 
-	var effectIDs []string
-	for _, def := range collectDefs(ctx, res) {
-		if def == nil {
+	if res == nil || res.ID() == nil {
+		if len(parentEffects) > 0 {
+			span.SetAttributes(attribute.StringSlice(telemetry.EffectsCompletedAttr, parentEffects))
+		}
+		return
+	}
+
+	allEffects := res.ID().AllEffectIDs()
+	if len(allEffects) == 0 && len(parentEffects) == 0 {
+		return
+	}
+
+	seen := make(map[string]bool, len(parentEffects))
+	for _, effect := range parentEffects {
+		seen[effect] = true
+	}
+
+	var newEffects []string
+	for _, effect := range allEffects {
+		if seen[effect] {
 			continue
 		}
-		for _, opBytes := range def.Def {
-			dig := digest.FromBytes(opBytes)
-			if seenEffects[dig] {
-				continue
-			}
-			seenEffects[dig] = true
-
-			var pbOp pb.Op
-			err := pbOp.Unmarshal(opBytes)
-			if err != nil {
-				slog.Warn("failed to unmarshal LLB", "err", err)
-				continue
-			}
-			if pbOp.Op == nil {
-				// The last def should always be an empty op with the previous as
-				// an input. We never actually see a span for this, so skip it,
-				// otherwise the span will look like it still has pending
-				// effects.
-				continue
-			}
-
-			effectIDs = append(effectIDs, dig.String())
-		}
+		seen[effect] = true
+		newEffects = append(newEffects, effect)
 	}
-	if len(effectIDs) > 0 {
-		span.SetAttributes(attribute.StringSlice(telemetry.EffectIDsAttr, effectIDs))
+
+	if len(newEffects) > 0 {
+		span.SetAttributes(attribute.StringSlice(telemetry.EffectIDsAttr, newEffects))
+	}
+	if len(parentEffects) > 0 {
+		span.SetAttributes(attribute.StringSlice(telemetry.EffectsCompletedAttr, parentEffects))
 	}
 }
 
@@ -339,7 +336,7 @@ func collectEffects(ctx context.Context, res dagql.AnyResult, span trace.Span, s
 //
 // These queries tend to be very large and are not interesting for users to
 // see.
-func isIntrospection(id *call.ID) bool {
+func isIntrospection(ctx context.Context, id *call.ID) bool {
 	if id.Receiver() == nil {
 		switch id.Field() {
 		case "__schema",
@@ -347,14 +344,31 @@ func isIntrospection(id *call.ID) bool {
 			"__schemaVersion",
 			"currentTypeDefs",
 			"currentFunctionCall",
-			"currentModule":
+			"currentModule",
+			"typeDef",
+			"sourceMap":
 			return true
 		default:
 			return false
 		}
-	} else {
-		return isIntrospection(id.Receiver())
 	}
+
+	//nolint:gocritic
+	// disable these unless debug is set in OTEL baggage
+	if !slog.IsDebug(ctx) {
+		switch id.Receiver().Type().NamedType() {
+		case "Function":
+			switch id.Field() {
+			case "withCachePolicy",
+				"withArg",
+				"withSourceMap",
+				"withDescription":
+				return true
+			}
+		}
+	}
+
+	return isIntrospection(ctx, id.Receiver())
 }
 
 // isMeta returns true if any type in the ID is "too meta" to show to the user,

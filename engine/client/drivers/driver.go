@@ -7,6 +7,7 @@ import (
 	"net/url"
 
 	"github.com/dagger/dagger/engine/client/imageload"
+	"github.com/dagger/dagger/internal/cloud/auth"
 )
 
 type Driver interface {
@@ -29,6 +30,9 @@ type Connector interface {
 	// connection - but a connector can choose to block this call until
 	// previously returned connections have been closed.
 	Connect(ctx context.Context) (net.Conn, error)
+
+	// If available, a unique identifier for the engine, otherwise empty string.
+	EngineID() string
 }
 
 type DriverOpts struct {
@@ -38,6 +42,7 @@ type DriverOpts struct {
 	Function         string
 	ExecCmd          []string
 	ClientID         string
+	CloudAuth        *auth.Cloud
 }
 
 const (

@@ -53,6 +53,8 @@ logger = logging.getLogger(__package__)
 OBJECT_DEF_KEY: typing.Final[str] = "__dagger_object__"
 FIELD_DEF_KEY: typing.Final[str] = "__dagger_field__"
 FUNCTION_DEF_KEY: typing.Final[str] = "__dagger_function__"
+CHECK_DEF_KEY: typing.Final[str] = "__dagger_check__"
+GENERATOR_DEF_KEY: typing.Final[str] = "__dagger_generate__"
 MODULE_NAME: typing.Final[str] = os.getenv("DAGGER_MODULE", "")
 MAIN_OBJECT: typing.Final[str] = os.getenv("DAGGER_MAIN_OBJECT", "")
 TYPE_DEF_FILE: typing.Final[str] = os.getenv("DAGGER_MODULE_FILE", "/module.json")
@@ -119,7 +121,7 @@ class Module:
             raise RegistrationError(str(e), e) from e
         await anyio.Path(TYPE_DEF_FILE).write_text(output)
 
-    async def _typedefs(self) -> dagger.ModuleID:  # noqa: C901, PLR0912
+    async def _typedefs(self) -> dagger.ModuleID:  # noqa: C901, PLR0912, PLR0915
         if not self._main_name:
             msg = "Main object name can't be empty"
             raise ValueError(msg)
@@ -158,6 +160,7 @@ class Module:
                 type_def = type_def.with_object(
                     obj_name,
                     description=get_doc(obj_type.cls),
+                    deprecated=obj_type.deprecated,
                 )
 
             # Object fields
@@ -170,6 +173,7 @@ class Module:
                         field_name,
                         to_typedef(types[field.original_name], ctx),
                         description=get_doc(field.return_type),
+                        deprecated=field.meta.deprecated,
                     )
 
             # Object/interface functions
@@ -201,6 +205,12 @@ class Module:
                             dagger.FunctionCachePolicy.Default,
                             time_to_live=func.cache_policy,
                         )
+                if deprecated := func.deprecated:
+                    func_def = func_def.with_deprecated(reason=deprecated)
+                if func.check:
+                    func_def = func_def.with_check()
+                if func.generate:
+                    func_def = func_def.with_generator()
 
                 for param in func.parameters.values():
                     arg_def = to_typedef(
@@ -217,7 +227,9 @@ class Module:
                         description=param.doc,
                         default_value=param.default_value,
                         default_path=param.default_path,
+                        default_address=param.default_address,
                         ignore=param.ignore,
+                        deprecated=param.deprecated,
                     )
 
                 type_def = (
@@ -227,10 +239,11 @@ class Module:
                 )
 
             # Add object/interface to module
-            if obj_type.interface:
-                mod = mod.with_interface(type_def)
-            else:
-                mod = mod.with_object(type_def)
+            mod = (
+                mod.with_interface(type_def)
+                if obj_type.interface
+                else mod.with_object(type_def)
+            )
 
         # Enum types
         for name, cls in self._enums.items():
@@ -238,15 +251,17 @@ class Module:
             member_docs = extract_enum_member_doc(cls)
 
             for member in cls:
-                # Get description from either description attribute or AST doc
                 description = getattr(member, "description", None)
-                if description is None:
-                    description = member_docs.get(member.name)
+                meta = member_docs.get(member.name)
+
+                if description is None and meta and meta.description is not None:
+                    description = meta.description
 
                 enum_def = enum_def.with_enum_member(
                     member.name,
                     value=str(member.value),
                     description=description,
+                    deprecated=meta.deprecated if meta else None,
                 )
             mod = mod.with_enum(enum_def)
 
@@ -557,6 +572,7 @@ class Module:
         default: Callable[[], Any] | object = ...,
         name: APIName | None = None,
         init: bool = True,
+        deprecated: str | None = None,
     ) -> Any:
         """Exposes an attribute as a :py:class:`dagger.FieldTypeDef`.
 
@@ -581,6 +597,8 @@ class Module:
         init:
             Whether the field should be included in the constructor.
             Defaults to `True`.
+        deprecated:
+            Optional deprecation message exposed to the engine.
         """
         kwargs = {}
         optional = False
@@ -590,12 +608,77 @@ class Module:
             kwargs["default_factory" if callable(default) else "default"] = default
 
         return dataclasses.field(
-            metadata={FIELD_DEF_KEY: FieldDefinition(name, optional)},
+            metadata={FIELD_DEF_KEY: FieldDefinition(name, optional, deprecated)},
             kw_only=True,
             init=init,
             repr=init,  # default repr shows field as an __init__ argument
             **kwargs,
         )
+
+    def check(
+        self,
+        func: Func[P, R] | None = None,
+    ) -> Func[P, R] | Callable[[Func[P, R]], Func[P, R]]:
+        """Mark a function as a check.
+
+        Checks are functions that validate conditions and return void/error
+        to indicate pass/fail. This decorator can be combined with
+        :py:meth:`function`.
+
+        Example usage::
+
+            @object_type
+            class MyModule:
+                @function
+                @check
+                def lint(self) -> str:
+                    return "All checks passed"
+
+        Parameters
+        ----------
+        func:
+            The function to mark as a check. Should be an instance method in a
+            class decorated with :py:meth:`object_type`.
+        """
+
+        def wrapper(fn: Func[P, R]) -> Func[P, R]:
+            setattr(fn, CHECK_DEF_KEY, True)
+            return fn
+
+        return wrapper(func) if func else wrapper
+
+    def generate(
+        self,
+        func: Func[P, R] | None = None,
+    ) -> Func[P, R] | Callable[[Func[P, R]], Func[P, R]]:
+        """Mark a function as a generator.
+
+        Generators are functions that return a Changeset representing
+        changes to be applied. This decorator can be combined with
+        :py:meth:`function`.
+
+        Example usage::
+
+            @object_type
+            class MyModule:
+                @function
+                @generate
+                def codegen(self) -> dagger.Changeset:
+                    # Generate code and return changeset
+                    ...
+
+        Parameters
+        ----------
+        func:
+            The function to mark as a generator. Should be an instance method in a
+            class decorated with :py:meth:`object_type`.
+        """
+
+        def wrapper(fn: Func[P, R]) -> Func[P, R]:
+            setattr(fn, GENERATOR_DEF_KEY, True)
+            return fn
+
+        return wrapper(func) if func else wrapper
 
     @overload
     def function(
@@ -604,6 +687,7 @@ class Module:
         *,
         name: APIName | None = None,
         doc: str | None = None,
+        deprecated: str | None = None,
     ) -> Func[P, R]: ...
 
     @overload
@@ -612,6 +696,7 @@ class Module:
         *,
         name: APIName | None = None,
         doc: str | None = None,
+        deprecated: str | None = None,
     ) -> Callable[[Func[P, R]], Func[P, R]]: ...
 
     def function(
@@ -621,6 +706,7 @@ class Module:
         name: APIName | None = None,
         doc: str | None = None,
         cache: str | None = None,
+        deprecated: str | None = None,
     ) -> Func[P, R] | Callable[[Func[P, R]], Func[P, R]]:
         """Exposes a Python function as a :py:class:`dagger.Function`.
 
@@ -645,6 +731,8 @@ class Module:
         doc:
             An alternative description for the API. Useful to use the
             docstring for other purposes.
+        deprecated:
+            Optional deprecation message exposed to the engine.
         """
 
         # TODO: Wrap appropriately
@@ -652,7 +740,18 @@ class Module:
             # TODO: Use beartype to validate
             assert callable(func), f"Expected a callable, got {type(func)}."
 
-            meta = FunctionDefinition(name, doc, cache)
+            # Check if function is marked as a check or generator
+            check = getattr(func, CHECK_DEF_KEY, False)
+            generator = getattr(func, GENERATOR_DEF_KEY, False)
+
+            meta = FunctionDefinition(
+                name=name,
+                doc=doc,
+                cache=cache,
+                deprecated=deprecated,
+                check=check,
+                generator=generator,
+            )
 
             if inspect.isclass(func):
                 return Constructor(func, meta)
@@ -668,16 +767,21 @@ class Module:
         kw_only_default=True,
         field_specifiers=(function, dataclasses.field, dataclasses.Field),
     )
-    def object_type(self, cls: T) -> T: ...
+    def object_type(self, cls: T, /, *, deprecated: str | None = None) -> T: ...
 
     @overload
     @dataclass_transform(
         kw_only_default=True,
         field_specifiers=(function, dataclasses.field, dataclasses.Field),
     )
-    def object_type(self) -> Callable[[T], T]: ...
+    def object_type(self, *, deprecated: str | None = None) -> Callable[[T], T]: ...
 
-    def object_type(self, cls: T | None = None) -> T | Callable[[T], T]:
+    def object_type(
+        self,
+        cls: T | None = None,
+        *,
+        deprecated: str | None = None,
+    ) -> T | Callable[[T], T]:
         """Exposes a Python class as a :py:class:`dagger.ObjectTypeDef`.
 
         Used with :py:meth:`field` and :py:meth:`function` to expose
@@ -693,6 +797,12 @@ class Module:
                 @dagger.function
                 def bar(self) -> str:
                     return "foobar"
+
+
+        Parameters
+        ----------
+        deprecated:
+            Optional deprecation message visible when introspecting the module.
         """
 
         def wrapper(cls: T) -> T:
@@ -714,12 +824,18 @@ class Module:
                     raise BadUsageError(msg)
 
             wrapped = dataclasses.dataclass(kw_only=True)(cls)
-            return self._process_type(wrapped)
+            return self._process_type(wrapped, deprecated=deprecated)
 
         return wrapper(cls) if cls else wrapper
 
-    def _process_type(self, cls: T, interface: bool = False) -> T:
-        obj_def = ObjectType(cls, interface=interface)
+    def _process_type(
+        self,
+        cls: T,
+        *,
+        interface: bool = False,
+        deprecated: str | None = None,
+    ) -> T:
+        obj_def = ObjectType(cls, interface=interface, deprecated=deprecated)
 
         cls.__dagger_module__ = self
         cls.__dagger_object_type__ = obj_def

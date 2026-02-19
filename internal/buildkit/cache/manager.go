@@ -15,6 +15,7 @@ import (
 	"github.com/containerd/containerd/v2/pkg/gc"
 	"github.com/containerd/containerd/v2/pkg/labels"
 	cerrdefs "github.com/containerd/errdefs"
+	"github.com/dagger/dagger/engine/slog"
 	"github.com/dagger/dagger/internal/buildkit/cache/metadata"
 	"github.com/dagger/dagger/internal/buildkit/client"
 	"github.com/dagger/dagger/internal/buildkit/identity"
@@ -117,15 +118,15 @@ func NewManager(opt ManagerOpt) (Manager, error) {
 		records:         make(map[string]*cacheRecord),
 	}
 
-	if err := cm.init(context.TODO()); err != nil {
-		return nil, err
-	}
-
 	p, err := newSharableMountPool(opt.MountPoolRoot)
 	if err != nil {
 		return nil, err
 	}
 	cm.mountPool = p
+
+	if err := cm.init(context.TODO()); err != nil {
+		return nil, err
+	}
 
 	// cm.scheduleGC(5 * time.Minute)
 
@@ -326,7 +327,8 @@ func (cm *cacheManager) init(ctx context.Context) error {
 	}
 
 	for _, si := range items {
-		if _, err := cm.getRecord(ctx, si.ID()); err != nil {
+		_, err := cm.getRecord(ctx, si.ID())
+		if err != nil {
 			bklog.G(ctx).Debugf("could not load snapshot %s: %+v", si.ID(), err)
 			cm.MetadataStore.Clear(si.ID())
 			cm.LeaseManager.Delete(ctx, leases.Lease{ID: si.ID()})
@@ -498,6 +500,18 @@ func (cm *cacheManager) getRecord(ctx context.Context, id string, opts ...RefOpt
 				return nil, errors.Wrap(err, "failed to remove mutable rec with missing snapshot")
 			}
 			return nil, errors.Wrap(errNotFound, rec.ID())
+		}
+		// check if the engine had a hard crash and left an overlay volatile dir over, in which
+		// case we should just remove the cache record
+		dirtyVolatile, err := rec.hasDirtyVolatile(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if dirtyVolatile {
+			if err := rec.remove(ctx, true); err != nil {
+				return nil, err
+			}
+			return nil, errors.Wrapf(errNotFound, "failed to get record %s with dirty volatile overlay", id)
 		}
 	}
 
@@ -1360,6 +1374,8 @@ type cacheUsageInfo struct {
 	recordType  client.UsageRecordType
 	shared      bool
 	parentChain []digest.Digest
+
+	rec *cacheRecord
 }
 
 func (cm *cacheManager) DiskUsage(ctx context.Context, opt client.DiskUsageInfo) ([]*client.UsageInfo, error) {
@@ -1393,6 +1409,7 @@ func (cm *cacheManager) DiskUsage(ctx context.Context, opt client.DiskUsageInfo)
 			doubleRef:   cr.equalImmutable != nil,
 			recordType:  cr.GetRecordType(),
 			parentChain: cr.layerDigestChain().digests,
+			rec:         cr,
 		}
 		if c.recordType == "" {
 			c.recordType = client.UsageRecordTypeRegular
@@ -1431,11 +1448,13 @@ func (cm *cacheManager) DiskUsage(ctx context.Context, opt client.DiskUsageInfo)
 			v := m[id]
 			if v.refs == 0 {
 				for _, p := range v.parents {
-					m[p].refs--
-					if v.doubleRef {
-						m[p].refs--
+					if pInfo, ok := m[p]; ok && pInfo != nil {
+						pInfo.refs--
+						if v.doubleRef {
+							pInfo.refs--
+						}
+						rescan[p] = struct{}{}
 					}
-					rescan[p] = struct{}{}
 				}
 			}
 			delete(rescan, id)
@@ -1447,6 +1466,7 @@ func (cm *cacheManager) DiskUsage(ctx context.Context, opt client.DiskUsageInfo)
 	}
 
 	var du []*client.UsageInfo
+	eg, ctx := errgroup.WithContext(ctx)
 	for id, cr := range m {
 		c := &client.UsageInfo{
 			ID:          id,
@@ -1463,31 +1483,20 @@ func (cm *cacheManager) DiskUsage(ctx context.Context, opt client.DiskUsageInfo)
 		}
 		if filter.Match(adaptUsageInfo(c)) {
 			du = append(du, c)
-		}
-	}
-
-	eg, ctx := errgroup.WithContext(ctx)
-
-	for _, d := range du {
-		if d.Size == sizeUnknown {
-			func(d *client.UsageInfo) {
-				eg.Go(func() error {
-					cm.mu.Lock()
-					ref, err := cm.get(ctx, d.ID, nil, NoUpdateLastUsed)
-					cm.mu.Unlock()
-					if err != nil {
-						d.Size = 0
+			if c.Size == sizeUnknown {
+				func(d *client.UsageInfo) {
+					eg.Go(func() error {
+						s, err := cr.rec.size(ctx)
+						if err != nil {
+							slog.Error("failed to calculate size", "id", d.ID, "error", err)
+							d.Size = 0
+							return nil
+						}
+						d.Size = s
 						return nil
-					}
-					defer ref.Release(context.TODO())
-					s, err := ref.size(ctx)
-					if err != nil {
-						return err
-					}
-					d.Size = s
-					return nil
-				})
-			}(d)
+					})
+				}(c)
+			}
 		}
 	}
 

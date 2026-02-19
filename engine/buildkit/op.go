@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/dagger/dagger/dagql"
+	"github.com/dagger/dagger/dagql/call"
 	"github.com/dagger/dagger/engine"
 	"github.com/dagger/dagger/engine/slog"
 	"github.com/dagger/dagger/internal/buildkit/client/llb"
@@ -20,8 +21,6 @@ import (
 type CustomOpWrapper struct {
 	Name    string
 	Backend CustomOpBackend
-
-	ClientMetadata engine.ClientMetadata
 
 	causeCtx       trace.SpanContext
 	server         dagqlServer
@@ -64,32 +63,26 @@ func RegisterCustomOp(op CustomOp) {
 	customOps[op.Name()] = op
 }
 
-func NewCustomLLB(ctx context.Context, op CustomOp, inputs []llb.State, opts ...llb.ConstraintsOpt) (llb.State, error) {
-	clientMetadata, err := engine.ClientMetadataFromContext(ctx)
-	if err != nil {
-		return llb.State{}, fmt.Errorf("failed to get client metadata: %w", err)
-	}
-
+func NewCustomLLB(ctx context.Context, dagOpID *call.ID, op CustomOp, inputs []llb.State, opts ...llb.ConstraintsOpt) (llb.State, error) {
 	opWrapped := CustomOpWrapper{
-		Name:           op.Name(),
-		Backend:        op.Backend(),
-		ClientMetadata: *clientMetadata,
+		Name:    op.Name(),
+		Backend: op.Backend(),
 	}
 
 	// generate a uniqued digest of the op to use in the buildkit id (this
 	// prevents all our ops merging together in the solver)
-	id, err := opWrapped.Digest()
+	bkID, err := opWrapped.Digest()
 	if err != nil {
 		return llb.State{}, err
 	}
 
 	// pre-populate a reasonable underlying representation that has some inputs
-	a := llb.Rm("/" + id.Encoded())
+	a := llb.Rm("/" + bkID.Encoded())
 	for _, input := range inputs {
 		a = a.Copy(input, "/", "/")
 	}
 	st := llb.Scratch().File(a)
-	customOpOpt, err := opWrapped.AsConstraintsOpt()
+	customOpOpt, err := opWrapped.AsConstraintsOpt(dagOpID.Digest().String())
 	if err != nil {
 		return llb.State{}, fmt.Errorf("constraints opt: %w", err)
 	}
@@ -135,6 +128,11 @@ func ctxWithBkSessionGroup(ctx context.Context, g bksession.Group) context.Conte
 func CurrentBuildkitSessionGroup(ctx context.Context) (bksession.Group, bool) {
 	g, ok := ctx.Value(bkSessionGroupContextKey{}).(bksession.Group)
 	return g, ok
+}
+
+// NewSessionGroup creates a session group from a client ID.
+func NewSessionGroup(clientID string) bksession.Group {
+	return bksession.NewGroup(clientID)
 }
 
 func (op *CustomOpWrapper) Exec(ctx context.Context, g bksession.Group, inputs []solver.Result) (outputs []solver.Result, err error) {
@@ -186,12 +184,7 @@ func (op *CustomOpWrapper) Acquire(ctx context.Context) (release solver.ReleaseF
 }
 
 func (op *CustomOpWrapper) clientMetadata(ctx context.Context, g bksession.Group) (md *engine.ClientMetadata, _ error) {
-	_, err := op.server.Server(engine.ContextWithClientMetadata(ctx, &op.ClientMetadata))
-	if err == nil {
-		return &op.ClientMetadata, nil
-	}
-
-	err = op.sessionManager.Any(ctx, g, func(ctx context.Context, id string, c bksession.Caller) error {
+	err := op.sessionManager.Any(ctx, g, func(ctx context.Context, id string, c bksession.Caller) error {
 		var err error
 		md, err = engine.ClientMetadataFromContext(c.Context())
 		if err != nil {
@@ -261,13 +254,14 @@ func customOpFromDescription(desc map[string]string) (*CustomOpWrapper, bool, er
 	return &wrapper.CustomOpWrapper, true, nil
 }
 
-func (op CustomOpWrapper) AsConstraintsOpt() (llb.ConstraintsOpt, error) {
+func (op CustomOpWrapper) AsConstraintsOpt(effectID string) (llb.ConstraintsOpt, error) {
 	bs, err := json.Marshal(op)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal custom op: %w", err)
 	}
 	return llb.WithDescription(map[string]string{
 		customOpKey: string(bs),
+		"effectID":  effectID,
 	}), nil
 }
 

@@ -377,6 +377,19 @@ class Container extends Client\AbstractObject implements Client\IdAble
     }
 
     /**
+     * Return file status
+     */
+    public function stat(string $path, ?bool $doNotFollowSymlinks = false): Stat
+    {
+        $innerQueryBuilder = new \Dagger\Client\QueryBuilder('stat');
+        $innerQueryBuilder->setArgument('path', $path);
+        if (null !== $doNotFollowSymlinks) {
+        $innerQueryBuilder->setArgument('doNotFollowSymlinks', $doNotFollowSymlinks);
+        }
+        return new \Dagger\Stat($this->client, $this->queryBuilderChain->chain($innerQueryBuilder));
+    }
+
+    /**
      * The buffered standard error stream of the last executed command
      *
      * Returns an error if no command was executed
@@ -483,7 +496,7 @@ class Container extends Client\AbstractObject implements Client\IdAble
     }
 
     /**
-     * Retrieves this container plus the given OCI anotation.
+     * Retrieves this container plus the given OCI annotation.
      */
     public function withAnnotation(string $name, string $value): Container
     {
@@ -565,6 +578,16 @@ class Container extends Client\AbstractObject implements Client\IdAble
         if (null !== $keepDefaultArgs) {
         $innerQueryBuilder->setArgument('keepDefaultArgs', $keepDefaultArgs);
         }
+        return new \Dagger\Container($this->client, $this->queryBuilderChain->chain($innerQueryBuilder));
+    }
+
+    /**
+     * Export environment variables from an env-file to the container.
+     */
+    public function withEnvFileVariables(EnvFileId|EnvFile $source): Container
+    {
+        $innerQueryBuilder = new \Dagger\Client\QueryBuilder('withEnvFileVariables');
+        $innerQueryBuilder->setArgument('source', $source);
         return new \Dagger\Container($this->client, $this->queryBuilderChain->chain($innerQueryBuilder));
     }
 

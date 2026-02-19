@@ -25,10 +25,25 @@ func ContextWithDebugMode(ctx context.Context, debug bool) context.Context {
 	return toggleBaggage(ctx, debugBaggageKey, debug)
 }
 
+func IsDebug(ctx context.Context) bool {
+	bag := baggage.FromContext(ctx)
+	return bag.Member(debugBaggageKey).Value() == "true"
+}
+
 // ContextWithColorMode enables or disables color mode in the given context's
 // OpenTelemetry baggage.
 func ContextWithColorMode(ctx context.Context, noColor bool) context.Context {
 	return toggleBaggage(ctx, noColorBaggageKey, noColor)
+}
+
+// OutputWithContextColorMode returns a termenv.Output configured according to
+// the given context's OpenTelemetry baggage.
+func ColorProfileFromContext(ctx context.Context) termenv.Profile {
+	bag := baggage.FromContext(ctx)
+	if bag.Member(noColorBaggageKey).Value() == "true" {
+		return termenv.Ascii
+	}
+	return termenv.ANSI
 }
 
 // SpanLogger returns a Logger that writes to the give context's span logs.

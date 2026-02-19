@@ -54,6 +54,8 @@
               <li><a href="#query-loadBindingFromID">loadBindingFromID</a></li>
               <li><a href="#query-loadCacheVolumeFromID">loadCacheVolumeFromID</a></li>
               <li><a href="#query-loadChangesetFromID">loadChangesetFromID</a></li>
+              <li><a href="#query-loadCheckFromID">loadCheckFromID</a></li>
+              <li><a href="#query-loadCheckGroupFromID">loadCheckGroupFromID</a></li>
               <li><a href="#query-loadCloudFromID">loadCloudFromID</a></li>
               <li><a href="#query-loadContainerFromID">loadContainerFromID</a></li>
               <li><a href="#query-loadCurrentModuleFromID">loadCurrentModuleFromID</a></li>
@@ -76,6 +78,8 @@
               <li><a href="#query-loadFunctionCallFromID">loadFunctionCallFromID</a></li>
               <li><a href="#query-loadFunctionFromID">loadFunctionFromID</a></li>
               <li><a href="#query-loadGeneratedCodeFromID">loadGeneratedCodeFromID</a></li>
+              <li><a href="#query-loadGeneratorFromID">loadGeneratorFromID</a></li>
+              <li><a href="#query-loadGeneratorGroupFromID">loadGeneratorGroupFromID</a></li>
               <li><a href="#query-loadGitRefFromID">loadGitRefFromID</a></li>
               <li><a href="#query-loadGitRepositoryFromID">loadGitRepositoryFromID</a></li>
               <li><a href="#query-loadHostFromID">loadHostFromID</a></li>
@@ -99,6 +103,7 @@
               <li><a href="#query-loadServiceFromID">loadServiceFromID</a></li>
               <li><a href="#query-loadSocketFromID">loadSocketFromID</a></li>
               <li><a href="#query-loadSourceMapFromID">loadSourceMapFromID</a></li>
+              <li><a href="#query-loadStatFromID">loadStatFromID</a></li>
               <li><a href="#query-loadTerminalFromID">loadTerminalFromID</a></li>
               <li><a href="#query-loadTypeDefFromID">loadTypeDefFromID</a></li>
               <li><a href="#query-loadVolumeFromID">loadVolumeFromID</a></li>
@@ -126,6 +131,12 @@
               <li><a href="#definition-CacheVolumeID">CacheVolumeID</a></li>
               <li><a href="#definition-Changeset">Changeset</a></li>
               <li><a href="#definition-ChangesetID">ChangesetID</a></li>
+              <li><a href="#definition-ChangesetMergeConflict">ChangesetMergeConflict</a></li>
+              <li><a href="#definition-ChangesetsMergeConflict">ChangesetsMergeConflict</a></li>
+              <li><a href="#definition-Check">Check</a></li>
+              <li><a href="#definition-CheckGroup">CheckGroup</a></li>
+              <li><a href="#definition-CheckGroupID">CheckGroupID</a></li>
+              <li><a href="#definition-CheckID">CheckID</a></li>
               <li><a href="#definition-Cloud">Cloud</a></li>
               <li><a href="#definition-CloudID">CloudID</a></li>
               <li><a href="#definition-Container">Container</a></li>
@@ -161,6 +172,7 @@
               <li><a href="#definition-FieldTypeDefID">FieldTypeDefID</a></li>
               <li><a href="#definition-File">File</a></li>
               <li><a href="#definition-FileID">FileID</a></li>
+              <li><a href="#definition-FileType">FileType</a></li>
               <li><a href="#definition-Function">Function</a></li>
               <li><a href="#definition-FunctionArg">FunctionArg</a></li>
               <li><a href="#definition-FunctionArgID">FunctionArgID</a></li>
@@ -172,6 +184,10 @@
               <li><a href="#definition-FunctionID">FunctionID</a></li>
               <li><a href="#definition-GeneratedCode">GeneratedCode</a></li>
               <li><a href="#definition-GeneratedCodeID">GeneratedCodeID</a></li>
+              <li><a href="#definition-Generator">Generator</a></li>
+              <li><a href="#definition-GeneratorGroup">GeneratorGroup</a></li>
+              <li><a href="#definition-GeneratorGroupID">GeneratorGroupID</a></li>
+              <li><a href="#definition-GeneratorID">GeneratorID</a></li>
               <li><a href="#definition-GitRef">GitRef</a></li>
               <li><a href="#definition-GitRefID">GitRefID</a></li>
               <li><a href="#definition-GitRepository">GitRepository</a></li>
@@ -229,6 +245,8 @@
               <li><a href="#definition-SocketID">SocketID</a></li>
               <li><a href="#definition-SourceMap">SourceMap</a></li>
               <li><a href="#definition-SourceMapID">SourceMapID</a></li>
+              <li><a href="#definition-Stat">Stat</a></li>
+              <li><a href="#definition-StatID">StatID</a></li>
               <li><a href="#definition-String">String</a></li>
               <li><a href="#definition-Terminal">Terminal</a></li>
               <li><a href="#definition-TerminalID">TerminalID</a></li>
@@ -1609,6 +1627,112 @@
               </div>
             </div>
           </section>
+          <section id="query-loadCheckFromID" class="operation operation-query" data-traverse-target="query-loadCheckFromID">
+            <div class="operation-group-name">
+              <a href="#group-Queries">Queries</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>loadCheckFromID</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Load a Check from its ID.</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Type</h5>
+                  <p>
+                    <a href="#definition-Check"><code>Check!</code></a>
+                  </p>
+                </div>
+                <div class="operation-arguments test doc-copy-section">
+                  <h5>Arguments</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>id</code></span> - <span class="property-type"><a href="#definition-CheckID"><code>CheckID!</code></a></span>
+                        </td>
+                        <td>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-example doc-copy-section">
+                  <h5>Example</h5>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="query-loadCheckGroupFromID" class="operation operation-query" data-traverse-target="query-loadCheckGroupFromID">
+            <div class="operation-group-name">
+              <a href="#group-Queries">Queries</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>loadCheckGroupFromID</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Load a CheckGroup from its ID.</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Type</h5>
+                  <p>
+                    <a href="#definition-CheckGroup"><code>CheckGroup!</code></a>
+                  </p>
+                </div>
+                <div class="operation-arguments test doc-copy-section">
+                  <h5>Arguments</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>id</code></span> - <span class="property-type"><a href="#definition-CheckGroupID"><code>CheckGroupID!</code></a></span>
+                        </td>
+                        <td>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-example doc-copy-section">
+                  <h5>Example</h5>
+                </div>
+              </div>
+            </div>
+          </section>
           <section id="query-loadCloudFromID" class="operation operation-query" data-traverse-target="query-loadCloudFromID">
             <div class="operation-group-name">
               <a href="#group-Queries">Queries</a>
@@ -2758,6 +2882,112 @@
                       <tr>
                         <td>
                           <span class="property-name"><code>id</code></span> - <span class="property-type"><a href="#definition-GeneratedCodeID"><code>GeneratedCodeID!</code></a></span>
+                        </td>
+                        <td>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-example doc-copy-section">
+                  <h5>Example</h5>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="query-loadGeneratorFromID" class="operation operation-query" data-traverse-target="query-loadGeneratorFromID">
+            <div class="operation-group-name">
+              <a href="#group-Queries">Queries</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>loadGeneratorFromID</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Load a Generator from its ID.</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Type</h5>
+                  <p>
+                    <a href="#definition-Generator"><code>Generator!</code></a>
+                  </p>
+                </div>
+                <div class="operation-arguments test doc-copy-section">
+                  <h5>Arguments</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>id</code></span> - <span class="property-type"><a href="#definition-GeneratorID"><code>GeneratorID!</code></a></span>
+                        </td>
+                        <td>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-example doc-copy-section">
+                  <h5>Example</h5>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="query-loadGeneratorGroupFromID" class="operation operation-query" data-traverse-target="query-loadGeneratorGroupFromID">
+            <div class="operation-group-name">
+              <a href="#group-Queries">Queries</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>loadGeneratorGroupFromID</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Load a GeneratorGroup from its ID.</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Type</h5>
+                  <p>
+                    <a href="#definition-GeneratorGroup"><code>GeneratorGroup!</code></a>
+                  </p>
+                </div>
+                <div class="operation-arguments test doc-copy-section">
+                  <h5>Arguments</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>id</code></span> - <span class="property-type"><a href="#definition-GeneratorGroupID"><code>GeneratorGroupID!</code></a></span>
                         </td>
                         <td>
                         </td>
@@ -3994,6 +4224,59 @@
               </div>
             </div>
           </section>
+          <section id="query-loadStatFromID" class="operation operation-query" data-traverse-target="query-loadStatFromID">
+            <div class="operation-group-name">
+              <a href="#group-Queries">Queries</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>loadStatFromID</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Load a Stat from its ID.</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Type</h5>
+                  <p>
+                    <a href="#definition-Stat"><code>Stat</code></a>
+                  </p>
+                </div>
+                <div class="operation-arguments test doc-copy-section">
+                  <h5>Arguments</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>id</code></span> - <span class="property-type"><a href="#definition-StatID"><code>StatID!</code></a></span>
+                        </td>
+                        <td>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-example doc-copy-section">
+                  <h5>Example</h5>
+                </div>
+              </div>
+            </div>
+          </section>
           <section id="query-loadTerminalFromID" class="operation operation-query" data-traverse-target="query-loadTerminalFromID">
             <div class="operation-group-name">
               <a href="#group-Queries">Queries</a>
@@ -4734,6 +5017,14 @@
                         <td> Retrieve the binding value, as type Changeset </td>
                       </tr>
                       <tr>
+                        <td data-property-name=""><a class="property-name" id="Binding-asCheck" href="#Binding-asCheck"><code>asCheck</code></a> - <span class="property-type"><a href="#definition-Check"><code>Check!</code></a></span> </td>
+                        <td> Retrieve the binding value, as type Check </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="Binding-asCheckGroup" href="#Binding-asCheckGroup"><code>asCheckGroup</code></a> - <span class="property-type"><a href="#definition-CheckGroup"><code>CheckGroup!</code></a></span> </td>
+                        <td> Retrieve the binding value, as type CheckGroup </td>
+                      </tr>
+                      <tr>
                         <td data-property-name=""><a class="property-name" id="Binding-asCloud" href="#Binding-asCloud"><code>asCloud</code></a> - <span class="property-type"><a href="#definition-Cloud"><code>Cloud!</code></a></span> </td>
                         <td> Retrieve the binding value, as type Cloud </td>
                       </tr>
@@ -4756,6 +5047,14 @@
                       <tr>
                         <td data-property-name=""><a class="property-name" id="Binding-asFile" href="#Binding-asFile"><code>asFile</code></a> - <span class="property-type"><a href="#definition-File"><code>File!</code></a></span> </td>
                         <td> Retrieve the binding value, as type File </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="Binding-asGenerator" href="#Binding-asGenerator"><code>asGenerator</code></a> - <span class="property-type"><a href="#definition-Generator"><code>Generator!</code></a></span> </td>
+                        <td> Retrieve the binding value, as type Generator </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="Binding-asGeneratorGroup" href="#Binding-asGeneratorGroup"><code>asGeneratorGroup</code></a> - <span class="property-type"><a href="#definition-GeneratorGroup"><code>GeneratorGroup!</code></a></span> </td>
+                        <td> Retrieve the binding value, as type GeneratorGroup </td>
                       </tr>
                       <tr>
                         <td data-property-name=""><a class="property-name" id="Binding-asGitRef" href="#Binding-asGitRef"><code>asGitRef</code></a> - <span class="property-type"><a href="#definition-GitRef"><code>GitRef!</code></a></span> </td>
@@ -4800,6 +5099,10 @@
                       <tr>
                         <td data-property-name=""><a class="property-name" id="Binding-asSocket" href="#Binding-asSocket"><code>asSocket</code></a> - <span class="property-type"><a href="#definition-Socket"><code>Socket!</code></a></span> </td>
                         <td> Retrieve the binding value, as type Socket </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="Binding-asStat" href="#Binding-asStat"><code>asStat</code></a> - <span class="property-type"><a href="#definition-Stat"><code>Stat</code></a></span> </td>
+                        <td> Retrieve the binding value, as type Stat </td>
                       </tr>
                       <tr>
                         <td data-property-name=""><a class="property-name" id="Binding-asString" href="#Binding-asString"><code>asString</code></a> - <span class="property-type"><a href="#definition-String"><code>String</code></a></span> </td>
@@ -5087,6 +5390,55 @@
                         <td data-property-name=""><a class="property-name" id="Changeset-sync" href="#Changeset-sync"><code>sync</code></a> - <span class="property-type"><a href="#definition-ChangesetID"><code>ChangesetID!</code></a></span> </td>
                         <td> Force evaluation in the engine. </td>
                       </tr>
+                      <tr class="row-has-field-arguments">
+                        <td data-property-name=""><a class="property-name" id="Changeset-withChangeset" href="#Changeset-withChangeset"><code>withChangeset</code></a> - <span class="property-type"><a href="#definition-Changeset"><code>Changeset!</code></a></span> </td>
+                        <td>
+                          <p>Add changes to an existing changeset</p>
+                          <p>By default the operation will fail in case of conflicts, for instance a file modified in both changesets. The behavior can be adjusted using onConflict argument</p>
+                        </td>
+                      </tr>
+                      <tr class="row-field-arguments">
+                        <td colspan="2">
+                          <div class="field-arguments">
+                            <h5 class="field-arguments-heading"> Arguments </h5>
+                            <div class="field-argument-list">
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>changes</code></span> - <span class="property-type"><a href="#definition-ChangesetID"><code>ChangesetID!</code></a></span></h6>
+                                <p>Changes to merge into the actual changeset</p>
+                              </div>
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>onConflict</code></span> - <span class="property-type"><a href="#definition-ChangesetMergeConflict"><code>ChangesetMergeConflict</code></a></span></h6>
+                                <p>What to do on a merge conflict</p>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr class="row-has-field-arguments">
+                        <td data-property-name=""><a class="property-name" id="Changeset-withChangesets" href="#Changeset-withChangesets"><code>withChangesets</code></a> - <span class="property-type"><a href="#definition-Changeset"><code>Changeset!</code></a></span> </td>
+                        <td>
+                          <p>Add changes from multiple changesets using git octopus merge strategy</p>
+                          <p>This is more efficient than chaining multiple withChangeset calls when merging many changesets.</p>
+                          <p>Only FAIL and FAIL_EARLY conflict strategies are supported (octopus merge cannot use -X ours/theirs).</p>
+                        </td>
+                      </tr>
+                      <tr class="row-field-arguments">
+                        <td colspan="2">
+                          <div class="field-arguments">
+                            <h5 class="field-arguments-heading"> Arguments </h5>
+                            <div class="field-argument-list">
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>changes</code></span> - <span class="property-type"><a href="#definition-ChangesetID"><code>[ChangesetID!]!</code></a></span></h6>
+                                <p>List of changesets to merge into the actual changeset</p>
+                              </div>
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>onConflict</code></span> - <span class="property-type"><a href="#definition-ChangesetsMergeConflict"><code>ChangesetsMergeConflict</code></a></span></h6>
+                                <p>What to do on a merge conflict</p>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
                     </tbody>
                   </table>
                 </div>
@@ -5103,6 +5455,238 @@
                 <div class="definition-description doc-copy-section">
                   <h5>Description</h5>
                   <p>The <code>ChangesetID</code> scalar type represents an identifier for an object of type Changeset.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-ChangesetMergeConflict" class="definition definition-enum" data-traverse-target="definition-ChangesetMergeConflict">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">ChangesetMergeConflict</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Strategy to use when merging changesets with conflicting changes.</p>
+                </div>
+                <div class="definition-properties doc-copy-section">
+                  <h5>Values</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Enum Value</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <p><code>FAIL_EARLY</code></p>
+                        </td>
+                        <td> Fail before attempting merge if file-level conflicts are detected </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <p><code>FAIL</code></p>
+                        </td>
+                        <td> Attempt the merge and fail if git merge fails due to conflicts </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <p><code>LEAVE_CONFLICT_MARKERS</code></p>
+                        </td>
+                        <td> Let git create conflict markers in files. For modify/delete conflicts, keeps the modified version. Fails on binary conflicts. </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <p><code>PREFER_OURS</code></p>
+                        </td>
+                        <td> The conflict is resolved by applying the version of the calling changeset </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <p><code>PREFER_THEIRS</code></p>
+                        </td>
+                        <td> The conflict is resolved by applying the version of the other changeset </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol">"FAIL_EARLY"</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-ChangesetsMergeConflict" class="definition definition-enum" data-traverse-target="definition-ChangesetsMergeConflict">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">ChangesetsMergeConflict</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Strategy to use when merging multiple changesets with git octopus merge.</p>
+                </div>
+                <div class="definition-properties doc-copy-section">
+                  <h5>Values</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Enum Value</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <p><code>FAIL_EARLY</code></p>
+                        </td>
+                        <td> Fail before attempting merge if file-level conflicts are detected between any changesets </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <p><code>FAIL</code></p>
+                        </td>
+                        <td> Attempt the octopus merge and fail if git merge fails due to conflicts </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol">"FAIL_EARLY"</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-Check" class="definition definition-object" data-traverse-target="definition-Check">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">Check</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Field Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="Check-completed" href="#Check-completed"><code>completed</code></a> - <span class="property-type"><a href="#definition-Boolean"><code>Boolean!</code></a></span> </td>
+                        <td> Whether the check completed </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="Check-description" href="#Check-description"><code>description</code></a> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span> </td>
+                        <td> The description of the check </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="Check-id" href="#Check-id"><code>id</code></a> - <span class="property-type"><a href="#definition-CheckID"><code>CheckID!</code></a></span> </td>
+                        <td> A unique identifier for this Check. </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="Check-name" href="#Check-name"><code>name</code></a> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span> </td>
+                        <td> Return the fully qualified name of the check </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="Check-passed" href="#Check-passed"><code>passed</code></a> - <span class="property-type"><a href="#definition-Boolean"><code>Boolean!</code></a></span> </td>
+                        <td> Whether the check passed </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="Check-path" href="#Check-path"><code>path</code></a> - <span class="property-type"><a href="#definition-String"><code>[String!]!</code></a></span> </td>
+                        <td> The path of the check within its module </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="Check-resultEmoji" href="#Check-resultEmoji"><code>resultEmoji</code></a> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span> </td>
+                        <td> An emoji representing the result of the check </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="Check-run" href="#Check-run"><code>run</code></a> - <span class="property-type"><a href="#definition-Check"><code>Check!</code></a></span> </td>
+                        <td> Execute the check </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-CheckGroup" class="definition definition-object" data-traverse-target="definition-CheckGroup">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">CheckGroup</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Field Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="CheckGroup-id" href="#CheckGroup-id"><code>id</code></a> - <span class="property-type"><a href="#definition-CheckGroupID"><code>CheckGroupID!</code></a></span> </td>
+                        <td> A unique identifier for this CheckGroup. </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="CheckGroup-list" href="#CheckGroup-list"><code>list</code></a> - <span class="property-type"><a href="#definition-Check"><code>[Check!]!</code></a></span> </td>
+                        <td> Return a list of individual checks and their details </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="CheckGroup-report" href="#CheckGroup-report"><code>report</code></a> - <span class="property-type"><a href="#definition-File"><code>File!</code></a></span> </td>
+                        <td> Generate a markdown report </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="CheckGroup-run" href="#CheckGroup-run"><code>run</code></a> - <span class="property-type"><a href="#definition-CheckGroup"><code>CheckGroup!</code></a></span> </td>
+                        <td> Execute all selected checks </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-CheckGroupID" class="definition definition-scalar" data-traverse-target="definition-CheckGroupID">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">CheckGroupID</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>The <code>CheckGroupID</code> scalar type represents an identifier for an object of type CheckGroup.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-CheckID" class="definition definition-scalar" data-traverse-target="definition-CheckID">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">CheckID</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>The <code>CheckID</code> scalar type represents an identifier for an object of type Check.</p>
                 </div>
               </div>
             </div>
@@ -5586,6 +6170,27 @@
                         <td data-property-name=""><a class="property-name" id="Container-rootfs" href="#Container-rootfs"><code>rootfs</code></a> - <span class="property-type"><a href="#definition-Directory"><code>Directory!</code></a></span> </td>
                         <td> Return a snapshot of the container's root filesystem. The snapshot can be modified then written back using withRootfs. Use that method for filesystem modifications. </td>
                       </tr>
+                      <tr class="row-has-field-arguments">
+                        <td data-property-name=""><a class="property-name" id="Container-stat" href="#Container-stat"><code>stat</code></a> - <span class="property-type"><a href="#definition-Stat"><code>Stat</code></a></span> </td>
+                        <td> Return file status </td>
+                      </tr>
+                      <tr class="row-field-arguments">
+                        <td colspan="2">
+                          <div class="field-arguments">
+                            <h5 class="field-arguments-heading"> Arguments </h5>
+                            <div class="field-argument-list">
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>path</code></span> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span></h6>
+                                <p>Path to check (e.g., &quot;/file.txt&quot;).</p>
+                              </div>
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>doNotFollowSymlinks</code></span> - <span class="property-type"><a href="#definition-Boolean"><code>Boolean</code></a></span></h6>
+                                <p>If specified, do not follow symlinks.</p>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
                       <tr>
                         <td data-property-name=""><a class="property-name" id="Container-stderr" href="#Container-stderr"><code>stderr</code></a> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span> </td>
                         <td>
@@ -5689,7 +6294,7 @@
                       </tr>
                       <tr class="row-has-field-arguments">
                         <td data-property-name=""><a class="property-name" id="Container-withAnnotation" href="#Container-withAnnotation"><code>withAnnotation</code></a> - <span class="property-type"><a href="#definition-Container"><code>Container!</code></a></span> </td>
-                        <td> Retrieves this container plus the given OCI anotation. </td>
+                        <td> Retrieves this container plus the given OCI annotation. </td>
                       </tr>
                       <tr class="row-field-arguments">
                         <td colspan="2">
@@ -5809,6 +6414,23 @@
                               <div class="field-argument">
                                 <h6 class="field-argument-name"><span class="property-name"><code>keepDefaultArgs</code></span> - <span class="property-type"><a href="#definition-Boolean"><code>Boolean</code></a></span></h6>
                                 <p>Don&#39;t reset the default arguments when setting the entrypoint. By default it is reset, since entrypoint and default args are often tightly coupled.</p>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr class="row-has-field-arguments">
+                        <td data-property-name=""><a class="property-name" id="Container-withEnvFileVariables" href="#Container-withEnvFileVariables"><code>withEnvFileVariables</code></a> - <span class="property-type"><a href="#definition-Container"><code>Container!</code></a></span> </td>
+                        <td> Export environment variables from an env-file to the container. </td>
+                      </tr>
+                      <tr class="row-field-arguments">
+                        <td colspan="2">
+                          <div class="field-arguments">
+                            <h5 class="field-arguments-heading"> Arguments </h5>
+                            <div class="field-argument-list">
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>source</code></span> - <span class="property-type"><a href="#definition-EnvFileID"><code>EnvFileID!</code></a></span></h6>
+                                <p>Identifier of the envfile</p>
                               </div>
                             </div>
                           </div>
@@ -6764,6 +7386,31 @@
                     </thead>
                     <tbody>
                       <tr>
+                        <td data-property-name=""><a class="property-name" id="CurrentModule-dependencies" href="#CurrentModule-dependencies"><code>dependencies</code></a> - <span class="property-type"><a href="#definition-Module"><code>[Module!]!</code></a></span> </td>
+                        <td> The dependencies of the module. </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="CurrentModule-generatedContextDirectory" href="#CurrentModule-generatedContextDirectory"><code>generatedContextDirectory</code></a> - <span class="property-type"><a href="#definition-Directory"><code>Directory!</code></a></span> </td>
+                        <td> The generated files and directories made on top of the module source's context directory. </td>
+                      </tr>
+                      <tr class="row-has-field-arguments">
+                        <td data-property-name=""><a class="property-name" id="CurrentModule-generators" href="#CurrentModule-generators"><code>generators</code></a> - <span class="property-type"><a href="#definition-GeneratorGroup"><code>GeneratorGroup!</code></a></span> </td>
+                        <td> Return all generators defined by the module </td>
+                      </tr>
+                      <tr class="row-field-arguments">
+                        <td colspan="2">
+                          <div class="field-arguments">
+                            <h5 class="field-arguments-heading"> Arguments </h5>
+                            <div class="field-argument-list">
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>include</code></span> - <span class="property-type"><a href="#definition-String"><code>[String!]</code></a></span></h6>
+                                <p>Only include generators matching the specified patterns</p>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr>
                         <td data-property-name=""><a class="property-name" id="CurrentModule-id" href="#CurrentModule-id"><code>id</code></a> - <span class="property-type"><a href="#definition-CurrentModuleID"><code>CurrentModuleID!</code></a></span> </td>
                         <td> A unique identifier for this CurrentModule. </td>
                       </tr>
@@ -7018,6 +7665,12 @@
                                 <p>If set, skip the automatic init process injected into containers created by RUN statements.</p>
                                 <p>This should only be used if the user requires that their exec processes be the pid 1 process in the container. Otherwise it may result in unexpected behavior.</p>
                               </div>
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>ssh</code></span> - <span class="property-type"><a href="#definition-SocketID"><code>SocketID</code></a></span></h6>
+                                <p>A socket to use for SSH authentication during the build</p>
+                                <p>(e.g., for Dockerfile RUN --mount=type=ssh instructions).</p>
+                                <p>Typically obtained via host.unixSocket() pointing to the SSH_AUTH_SOCK.</p>
+                              </div>
                             </div>
                           </div>
                         </td>
@@ -7228,6 +7881,27 @@
                               <div class="field-argument">
                                 <h6 class="field-argument-name"><span class="property-name"><code>limit</code></span> - <span class="property-type"><a href="#definition-Int"><code>Int</code></a></span></h6>
                                 <p>Limit the number of results to return</p>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr class="row-has-field-arguments">
+                        <td data-property-name=""><a class="property-name" id="Directory-stat" href="#Directory-stat"><code>stat</code></a> - <span class="property-type"><a href="#definition-Stat"><code>Stat</code></a></span> </td>
+                        <td> Return file status </td>
+                      </tr>
+                      <tr class="row-field-arguments">
+                        <td colspan="2">
+                          <div class="field-arguments">
+                            <h5 class="field-arguments-heading"> Arguments </h5>
+                            <div class="field-argument-list">
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>path</code></span> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span></h6>
+                                <p>Path to stat (e.g., &quot;/file.txt&quot;).</p>
+                              </div>
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>doNotFollowSymlinks</code></span> - <span class="property-type"><a href="#definition-Boolean"><code>Boolean</code></a></span></h6>
+                                <p>If specified, do not follow symlinks.</p>
                               </div>
                             </div>
                           </div>
@@ -7690,6 +8364,22 @@
                                 <h6 class="field-argument-name"><span class="property-name"><code>useDefaultPolicy</code></span> - <span class="property-type"><a href="#definition-Boolean"><code>Boolean</code></a></span></h6>
                                 <p>Use the engine-wide default pruning policy if true, otherwise prune the whole cache of any releasable entries.</p>
                               </div>
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>maxUsedSpace</code></span> - <span class="property-type"><a href="#definition-String"><code>String</code></a></span></h6>
+                                <p>Override the maximum disk space to keep before pruning (e.g. &quot;200GB&quot; or &quot;80%&quot;).</p>
+                              </div>
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>reservedSpace</code></span> - <span class="property-type"><a href="#definition-String"><code>String</code></a></span></h6>
+                                <p>Override the minimum disk space to retain during pruning (e.g. &quot;500GB&quot; or &quot;10%&quot;).</p>
+                              </div>
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>minFreeSpace</code></span> - <span class="property-type"><a href="#definition-String"><code>String</code></a></span></h6>
+                                <p>Override the minimum free disk space target during pruning (e.g. &quot;20GB&quot; or &quot;20%&quot;).</p>
+                              </div>
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>targetSpace</code></span> - <span class="property-type"><a href="#definition-String"><code>String</code></a></span></h6>
+                                <p>Override the target disk space to keep after pruning (e.g. &quot;200GB&quot; or &quot;50%&quot;).</p>
+                              </div>
                             </div>
                           </div>
                         </td>
@@ -7951,6 +8641,10 @@
                     </thead>
                     <tbody>
                       <tr>
+                        <td data-property-name=""><a class="property-name" id="EnumValueTypeDef-deprecated" href="#EnumValueTypeDef-deprecated"><code>deprecated</code></a> - <span class="property-type"><a href="#definition-String"><code>String</code></a></span> </td>
+                        <td> The reason this enum member is deprecated, if any. </td>
+                      </tr>
+                      <tr>
                         <td data-property-name=""><a class="property-name" id="EnumValueTypeDef-description" href="#EnumValueTypeDef-description"><code>description</code></a> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span> </td>
                         <td> A doc string for the enum member, if any. </td>
                       </tr>
@@ -8007,6 +8701,40 @@
                       </tr>
                     </thead>
                     <tbody>
+                      <tr class="row-has-field-arguments">
+                        <td data-property-name=""><a class="property-name" id="Env-check" href="#Env-check"><code>check</code></a> - <span class="property-type"><a href="#definition-Check"><code>Check!</code></a></span> </td>
+                        <td> Return the check with the given name from the installed modules. Must match exactly one check. </td>
+                      </tr>
+                      <tr class="row-field-arguments">
+                        <td colspan="2">
+                          <div class="field-arguments">
+                            <h5 class="field-arguments-heading"> Arguments </h5>
+                            <div class="field-argument-list">
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>name</code></span> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span></h6>
+                                <p>The name of the check to retrieve</p>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr class="row-has-field-arguments">
+                        <td data-property-name=""><a class="property-name" id="Env-checks" href="#Env-checks"><code>checks</code></a> - <span class="property-type"><a href="#definition-CheckGroup"><code>CheckGroup!</code></a></span> </td>
+                        <td> Return all checks defined by the installed modules </td>
+                      </tr>
+                      <tr class="row-field-arguments">
+                        <td colspan="2">
+                          <div class="field-arguments">
+                            <h5 class="field-arguments-heading"> Arguments </h5>
+                            <div class="field-argument-list">
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>include</code></span> - <span class="property-type"><a href="#definition-String"><code>[String!]</code></a></span></h6>
+                                <p>Only include checks matching the specified patterns</p>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
                       <tr>
                         <td data-property-name=""><a class="property-name" id="Env-id" href="#Env-id"><code>id</code></a> - <span class="property-type"><a href="#definition-EnvID"><code>EnvID!</code></a></span> </td>
                         <td> A unique identifier for this Env. </td>
@@ -8171,6 +8899,98 @@
                       <tr class="row-has-field-arguments">
                         <td data-property-name=""><a class="property-name" id="Env-withChangesetOutput" href="#Env-withChangesetOutput"><code>withChangesetOutput</code></a> - <span class="property-type"><a href="#definition-Env"><code>Env!</code></a></span> </td>
                         <td> Declare a desired Changeset output to be assigned in the environment </td>
+                      </tr>
+                      <tr class="row-field-arguments">
+                        <td colspan="2">
+                          <div class="field-arguments">
+                            <h5 class="field-arguments-heading"> Arguments </h5>
+                            <div class="field-argument-list">
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>name</code></span> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span></h6>
+                                <p>The name of the binding</p>
+                              </div>
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>description</code></span> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span></h6>
+                                <p>A description of the desired value of the binding</p>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr class="row-has-field-arguments">
+                        <td data-property-name=""><a class="property-name" id="Env-withCheckGroupInput" href="#Env-withCheckGroupInput"><code>withCheckGroupInput</code></a> - <span class="property-type"><a href="#definition-Env"><code>Env!</code></a></span> </td>
+                        <td> Create or update a binding of type CheckGroup in the environment </td>
+                      </tr>
+                      <tr class="row-field-arguments">
+                        <td colspan="2">
+                          <div class="field-arguments">
+                            <h5 class="field-arguments-heading"> Arguments </h5>
+                            <div class="field-argument-list">
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>name</code></span> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span></h6>
+                                <p>The name of the binding</p>
+                              </div>
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>value</code></span> - <span class="property-type"><a href="#definition-CheckGroupID"><code>CheckGroupID!</code></a></span></h6>
+                                <p>The CheckGroup value to assign to the binding</p>
+                              </div>
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>description</code></span> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span></h6>
+                                <p>The purpose of the input</p>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr class="row-has-field-arguments">
+                        <td data-property-name=""><a class="property-name" id="Env-withCheckGroupOutput" href="#Env-withCheckGroupOutput"><code>withCheckGroupOutput</code></a> - <span class="property-type"><a href="#definition-Env"><code>Env!</code></a></span> </td>
+                        <td> Declare a desired CheckGroup output to be assigned in the environment </td>
+                      </tr>
+                      <tr class="row-field-arguments">
+                        <td colspan="2">
+                          <div class="field-arguments">
+                            <h5 class="field-arguments-heading"> Arguments </h5>
+                            <div class="field-argument-list">
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>name</code></span> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span></h6>
+                                <p>The name of the binding</p>
+                              </div>
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>description</code></span> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span></h6>
+                                <p>A description of the desired value of the binding</p>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr class="row-has-field-arguments">
+                        <td data-property-name=""><a class="property-name" id="Env-withCheckInput" href="#Env-withCheckInput"><code>withCheckInput</code></a> - <span class="property-type"><a href="#definition-Env"><code>Env!</code></a></span> </td>
+                        <td> Create or update a binding of type Check in the environment </td>
+                      </tr>
+                      <tr class="row-field-arguments">
+                        <td colspan="2">
+                          <div class="field-arguments">
+                            <h5 class="field-arguments-heading"> Arguments </h5>
+                            <div class="field-argument-list">
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>name</code></span> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span></h6>
+                                <p>The name of the binding</p>
+                              </div>
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>value</code></span> - <span class="property-type"><a href="#definition-CheckID"><code>CheckID!</code></a></span></h6>
+                                <p>The Check value to assign to the binding</p>
+                              </div>
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>description</code></span> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span></h6>
+                                <p>The purpose of the input</p>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr class="row-has-field-arguments">
+                        <td data-property-name=""><a class="property-name" id="Env-withCheckOutput" href="#Env-withCheckOutput"><code>withCheckOutput</code></a> - <span class="property-type"><a href="#definition-Env"><code>Env!</code></a></span> </td>
+                        <td> Declare a desired Check output to be assigned in the environment </td>
                       </tr>
                       <tr class="row-field-arguments">
                         <td colspan="2">
@@ -8473,6 +9293,98 @@
                         </td>
                       </tr>
                       <tr class="row-has-field-arguments">
+                        <td data-property-name=""><a class="property-name" id="Env-withGeneratorGroupInput" href="#Env-withGeneratorGroupInput"><code>withGeneratorGroupInput</code></a> - <span class="property-type"><a href="#definition-Env"><code>Env!</code></a></span> </td>
+                        <td> Create or update a binding of type GeneratorGroup in the environment </td>
+                      </tr>
+                      <tr class="row-field-arguments">
+                        <td colspan="2">
+                          <div class="field-arguments">
+                            <h5 class="field-arguments-heading"> Arguments </h5>
+                            <div class="field-argument-list">
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>name</code></span> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span></h6>
+                                <p>The name of the binding</p>
+                              </div>
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>value</code></span> - <span class="property-type"><a href="#definition-GeneratorGroupID"><code>GeneratorGroupID!</code></a></span></h6>
+                                <p>The GeneratorGroup value to assign to the binding</p>
+                              </div>
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>description</code></span> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span></h6>
+                                <p>The purpose of the input</p>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr class="row-has-field-arguments">
+                        <td data-property-name=""><a class="property-name" id="Env-withGeneratorGroupOutput" href="#Env-withGeneratorGroupOutput"><code>withGeneratorGroupOutput</code></a> - <span class="property-type"><a href="#definition-Env"><code>Env!</code></a></span> </td>
+                        <td> Declare a desired GeneratorGroup output to be assigned in the environment </td>
+                      </tr>
+                      <tr class="row-field-arguments">
+                        <td colspan="2">
+                          <div class="field-arguments">
+                            <h5 class="field-arguments-heading"> Arguments </h5>
+                            <div class="field-argument-list">
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>name</code></span> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span></h6>
+                                <p>The name of the binding</p>
+                              </div>
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>description</code></span> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span></h6>
+                                <p>A description of the desired value of the binding</p>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr class="row-has-field-arguments">
+                        <td data-property-name=""><a class="property-name" id="Env-withGeneratorInput" href="#Env-withGeneratorInput"><code>withGeneratorInput</code></a> - <span class="property-type"><a href="#definition-Env"><code>Env!</code></a></span> </td>
+                        <td> Create or update a binding of type Generator in the environment </td>
+                      </tr>
+                      <tr class="row-field-arguments">
+                        <td colspan="2">
+                          <div class="field-arguments">
+                            <h5 class="field-arguments-heading"> Arguments </h5>
+                            <div class="field-argument-list">
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>name</code></span> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span></h6>
+                                <p>The name of the binding</p>
+                              </div>
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>value</code></span> - <span class="property-type"><a href="#definition-GeneratorID"><code>GeneratorID!</code></a></span></h6>
+                                <p>The Generator value to assign to the binding</p>
+                              </div>
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>description</code></span> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span></h6>
+                                <p>The purpose of the input</p>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr class="row-has-field-arguments">
+                        <td data-property-name=""><a class="property-name" id="Env-withGeneratorOutput" href="#Env-withGeneratorOutput"><code>withGeneratorOutput</code></a> - <span class="property-type"><a href="#definition-Env"><code>Env!</code></a></span> </td>
+                        <td> Declare a desired Generator output to be assigned in the environment </td>
+                      </tr>
+                      <tr class="row-field-arguments">
+                        <td colspan="2">
+                          <div class="field-arguments">
+                            <h5 class="field-arguments-heading"> Arguments </h5>
+                            <div class="field-argument-list">
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>name</code></span> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span></h6>
+                                <p>The name of the binding</p>
+                              </div>
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>description</code></span> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span></h6>
+                                <p>A description of the desired value of the binding</p>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr class="row-has-field-arguments">
                         <td data-property-name=""><a class="property-name" id="Env-withGitRefInput" href="#Env-withGitRefInput"><code>withGitRefInput</code></a> - <span class="property-type"><a href="#definition-Env"><code>Env!</code></a></span> </td>
                         <td> Create or update a binding of type GitRef in the environment </td>
                       </tr>
@@ -8611,10 +9523,30 @@
                         </td>
                       </tr>
                       <tr class="row-has-field-arguments">
-                        <td data-property-name=""><a class="property-name" id="Env-withModule" href="#Env-withModule"><code>withModule</code></a> - <span class="property-type"><a href="#definition-Env"><code>Env!</code></a></span> </td>
+                        <td data-property-name=""><a class="property-name" id="Env-withMainModule" href="#Env-withMainModule"><code>withMainModule</code></a> - <span class="property-type"><a href="#definition-Env"><code>Env!</code></a></span> </td>
+                        <td>
+                          <p>Sets the main module for this environment (the project being worked on)</p>
+                          <p>Contextual path arguments will be populated using the environment&#39;s workspace.</p>
+                        </td>
+                      </tr>
+                      <tr class="row-field-arguments">
+                        <td colspan="2">
+                          <div class="field-arguments">
+                            <h5 class="field-arguments-heading"> Arguments </h5>
+                            <div class="field-argument-list">
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>module</code></span> - <span class="property-type"><a href="#definition-ModuleID"><code>ModuleID!</code></a></span></h6>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr class="row-has-field-arguments">
+                        <td data-property-name="" class="definition-deprecated"><a class="property-name" id="Env-withModule" href="#Env-withModule"><code>withModule</code></a> - <span class="property-type"><a href="#definition-Env"><code>Env!</code></a></span> </td>
                         <td>
                           <p>Installs a module into the environment, exposing its functions to the model</p>
                           <p>Contextual path arguments will be populated using the environment&#39;s workspace.</p>
+                          <span class="deprecation-reason">Use withMainModule instead</span>
                         </td>
                       </tr>
                       <tr class="row-field-arguments">
@@ -8979,6 +9911,52 @@
                       <tr class="row-has-field-arguments">
                         <td data-property-name=""><a class="property-name" id="Env-withSocketOutput" href="#Env-withSocketOutput"><code>withSocketOutput</code></a> - <span class="property-type"><a href="#definition-Env"><code>Env!</code></a></span> </td>
                         <td> Declare a desired Socket output to be assigned in the environment </td>
+                      </tr>
+                      <tr class="row-field-arguments">
+                        <td colspan="2">
+                          <div class="field-arguments">
+                            <h5 class="field-arguments-heading"> Arguments </h5>
+                            <div class="field-argument-list">
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>name</code></span> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span></h6>
+                                <p>The name of the binding</p>
+                              </div>
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>description</code></span> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span></h6>
+                                <p>A description of the desired value of the binding</p>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr class="row-has-field-arguments">
+                        <td data-property-name=""><a class="property-name" id="Env-withStatInput" href="#Env-withStatInput"><code>withStatInput</code></a> - <span class="property-type"><a href="#definition-Env"><code>Env!</code></a></span> </td>
+                        <td> Create or update a binding of type Stat in the environment </td>
+                      </tr>
+                      <tr class="row-field-arguments">
+                        <td colspan="2">
+                          <div class="field-arguments">
+                            <h5 class="field-arguments-heading"> Arguments </h5>
+                            <div class="field-argument-list">
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>name</code></span> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span></h6>
+                                <p>The name of the binding</p>
+                              </div>
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>value</code></span> - <span class="property-type"><a href="#definition-StatID"><code>StatID!</code></a></span></h6>
+                                <p>The Stat value to assign to the binding</p>
+                              </div>
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>description</code></span> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span></h6>
+                                <p>The purpose of the input</p>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr class="row-has-field-arguments">
+                        <td data-property-name=""><a class="property-name" id="Env-withStatOutput" href="#Env-withStatOutput"><code>withStatOutput</code></a> - <span class="property-type"><a href="#definition-Env"><code>Env!</code></a></span> </td>
+                        <td> Declare a desired Stat output to be assigned in the environment </td>
                       </tr>
                       <tr class="row-field-arguments">
                         <td colspan="2">
@@ -9541,6 +10519,10 @@
                     </thead>
                     <tbody>
                       <tr>
+                        <td data-property-name=""><a class="property-name" id="FieldTypeDef-deprecated" href="#FieldTypeDef-deprecated"><code>deprecated</code></a> - <span class="property-type"><a href="#definition-String"><code>String</code></a></span> </td>
+                        <td> The reason this enum member is deprecated, if any. </td>
+                      </tr>
+                      <tr>
                         <td data-property-name=""><a class="property-name" id="FieldTypeDef-description" href="#FieldTypeDef-description"><code>description</code></a> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span> </td>
                         <td> A doc string for the field, if any. </td>
                       </tr>
@@ -9617,6 +10599,10 @@
                             </div>
                           </div>
                         </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="File-asJSON" href="#File-asJSON"><code>asJSON</code></a> - <span class="property-type"><a href="#definition-JSONValue"><code>JSONValue!</code></a></span> </td>
+                        <td> Parse the file contents as JSON. </td>
                       </tr>
                       <tr class="row-has-field-arguments">
                         <td data-property-name=""><a class="property-name" id="File-chown" href="#File-chown"><code>chown</code></a> - <span class="property-type"><a href="#definition-File"><code>File!</code></a></span> </td>
@@ -9767,6 +10753,10 @@
                         <td> Retrieves the size of the file, in bytes. </td>
                       </tr>
                       <tr>
+                        <td data-property-name=""><a class="property-name" id="File-stat" href="#File-stat"><code>stat</code></a> - <span class="property-type"><a href="#definition-Stat"><code>Stat</code></a></span> </td>
+                        <td> Return file status </td>
+                      </tr>
+                      <tr>
                         <td data-property-name=""><a class="property-name" id="File-sync" href="#File-sync"><code>sync</code></a> - <span class="property-type"><a href="#definition-FileID"><code>FileID!</code></a></span> </td>
                         <td> Force evaluation in the engine. </td>
                       </tr>
@@ -9860,6 +10850,82 @@
               </div>
             </div>
           </section>
+          <section id="definition-FileType" class="definition definition-enum" data-traverse-target="definition-FileType">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">FileType</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>File type.</p>
+                </div>
+                <div class="definition-properties doc-copy-section">
+                  <h5>Values</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Enum Value</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <p><code>UNKNOWN</code></p>
+                        </td>
+                        <td> unknown file type </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <p><code>REGULAR</code></p>
+                        </td>
+                        <td> regular file type </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <p><code>DIRECTORY</code></p>
+                        </td>
+                        <td> directory file type </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <p><code>SYMLINK</code></p>
+                        </td>
+                        <td> symlink file type </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <p><code>REGULAR_TYPE</code></p>
+                        </td>
+                        <td> regular file type </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <p><code>DIRECTORY_TYPE</code></p>
+                        </td>
+                        <td> directory file type </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <p><code>SYMLINK_TYPE</code></p>
+                        </td>
+                        <td> symlink file type </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol">"UNKNOWN"</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
           <section id="definition-Function" class="definition definition-object" data-traverse-target="definition-Function">
             <div class="definition-group-name">
               <a href="#group-Types">Types</a>
@@ -9885,6 +10951,10 @@
                       <tr>
                         <td data-property-name=""><a class="property-name" id="Function-args" href="#Function-args"><code>args</code></a> - <span class="property-type"><a href="#definition-FunctionArg"><code>[FunctionArg!]!</code></a></span> </td>
                         <td> Arguments accepted by the function, if any. </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="Function-deprecated" href="#Function-deprecated"><code>deprecated</code></a> - <span class="property-type"><a href="#definition-String"><code>String</code></a></span> </td>
+                        <td> The reason this function is deprecated, if any. </td>
                       </tr>
                       <tr>
                         <td data-property-name=""><a class="property-name" id="Function-description" href="#Function-description"><code>description</code></a> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span> </td>
@@ -9943,6 +11013,13 @@
                                 <h6 class="field-argument-name"><span class="property-name"><code>sourceMap</code></span> - <span class="property-type"><a href="#definition-SourceMapID"><code>SourceMapID</code></a></span></h6>
                                 <p>The source map for the argument definition.</p>
                               </div>
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>deprecated</code></span> - <span class="property-type"><a href="#definition-String"><code>String</code></a></span></h6>
+                                <p>If deprecated, the reason or migration path.</p>
+                              </div>
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>defaultAddress</code></span> - <span class="property-type"><a href="#definition-String"><code>String</code></a></span></h6>
+                              </div>
                             </div>
                           </div>
                         </td>
@@ -9968,6 +11045,27 @@
                           </div>
                         </td>
                       </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="Function-withCheck" href="#Function-withCheck"><code>withCheck</code></a> - <span class="property-type"><a href="#definition-Function"><code>Function!</code></a></span> </td>
+                        <td> Returns the function with a flag indicating it's a check. </td>
+                      </tr>
+                      <tr class="row-has-field-arguments">
+                        <td data-property-name=""><a class="property-name" id="Function-withDeprecated" href="#Function-withDeprecated"><code>withDeprecated</code></a> - <span class="property-type"><a href="#definition-Function"><code>Function!</code></a></span> </td>
+                        <td> Returns the function with the provided deprecation reason. </td>
+                      </tr>
+                      <tr class="row-field-arguments">
+                        <td colspan="2">
+                          <div class="field-arguments">
+                            <h5 class="field-arguments-heading"> Arguments </h5>
+                            <div class="field-argument-list">
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>reason</code></span> - <span class="property-type"><a href="#definition-String"><code>String</code></a></span></h6>
+                                <p>Reason or migration path describing the deprecation.</p>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
                       <tr class="row-has-field-arguments">
                         <td data-property-name=""><a class="property-name" id="Function-withDescription" href="#Function-withDescription"><code>withDescription</code></a> - <span class="property-type"><a href="#definition-Function"><code>Function!</code></a></span> </td>
                         <td> Returns the function with the given doc string. </td>
@@ -9984,6 +11082,10 @@
                             </div>
                           </div>
                         </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="Function-withGenerator" href="#Function-withGenerator"><code>withGenerator</code></a> - <span class="property-type"><a href="#definition-Function"><code>Function!</code></a></span> </td>
+                        <td> Returns the function with a flag indicating it's a generator. </td>
                       </tr>
                       <tr class="row-has-field-arguments">
                         <td data-property-name=""><a class="property-name" id="Function-withSourceMap" href="#Function-withSourceMap"><code>withSourceMap</code></a> - <span class="property-type"><a href="#definition-Function"><code>Function!</code></a></span> </td>
@@ -10031,12 +11133,20 @@
                     </thead>
                     <tbody>
                       <tr>
+                        <td data-property-name=""><a class="property-name" id="FunctionArg-defaultAddress" href="#FunctionArg-defaultAddress"><code>defaultAddress</code></a> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span> </td>
+                        <td> Only applies to arguments of type Container. If the argument is not set, load it from the given address (e.g. alpine:latest) </td>
+                      </tr>
+                      <tr>
                         <td data-property-name=""><a class="property-name" id="FunctionArg-defaultPath" href="#FunctionArg-defaultPath"><code>defaultPath</code></a> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span> </td>
                         <td> Only applies to arguments of type File or Directory. If the argument is not set, load it from the given path in the context directory </td>
                       </tr>
                       <tr>
                         <td data-property-name=""><a class="property-name" id="FunctionArg-defaultValue" href="#FunctionArg-defaultValue"><code>defaultValue</code></a> - <span class="property-type"><a href="#definition-JSON"><code>JSON!</code></a></span> </td>
                         <td> A default value to use for this argument when not explicitly set by the caller, if any. </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="FunctionArg-deprecated" href="#FunctionArg-deprecated"><code>deprecated</code></a> - <span class="property-type"><a href="#definition-String"><code>String</code></a></span> </td>
+                        <td> The reason this function is deprecated, if any. </td>
                       </tr>
                       <tr>
                         <td data-property-name=""><a class="property-name" id="FunctionArg-description" href="#FunctionArg-description"><code>description</code></a> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span> </td>
@@ -10384,6 +11494,145 @@
                 <div class="definition-description doc-copy-section">
                   <h5>Description</h5>
                   <p>The <code>GeneratedCodeID</code> scalar type represents an identifier for an object of type GeneratedCode.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-Generator" class="definition definition-object" data-traverse-target="definition-Generator">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">Generator</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Field Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="Generator-changes" href="#Generator-changes"><code>changes</code></a> - <span class="property-type"><a href="#definition-Changeset"><code>Changeset!</code></a></span> </td>
+                        <td> The generated changeset </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="Generator-completed" href="#Generator-completed"><code>completed</code></a> - <span class="property-type"><a href="#definition-Boolean"><code>Boolean!</code></a></span> </td>
+                        <td> Whether the generator complete </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="Generator-description" href="#Generator-description"><code>description</code></a> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span> </td>
+                        <td> Return the description of the generator </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="Generator-id" href="#Generator-id"><code>id</code></a> - <span class="property-type"><a href="#definition-GeneratorID"><code>GeneratorID!</code></a></span> </td>
+                        <td> A unique identifier for this Generator. </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="Generator-isEmpty" href="#Generator-isEmpty"><code>isEmpty</code></a> - <span class="property-type"><a href="#definition-Boolean"><code>Boolean!</code></a></span> </td>
+                        <td> Wether changeset from the generator execution is empty or not </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="Generator-name" href="#Generator-name"><code>name</code></a> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span> </td>
+                        <td> Return the fully qualified name of the generator </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="Generator-run" href="#Generator-run"><code>run</code></a> - <span class="property-type"><a href="#definition-Generator"><code>Generator!</code></a></span> </td>
+                        <td> Execute the generator </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-GeneratorGroup" class="definition definition-object" data-traverse-target="definition-GeneratorGroup">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">GeneratorGroup</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Field Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr class="row-has-field-arguments">
+                        <td data-property-name=""><a class="property-name" id="GeneratorGroup-changes" href="#GeneratorGroup-changes"><code>changes</code></a> - <span class="property-type"><a href="#definition-Changeset"><code>Changeset!</code></a></span> </td>
+                        <td>
+                          <p>The combined changes from the generators execution</p>
+                          <p>If any conflict occurs, for instance if the same file is modified by multiple generators, or if a file is both modified and deleted, an error is raised and the merge of the changesets will failed.</p>
+                          <p>Set &#39;continueOnConflicts&#39; flag to force to merge the changes in a &#39;last write wins&#39; strategy.</p>
+                        </td>
+                      </tr>
+                      <tr class="row-field-arguments">
+                        <td colspan="2">
+                          <div class="field-arguments">
+                            <h5 class="field-arguments-heading"> Arguments </h5>
+                            <div class="field-argument-list">
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>onConflict</code></span> - <span class="property-type"><a href="#definition-ChangesetsMergeConflict"><code>ChangesetsMergeConflict</code></a></span></h6>
+                                <p>Strategy to apply on conflicts between generators</p>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="GeneratorGroup-id" href="#GeneratorGroup-id"><code>id</code></a> - <span class="property-type"><a href="#definition-GeneratorGroupID"><code>GeneratorGroupID!</code></a></span> </td>
+                        <td> A unique identifier for this GeneratorGroup. </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="GeneratorGroup-isEmpty" href="#GeneratorGroup-isEmpty"><code>isEmpty</code></a> - <span class="property-type"><a href="#definition-Boolean"><code>Boolean!</code></a></span> </td>
+                        <td> Whether the generated changeset is empty or not </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="GeneratorGroup-list" href="#GeneratorGroup-list"><code>list</code></a> - <span class="property-type"><a href="#definition-Generator"><code>[Generator!]!</code></a></span> </td>
+                        <td> Return a list of individual generators and their details </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="GeneratorGroup-run" href="#GeneratorGroup-run"><code>run</code></a> - <span class="property-type"><a href="#definition-GeneratorGroup"><code>GeneratorGroup!</code></a></span> </td>
+                        <td> Execute all selected generators </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-GeneratorGroupID" class="definition definition-scalar" data-traverse-target="definition-GeneratorGroupID">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">GeneratorGroupID</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>The <code>GeneratorGroupID</code> scalar type represents an identifier for an object of type GeneratorGroup.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-GeneratorID" class="definition definition-scalar" data-traverse-target="definition-GeneratorID">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">GeneratorID</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>The <code>GeneratorID</code> scalar type represents an identifier for an object of type Generator.</p>
                 </div>
               </div>
             </div>
@@ -11569,6 +12818,14 @@
                         <td data-property-name=""><a class="property-name" id="LLM-withoutDefaultSystemPrompt" href="#LLM-withoutDefaultSystemPrompt"><code>withoutDefaultSystemPrompt</code></a> - <span class="property-type"><a href="#definition-LLM"><code>LLM!</code></a></span> </td>
                         <td> Disable the default system prompt </td>
                       </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="LLM-withoutMessageHistory" href="#LLM-withoutMessageHistory"><code>withoutMessageHistory</code></a> - <span class="property-type"><a href="#definition-LLM"><code>LLM!</code></a></span> </td>
+                        <td> Clear the message history, leaving only the system prompts </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="LLM-withoutSystemPrompts" href="#LLM-withoutSystemPrompts"><code>withoutSystemPrompts</code></a> - <span class="property-type"><a href="#definition-LLM"><code>LLM!</code></a></span> </td>
+                        <td> Clear the system prompts, leaving only the default system prompt </td>
+                      </tr>
                     </tbody>
                   </table>
                 </div>
@@ -11778,6 +13035,40 @@
                       </tr>
                     </thead>
                     <tbody>
+                      <tr class="row-has-field-arguments">
+                        <td data-property-name=""><a class="property-name" id="Module-check" href="#Module-check"><code>check</code></a> - <span class="property-type"><a href="#definition-Check"><code>Check!</code></a></span> </td>
+                        <td> Return the check defined by the module with the given name. Must match to exactly one check. </td>
+                      </tr>
+                      <tr class="row-field-arguments">
+                        <td colspan="2">
+                          <div class="field-arguments">
+                            <h5 class="field-arguments-heading"> Arguments </h5>
+                            <div class="field-argument-list">
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>name</code></span> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span></h6>
+                                <p>The name of the check to retrieve</p>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr class="row-has-field-arguments">
+                        <td data-property-name=""><a class="property-name" id="Module-checks" href="#Module-checks"><code>checks</code></a> - <span class="property-type"><a href="#definition-CheckGroup"><code>CheckGroup!</code></a></span> </td>
+                        <td> Return all checks defined by the module </td>
+                      </tr>
+                      <tr class="row-field-arguments">
+                        <td colspan="2">
+                          <div class="field-arguments">
+                            <h5 class="field-arguments-heading"> Arguments </h5>
+                            <div class="field-argument-list">
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>include</code></span> - <span class="property-type"><a href="#definition-String"><code>[String!]</code></a></span></h6>
+                                <p>Only include checks matching the specified patterns</p>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
                       <tr>
                         <td data-property-name=""><a class="property-name" id="Module-dependencies" href="#Module-dependencies"><code>dependencies</code></a> - <span class="property-type"><a href="#definition-Module"><code>[Module!]!</code></a></span> </td>
                         <td> The dependencies of the module. </td>
@@ -11793,6 +13084,40 @@
                       <tr>
                         <td data-property-name=""><a class="property-name" id="Module-generatedContextDirectory" href="#Module-generatedContextDirectory"><code>generatedContextDirectory</code></a> - <span class="property-type"><a href="#definition-Directory"><code>Directory!</code></a></span> </td>
                         <td> The generated files and directories made on top of the module source's context directory. </td>
+                      </tr>
+                      <tr class="row-has-field-arguments">
+                        <td data-property-name=""><a class="property-name" id="Module-generator" href="#Module-generator"><code>generator</code></a> - <span class="property-type"><a href="#definition-Generator"><code>Generator!</code></a></span> </td>
+                        <td> Return the generator defined by the module with the given name. Must match to exactly one generator. </td>
+                      </tr>
+                      <tr class="row-field-arguments">
+                        <td colspan="2">
+                          <div class="field-arguments">
+                            <h5 class="field-arguments-heading"> Arguments </h5>
+                            <div class="field-argument-list">
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>name</code></span> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span></h6>
+                                <p>The name of the generator to retrieve</p>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr class="row-has-field-arguments">
+                        <td data-property-name=""><a class="property-name" id="Module-generators" href="#Module-generators"><code>generators</code></a> - <span class="property-type"><a href="#definition-GeneratorGroup"><code>GeneratorGroup!</code></a></span> </td>
+                        <td> Return all generators defined by the module </td>
+                      </tr>
+                      <tr class="row-field-arguments">
+                        <td colspan="2">
+                          <div class="field-arguments">
+                            <h5 class="field-arguments-heading"> Arguments </h5>
+                            <div class="field-argument-list">
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>include</code></span> - <span class="property-type"><a href="#definition-String"><code>[String!]</code></a></span></h6>
+                                <p>Only include generators matching the specified patterns</p>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
                       </tr>
                       <tr>
                         <td data-property-name=""><a class="property-name" id="Module-id" href="#Module-id"><code>id</code></a> - <span class="property-type"><a href="#definition-ModuleID"><code>ModuleID!</code></a></span> </td>
@@ -12669,6 +13994,10 @@
                         <td> The function used to construct new instances of this object, if any </td>
                       </tr>
                       <tr>
+                        <td data-property-name=""><a class="property-name" id="ObjectTypeDef-deprecated" href="#ObjectTypeDef-deprecated"><code>deprecated</code></a> - <span class="property-type"><a href="#definition-String"><code>String</code></a></span> </td>
+                        <td> The reason this enum member is deprecated, if any. </td>
+                      </tr>
+                      <tr>
                         <td data-property-name=""><a class="property-name" id="ObjectTypeDef-description" href="#ObjectTypeDef-description"><code>description</code></a> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span> </td>
                         <td> The doc string for the object, if any. </td>
                       </tr>
@@ -12924,13 +14253,13 @@
                         <td>
                           <p><code>FAILURE</code></p>
                         </td>
-                        <td> A failed execution (exit codes 1-127) </td>
+                        <td> A failed execution (exit codes 1-127 and 192-255) </td>
                       </tr>
                       <tr>
                         <td>
                           <p><code>ANY</code></p>
                         </td>
-                        <td> Any execution (exit codes 0-127) </td>
+                        <td> Any execution (exit codes 0-127 and 192-255) </td>
                       </tr>
                     </tbody>
                   </table>
@@ -12966,6 +14295,10 @@
                       </tr>
                     </thead>
                     <tbody>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="SDKConfig-debug" href="#SDKConfig-debug"><code>debug</code></a> - <span class="property-type"><a href="#definition-Boolean"><code>Boolean!</code></a></span> </td>
+                        <td> Whether to start the SDK runtime in debug mode with an interactive terminal. </td>
+                      </tr>
                       <tr>
                         <td data-property-name=""><a class="property-name" id="SDKConfig-id" href="#SDKConfig-id"><code>id</code></a> - <span class="property-type"><a href="#definition-SDKConfigID"><code>SDKConfigID!</code></a></span> </td>
                         <td> A unique identifier for this SDKConfig. </td>
@@ -13494,6 +14827,67 @@
               </div>
             </div>
           </section>
+          <section id="definition-Stat" class="definition definition-object" data-traverse-target="definition-Stat">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">Stat</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>A file or directory status object.</p>
+                </div>
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Field Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="Stat-fileType" href="#Stat-fileType"><code>fileType</code></a> - <span class="property-type"><a href="#definition-FileType"><code>FileType</code></a></span> </td>
+                        <td> file type </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="Stat-id" href="#Stat-id"><code>id</code></a> - <span class="property-type"><a href="#definition-StatID"><code>StatID!</code></a></span> </td>
+                        <td> A unique identifier for this Stat. </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="Stat-name" href="#Stat-name"><code>name</code></a> - <span class="property-type"><a href="#definition-String"><code>String!</code></a></span> </td>
+                        <td> file name </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="Stat-permissions" href="#Stat-permissions"><code>permissions</code></a> - <span class="property-type"><a href="#definition-Int"><code>Int!</code></a></span> </td>
+                        <td> permission bits </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><a class="property-name" id="Stat-size" href="#Stat-size"><code>size</code></a> - <span class="property-type"><a href="#definition-Int"><code>Int!</code></a></span> </td>
+                        <td> file size </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-StatID" class="definition definition-scalar" data-traverse-target="definition-StatID">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">StatID</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>The <code>StatID</code> scalar type represents an identifier for an object of type Stat.</p>
+                </div>
+              </div>
+            </div>
+          </section>
           <section id="definition-String" class="definition definition-scalar" data-traverse-target="definition-String">
             <div class="definition-group-name">
               <a href="#group-Types">Types</a>
@@ -13686,6 +15080,10 @@
                                 <h6 class="field-argument-name"><span class="property-name"><code>sourceMap</code></span> - <span class="property-type"><a href="#definition-SourceMapID"><code>SourceMapID</code></a></span></h6>
                                 <p>The source map for the enum member definition.</p>
                               </div>
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>deprecated</code></span> - <span class="property-type"><a href="#definition-String"><code>String</code></a></span></h6>
+                                <p>If deprecated, the reason or migration path.</p>
+                              </div>
                             </div>
                           </div>
                         </td>
@@ -13711,6 +15109,10 @@
                               <div class="field-argument">
                                 <h6 class="field-argument-name"><span class="property-name"><code>sourceMap</code></span> - <span class="property-type"><a href="#definition-SourceMapID"><code>SourceMapID</code></a></span></h6>
                                 <p>The source map for the enum value definition.</p>
+                              </div>
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>deprecated</code></span> - <span class="property-type"><a href="#definition-String"><code>String</code></a></span></h6>
+                                <p>If deprecated, the reason or migration path.</p>
                               </div>
                             </div>
                           </div>
@@ -13740,6 +15142,10 @@
                               <div class="field-argument">
                                 <h6 class="field-argument-name"><span class="property-name"><code>sourceMap</code></span> - <span class="property-type"><a href="#definition-SourceMapID"><code>SourceMapID</code></a></span></h6>
                                 <p>The source map for the field definition.</p>
+                              </div>
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>deprecated</code></span> - <span class="property-type"><a href="#definition-String"><code>String</code></a></span></h6>
+                                <p>If deprecated, the reason or migration path.</p>
                               </div>
                             </div>
                           </div>
@@ -13835,6 +15241,9 @@
                               </div>
                               <div class="field-argument">
                                 <h6 class="field-argument-name"><span class="property-name"><code>sourceMap</code></span> - <span class="property-type"><a href="#definition-SourceMapID"><code>SourceMapID</code></a></span></h6>
+                              </div>
+                              <div class="field-argument">
+                                <h6 class="field-argument-name"><span class="property-name"><code>deprecated</code></span> - <span class="property-type"><a href="#definition-String"><code>String</code></a></span></h6>
                               </div>
                             </div>
                           </div>

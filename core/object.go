@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
 	"github.com/opencontainers/go-digest"
 	"github.com/vektah/gqlparser/v2/ast"
 
@@ -230,52 +229,6 @@ func (obj *ModuleObject) Type() *ast.Type {
 	}
 }
 
-var _ HasPBDefinitions = (*ModuleObject)(nil)
-
-func (obj *ModuleObject) PBDefinitions(ctx context.Context) ([]*pb.Definition, error) {
-	defs := []*pb.Definition{}
-	objDef := obj.TypeDef
-	for _, field := range objDef.Fields {
-		// TODO: we skip over private fields, we can't convert them anyways (this is a bug)
-		name := field.OriginalName
-		val, ok := obj.Fields[name]
-		if !ok {
-			// missing field
-			continue
-		}
-		fieldType, ok, err := obj.Module.ModTypeFor(ctx, field.TypeDef, true)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get mod type for field %q: %w", name, err)
-		}
-		if !ok {
-			return nil, fmt.Errorf("failed to find mod type for field %q", name)
-		}
-
-		curID := dagql.CurrentID(ctx)
-		fieldID := curID.Append(
-			field.TypeDef.ToType(),
-			field.Name,
-			call.WithView(curID.View()),
-			call.WithModule(curID.Module()),
-		)
-		ctx := dagql.ContextWithID(ctx, fieldID)
-
-		converted, err := fieldType.ConvertFromSDKResult(ctx, val)
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert field %q: %w", name, err)
-		}
-		if converted == nil {
-			continue
-		}
-		fieldDefs, err := collectPBDefinitions(ctx, converted.Unwrap())
-		if err != nil {
-			return nil, err
-		}
-		defs = append(defs, fieldDefs...)
-	}
-	return defs, nil
-}
-
 func (obj *ModuleObject) TypeDescription() string {
 	return formatGqlDescription(obj.TypeDef.Description)
 }
@@ -327,10 +280,11 @@ func (obj *ModuleObject) installConstructor(ctx context.Context, dag *dagql.Serv
 	// if no constructor defined, install a basic one that initializes an empty object
 	if !objDef.Constructor.Valid {
 		spec := dagql.FieldSpec{
-			Name:           gqlFieldName(mod.Name()),
-			Type:           obj,
-			Module:         obj.Module.IDModule(),
-			GetCacheConfig: mod.CacheConfigForCall,
+			Name:             gqlFieldName(mod.Name()),
+			Type:             obj,
+			Module:           obj.Module.IDModule(),
+			GetCacheConfig:   mod.CacheConfigForCall,
+			DeprecatedReason: objDef.Deprecated,
 		}
 
 		if objDef.SourceMap.Valid {
@@ -406,14 +360,14 @@ func (obj *ModuleObject) fields() (fields []dagql.Field[*ModuleObject]) {
 func (obj *ModuleObject) functions(ctx context.Context, dag *dagql.Server) (fields []dagql.Field[*ModuleObject], err error) {
 	objDef := obj.TypeDef
 	for _, fun := range obj.TypeDef.Functions {
-		// Check if this is a toolchain proxy function
-		if obj.Module.ToolchainModules != nil {
-			if tcMod, ok := obj.Module.ToolchainModules[fun.OriginalName]; ok {
-				bpFun, err := toolchainProxyFunction(ctx, obj.Module, fun, tcMod, dag)
+		// Check if this is a toolchain proxy function using the registry
+		if obj.Module.Toolchains != nil {
+			if entry, ok := obj.Module.Toolchains.Get(fun.OriginalName); ok {
+				proxyField, err := entry.CreateProxyField(ctx, obj.Module, fun, dag)
 				if err != nil {
 					return nil, err
 				}
-				fields = append(fields, bpFun)
+				fields = append(fields, proxyField)
 				continue
 			}
 		}
@@ -429,11 +383,12 @@ func (obj *ModuleObject) functions(ctx context.Context, dag *dagql.Server) (fiel
 
 func objField(mod *Module, field *FieldTypeDef) dagql.Field[*ModuleObject] {
 	spec := &dagql.FieldSpec{
-		Name:           field.Name,
-		Description:    field.Description,
-		Type:           field.TypeDef.ToTyped(),
-		Module:         mod.IDModule(),
-		GetCacheConfig: mod.CacheConfigForCall,
+		Name:             field.Name,
+		Description:      field.Description,
+		Type:             field.TypeDef.ToTyped(),
+		Module:           mod.IDModule(),
+		GetCacheConfig:   mod.CacheConfigForCall,
+		DeprecatedReason: field.Deprecated,
 	}
 	spec.Directives = append(spec.Directives, &ast.Directive{
 		Name: trivialFieldDirectiveName,

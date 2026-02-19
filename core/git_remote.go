@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -17,22 +18,24 @@ import (
 	"syscall"
 	"time"
 
+	ctdmount "github.com/containerd/containerd/v2/core/mount"
 	bkcache "github.com/dagger/dagger/internal/buildkit/cache"
 	bkclient "github.com/dagger/dagger/internal/buildkit/client"
 	"github.com/dagger/dagger/internal/buildkit/executor/oci"
 	bksession "github.com/dagger/dagger/internal/buildkit/session"
 	"github.com/dagger/dagger/internal/buildkit/snapshot"
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
 	"github.com/dagger/dagger/util/cleanups"
 	"github.com/dagger/dagger/util/gitutil"
 	"github.com/moby/sys/mount"
 	"golang.org/x/sys/unix"
 
+	"dagger.io/dagger/telemetry"
 	"github.com/dagger/dagger/dagql"
 	"github.com/dagger/dagger/engine"
 	"github.com/dagger/dagger/engine/buildkit"
 	"github.com/dagger/dagger/engine/slog"
 	"github.com/dagger/dagger/network"
+	"github.com/dagger/dagger/util/hashutil"
 )
 
 type RemoteGitRepository struct {
@@ -58,11 +61,106 @@ type RemoteGitRef struct {
 
 var _ GitRefBackend = (*RemoteGitRef)(nil)
 
-func (repo *RemoteGitRepository) PBDefinitions(ctx context.Context) ([]*pb.Definition, error) {
-	return nil, nil
+func (repo *RemoteGitRepository) Remote(ctx context.Context) (result *gitutil.Remote, rerr error) {
+	ctx, span := Tracer(ctx).Start(ctx, "git remote metadata", telemetry.Internal())
+	defer telemetry.EndWithCause(span, &rerr)
+
+	slog := slog.SpanLogger(ctx, InstrumentationLibrary)
+
+	srv, err := CurrentDagqlServer(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("query server: %w", err)
+	}
+	cacheKey, err := repo.remoteCacheKey(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("remote git repository %q: %w", repo.URL.Remote(), err)
+	}
+
+	if srv == nil || srv.Cache == nil {
+		slog.Info("git remote cache unavailable; running ls-remote", "cache_key", cacheKey)
+		return repo.runLsRemote(ctx)
+	}
+
+	cacheRes, err := srv.Cache.GetOrInitArbitrary(ctx, cacheKey, func(ctx context.Context) (any, error) {
+		remote, err := repo.runLsRemote(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		slog.Info("caching git remote metadata", "cache_key", cacheKey)
+		// Serialize to JSON so the cache can persist a plain string payload without
+		// requiring gitutil.Remote to satisfy dagql's typing interfaces. The decode
+		// step also hands each repo its own copy, so later tweaks (e.g. setting
+		// repo.Remote.Head) stay scoped to that caller
+		payload, err := json.Marshal(remote)
+		if err != nil {
+			return nil, err
+		}
+
+		return string(payload), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	if cacheRes == nil {
+		return nil, fmt.Errorf("git remote cache returned nil result for key %q", cacheKey)
+	}
+
+	slog.Info("loaded git remote metadata", "cache_hit", cacheRes.HitCache(), "cache_key", cacheKey)
+
+	return remoteFromCacheResult(cacheRes.Value())
 }
 
-func (repo *RemoteGitRepository) Remote(ctx context.Context) (*gitutil.Remote, error) {
+func remoteFromCacheResult(cacheRes any) (*gitutil.Remote, error) {
+	payload, ok := cacheRes.(string)
+	if !ok {
+		return nil, fmt.Errorf("unexpected cache value type %T", cacheRes)
+	}
+
+	var remote gitutil.Remote
+	if err := json.Unmarshal([]byte(payload), &remote); err != nil {
+		return nil, fmt.Errorf("decode cached remote: %w", err)
+	}
+	return &remote, nil
+}
+
+func (repo *RemoteGitRepository) Get(ctx context.Context, target *gitutil.Ref) (GitRefBackend, error) {
+	return &RemoteGitRef{
+		repo: repo,
+		Ref:  target,
+	}, nil
+}
+
+func (repo *RemoteGitRepository) remoteCacheKey(ctx context.Context) (string, error) {
+	clientMetadata, err := engine.ClientMetadataFromContext(ctx)
+	if err != nil {
+		return "", err
+	}
+	inputs := []string{clientMetadata.SessionID, repo.URL.Remote()}
+	inputs = append(inputs, repo.remoteCacheScope()...)
+	return hashutil.HashStrings(inputs...).String(), nil
+}
+
+// Pipelines could query the same remote with different creds (e.g. a pipeline checking that creds were properly rotated)
+// instead of being too smart, we just scope the cache key to the auth configuration: less chance of cache poisoning
+func (repo *RemoteGitRepository) remoteCacheScope() []string {
+	scope := make([]string, 0, 4)
+	if token := repo.AuthToken; token.Self() != nil && token.ID() != nil {
+		scope = append(scope, "token:"+SecretIDDigest(token.ID()).String())
+	}
+	if header := repo.AuthHeader; header.Self() != nil && header.ID() != nil {
+		scope = append(scope, "header:"+SecretIDDigest(header.ID()).String())
+	}
+	if repo.AuthUsername != "" {
+		scope = append(scope, "username:"+repo.AuthUsername)
+	}
+	if sshSock := repo.SSHAuthSocket; sshSock.Self() != nil {
+		scope = append(scope, "ssh-auth-scope:"+sshSock.Self().IDDigest.String())
+	}
+	return scope
+}
+
+func (repo *RemoteGitRepository) runLsRemote(ctx context.Context) (*gitutil.Remote, error) {
 	query, err := CurrentQuery(ctx)
 	if err != nil {
 		return nil, err
@@ -83,18 +181,11 @@ func (repo *RemoteGitRepository) Remote(ctx context.Context) (*gitutil.Remote, e
 	}
 	defer cleanup()
 
-	out, err := git.LsRemote(ctx, repo.URL.Remote())
+	remote, err := git.LsRemote(ctx, repo.URL.Remote())
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
-}
-
-func (repo *RemoteGitRepository) Get(ctx context.Context, target *gitutil.Ref) (GitRefBackend, error) {
-	return &RemoteGitRef{
-		repo: repo,
-		Ref:  target,
-	}, nil
+	return remote, nil
 }
 
 func (repo *RemoteGitRepository) Dirty(ctx context.Context) (inst dagql.ObjectResult[*Directory], _ error) {
@@ -168,7 +259,7 @@ func (repo *RemoteGitRepository) setup(ctx context.Context) (_ *gitutil.GitCLI, 
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to get secret store: %w", err)
 		}
-		password, err := secretStore.GetSecretPlaintext(ctx, repo.AuthToken.ID().Digest())
+		password, err := secretStore.GetSecretPlaintext(ctx, SecretIDDigest(repo.AuthToken.ID()))
 		if err != nil {
 			return nil, nil, err
 		}
@@ -178,7 +269,7 @@ func (repo *RemoteGitRepository) setup(ctx context.Context) (_ *gitutil.GitCLI, 
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to get secret store: %w", err)
 		}
-		byteAuthHeader, err := secretStore.GetSecretPlaintext(ctx, repo.AuthHeader.ID().Digest())
+		byteAuthHeader, err := secretStore.GetSecretPlaintext(ctx, SecretIDDigest(repo.AuthHeader.ID()))
 		if err != nil {
 			return nil, nil, err
 		}
@@ -186,7 +277,7 @@ func (repo *RemoteGitRepository) setup(ctx context.Context) (_ *gitutil.GitCLI, 
 	}
 
 	opts = append(opts, gitutil.WithExec(func(ctx context.Context, cmd *exec.Cmd) error {
-		return runWithStandardUmaskAndNetOverride(ctx, cmd, "", resolvPath)
+		return runWithStandardUmaskAndNetOverride(ctx, cmd, "", resolvPath, query.CleanMountNS())
 	}))
 
 	return gitutil.NewGitCLI(opts...), cleanups.Run, nil
@@ -410,10 +501,6 @@ func (repo *RemoteGitRepository) initRemote(ctx context.Context, g bksession.Gro
 	return fn(dir)
 }
 
-func (ref *RemoteGitRef) PBDefinitions(ctx context.Context) ([]*pb.Definition, error) {
-	return nil, nil
-}
-
 func (ref *RemoteGitRef) Tree(ctx context.Context, srv *dagql.Server, discardGitDir bool, depth int) (_ *Directory, rerr error) {
 	cacheKey := dagql.CurrentID(ctx).Digest().Encoded()
 
@@ -465,7 +552,7 @@ func (ref *RemoteGitRef) Tree(ctx context.Context, srv *dagql.Server, discardGit
 			return err
 		}
 
-		err = MountRef(ctx, checkoutRef, bkSessionGroup, func(checkoutDir string) error {
+		err = MountRef(ctx, checkoutRef, bkSessionGroup, func(checkoutDir string, _ *ctdmount.Mount) error {
 			checkoutDirGit := filepath.Join(checkoutDir, ".git")
 			if err := os.MkdirAll(checkoutDir, 0711); err != nil {
 				return err
@@ -587,14 +674,14 @@ func mergeResolv(dst *os.File, src io.Reader, dns *oci.DNSConfig) error {
 	return nil
 }
 
-func runWithStandardUmaskAndNetOverride(ctx context.Context, cmd *exec.Cmd, hosts, resolv string) error {
+func runWithStandardUmaskAndNetOverride(ctx context.Context, cmd *exec.Cmd, hosts, resolv string, cleanMntNS *os.File) error {
 	errCh := make(chan error)
 
 	go func() {
 		defer close(errCh)
 		runtime.LockOSThread()
 
-		if err := unshareAndRun(ctx, cmd, hosts, resolv); err != nil {
+		if err := unshareAndRun(ctx, cmd, hosts, resolv, cleanMntNS); err != nil {
 			errCh <- err
 		}
 	}()
@@ -603,10 +690,19 @@ func runWithStandardUmaskAndNetOverride(ctx context.Context, cmd *exec.Cmd, host
 }
 
 // unshareAndRun needs to be called in a locked thread.
-func unshareAndRun(ctx context.Context, cmd *exec.Cmd, hosts, resolv string) error {
-	if err := syscall.Unshare(syscall.CLONE_FS | syscall.CLONE_NEWNS); err != nil {
-		return err
+func unshareAndRun(ctx context.Context, cmd *exec.Cmd, hosts, resolv string, cleanMntNS *os.File) error {
+	// avoid leaking mounts from the engine by using an isolated clean mount namespace (see container start code,
+	// currently in engine/buildkit/executor_spec.go, for more details)
+	if err := unix.Unshare(unix.CLONE_FS); err != nil {
+		return fmt.Errorf("unshare fs attrs: %w", err)
 	}
+	if err := unix.Setns(int(cleanMntNS.Fd()), unix.CLONE_NEWNS); err != nil {
+		return fmt.Errorf("setns clean mount namespace: %w", err)
+	}
+	if err := unix.Unshare(unix.CLONE_NEWNS); err != nil {
+		return fmt.Errorf("unshare new mount namespace: %w", err)
+	}
+
 	syscall.Umask(0022)
 	if err := overrideNetworkConfig(hosts, resolv); err != nil {
 		return fmt.Errorf("failed to override network config: %w", err)

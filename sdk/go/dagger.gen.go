@@ -70,14 +70,16 @@ func getCustomError(err error) error {
 
 	ext := gqlErr.Extensions
 
+	lessNoisyErr := gqlExtendedError{gqlErr}
+
 	typ, ok := ext["_type"].(string)
 	if !ok {
-		return gqlExtendedError{gqlErr}
+		return lessNoisyErr
 	}
 
 	if typ == "EXEC_ERROR" {
 		e := &ExecError{
-			original: gqlErr,
+			original: lessNoisyErr,
 		}
 		if code, ok := ext["exitCode"].(float64); ok {
 			e.ExitCode = int(code)
@@ -98,12 +100,12 @@ func getCustomError(err error) error {
 		return e
 	}
 
-	return gqlExtendedError{gqlErr}
+	return lessNoisyErr
 }
 
 // ExecError is an API error from an exec operation.
 type ExecError struct {
-	original *gqlerror.Error
+	original extendedError
 	Cmd      []string
 	ExitCode int
 	Stdout   string
@@ -117,7 +119,7 @@ func (e *ExecError) Error() string {
 }
 
 func (e *ExecError) Extensions() map[string]any {
-	return e.original.Extensions
+	return e.original.Extensions()
 }
 
 func (e *ExecError) Message() string {
@@ -139,6 +141,12 @@ type CacheVolumeID string
 
 // The `ChangesetID` scalar type represents an identifier for an object of type Changeset.
 type ChangesetID string
+
+// The `CheckGroupID` scalar type represents an identifier for an object of type CheckGroup.
+type CheckGroupID string
+
+// The `CheckID` scalar type represents an identifier for an object of type Check.
+type CheckID string
 
 // The `CloudID` scalar type represents an identifier for an object of type Cloud.
 type CloudID string
@@ -205,6 +213,12 @@ type FunctionID string
 
 // The `GeneratedCodeID` scalar type represents an identifier for an object of type GeneratedCode.
 type GeneratedCodeID string
+
+// The `GeneratorGroupID` scalar type represents an identifier for an object of type GeneratorGroup.
+type GeneratorGroupID string
+
+// The `GeneratorID` scalar type represents an identifier for an object of type Generator.
+type GeneratorID string
 
 // The `GitRefID` scalar type represents an identifier for an object of type GitRef.
 type GitRefID string
@@ -282,6 +296,9 @@ type SocketID string
 
 // The `SourceMapID` scalar type represents an identifier for an object of type SourceMap.
 type SourceMapID string
+
+// The `StatID` scalar type represents an identifier for an object of type Stat.
+type StatID string
 
 // The `TerminalID` scalar type represents an identifier for an object of type Terminal.
 type TerminalID string
@@ -568,6 +585,24 @@ func (r *Binding) AsChangeset() *Changeset {
 	}
 }
 
+// Retrieve the binding value, as type Check
+func (r *Binding) AsCheck() *Check {
+	q := r.query.Select("asCheck")
+
+	return &Check{
+		query: q,
+	}
+}
+
+// Retrieve the binding value, as type CheckGroup
+func (r *Binding) AsCheckGroup() *CheckGroup {
+	q := r.query.Select("asCheckGroup")
+
+	return &CheckGroup{
+		query: q,
+	}
+}
+
 // Retrieve the binding value, as type Cloud
 func (r *Binding) AsCloud() *Cloud {
 	q := r.query.Select("asCloud")
@@ -618,6 +653,24 @@ func (r *Binding) AsFile() *File {
 	q := r.query.Select("asFile")
 
 	return &File{
+		query: q,
+	}
+}
+
+// Retrieve the binding value, as type Generator
+func (r *Binding) AsGenerator() *Generator {
+	q := r.query.Select("asGenerator")
+
+	return &Generator{
+		query: q,
+	}
+}
+
+// Retrieve the binding value, as type GeneratorGroup
+func (r *Binding) AsGeneratorGroup() *GeneratorGroup {
+	q := r.query.Select("asGeneratorGroup")
+
+	return &GeneratorGroup{
 		query: q,
 	}
 }
@@ -717,6 +770,15 @@ func (r *Binding) AsSocket() *Socket {
 	q := r.query.Select("asSocket")
 
 	return &Socket{
+		query: q,
+	}
+}
+
+// Retrieve the binding value, as type Stat
+func (r *Binding) AsStat() *Stat {
+	q := r.query.Select("asStat")
+
+	return &Stat{
 		query: q,
 	}
 }
@@ -897,6 +959,14 @@ type Changeset struct {
 	isEmpty *bool
 	sync    *ChangesetID
 }
+type WithChangesetFunc func(r *Changeset) *Changeset
+
+// With calls the provided function with current Changeset.
+//
+// This is useful for reusability and readability by not breaking the calling chain.
+func (r *Changeset) With(f WithChangesetFunc) *Changeset {
+	return f(r)
+}
 
 func (r *Changeset) WithGraphQLQuery(q *querybuilder.Selection) *Changeset {
 	return &Changeset{
@@ -1048,6 +1118,321 @@ func (r *Changeset) Sync(ctx context.Context) (*Changeset, error) {
 	return &Changeset{
 		query: q.Root().Select("loadChangesetFromID").Arg("id", id),
 	}, nil
+}
+
+// ChangesetWithChangesetOpts contains options for Changeset.WithChangeset
+type ChangesetWithChangesetOpts struct {
+	// What to do on a merge conflict
+	//
+	// Default: FAIL
+	OnConflict ChangesetMergeConflict
+}
+
+// Add changes to an existing changeset
+//
+// By default the operation will fail in case of conflicts, for instance a file modified in both changesets. The behavior can be adjusted using onConflict argument
+func (r *Changeset) WithChangeset(changes *Changeset, opts ...ChangesetWithChangesetOpts) *Changeset {
+	assertNotNil("changes", changes)
+	q := r.query.Select("withChangeset")
+	for i := len(opts) - 1; i >= 0; i-- {
+		// `onConflict` optional argument
+		if !querybuilder.IsZeroValue(opts[i].OnConflict) {
+			q = q.Arg("onConflict", opts[i].OnConflict)
+		}
+	}
+	q = q.Arg("changes", changes)
+
+	return &Changeset{
+		query: q,
+	}
+}
+
+// ChangesetWithChangesetsOpts contains options for Changeset.WithChangesets
+type ChangesetWithChangesetsOpts struct {
+	// What to do on a merge conflict
+	//
+	// Default: FAIL
+	OnConflict ChangesetsMergeConflict
+}
+
+// Add changes from multiple changesets using git octopus merge strategy
+//
+// This is more efficient than chaining multiple withChangeset calls when merging many changesets.
+//
+// Only FAIL and FAIL_EARLY conflict strategies are supported (octopus merge cannot use -X ours/theirs).
+func (r *Changeset) WithChangesets(changes []*Changeset, opts ...ChangesetWithChangesetsOpts) *Changeset {
+	q := r.query.Select("withChangesets")
+	for i := len(opts) - 1; i >= 0; i-- {
+		// `onConflict` optional argument
+		if !querybuilder.IsZeroValue(opts[i].OnConflict) {
+			q = q.Arg("onConflict", opts[i].OnConflict)
+		}
+	}
+	q = q.Arg("changes", changes)
+
+	return &Changeset{
+		query: q,
+	}
+}
+
+type Check struct {
+	query *querybuilder.Selection
+
+	completed   *bool
+	description *string
+	id          *CheckID
+	name        *string
+	passed      *bool
+	resultEmoji *string
+}
+type WithCheckFunc func(r *Check) *Check
+
+// With calls the provided function with current Check.
+//
+// This is useful for reusability and readability by not breaking the calling chain.
+func (r *Check) With(f WithCheckFunc) *Check {
+	return f(r)
+}
+
+func (r *Check) WithGraphQLQuery(q *querybuilder.Selection) *Check {
+	return &Check{
+		query: q,
+	}
+}
+
+// Whether the check completed
+func (r *Check) Completed(ctx context.Context) (bool, error) {
+	if r.completed != nil {
+		return *r.completed, nil
+	}
+	q := r.query.Select("completed")
+
+	var response bool
+
+	q = q.Bind(&response)
+	return response, q.Execute(ctx)
+}
+
+// The description of the check
+func (r *Check) Description(ctx context.Context) (string, error) {
+	if r.description != nil {
+		return *r.description, nil
+	}
+	q := r.query.Select("description")
+
+	var response string
+
+	q = q.Bind(&response)
+	return response, q.Execute(ctx)
+}
+
+// A unique identifier for this Check.
+func (r *Check) ID(ctx context.Context) (CheckID, error) {
+	if r.id != nil {
+		return *r.id, nil
+	}
+	q := r.query.Select("id")
+
+	var response CheckID
+
+	q = q.Bind(&response)
+	return response, q.Execute(ctx)
+}
+
+// XXX_GraphQLType is an internal function. It returns the native GraphQL type name
+func (r *Check) XXX_GraphQLType() string {
+	return "Check"
+}
+
+// XXX_GraphQLIDType is an internal function. It returns the native GraphQL type name for the ID of this object
+func (r *Check) XXX_GraphQLIDType() string {
+	return "CheckID"
+}
+
+// XXX_GraphQLID is an internal function. It returns the underlying type ID
+func (r *Check) XXX_GraphQLID(ctx context.Context) (string, error) {
+	id, err := r.ID(ctx)
+	if err != nil {
+		return "", err
+	}
+	return string(id), nil
+}
+
+func (r *Check) MarshalJSON() ([]byte, error) {
+	id, err := r.ID(marshalCtx)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(id)
+}
+
+// Return the fully qualified name of the check
+func (r *Check) Name(ctx context.Context) (string, error) {
+	if r.name != nil {
+		return *r.name, nil
+	}
+	q := r.query.Select("name")
+
+	var response string
+
+	q = q.Bind(&response)
+	return response, q.Execute(ctx)
+}
+
+// Whether the check passed
+func (r *Check) Passed(ctx context.Context) (bool, error) {
+	if r.passed != nil {
+		return *r.passed, nil
+	}
+	q := r.query.Select("passed")
+
+	var response bool
+
+	q = q.Bind(&response)
+	return response, q.Execute(ctx)
+}
+
+// The path of the check within its module
+func (r *Check) Path(ctx context.Context) ([]string, error) {
+	q := r.query.Select("path")
+
+	var response []string
+
+	q = q.Bind(&response)
+	return response, q.Execute(ctx)
+}
+
+// An emoji representing the result of the check
+func (r *Check) ResultEmoji(ctx context.Context) (string, error) {
+	if r.resultEmoji != nil {
+		return *r.resultEmoji, nil
+	}
+	q := r.query.Select("resultEmoji")
+
+	var response string
+
+	q = q.Bind(&response)
+	return response, q.Execute(ctx)
+}
+
+// Execute the check
+func (r *Check) Run() *Check {
+	q := r.query.Select("run")
+
+	return &Check{
+		query: q,
+	}
+}
+
+type CheckGroup struct {
+	query *querybuilder.Selection
+
+	id *CheckGroupID
+}
+type WithCheckGroupFunc func(r *CheckGroup) *CheckGroup
+
+// With calls the provided function with current CheckGroup.
+//
+// This is useful for reusability and readability by not breaking the calling chain.
+func (r *CheckGroup) With(f WithCheckGroupFunc) *CheckGroup {
+	return f(r)
+}
+
+func (r *CheckGroup) WithGraphQLQuery(q *querybuilder.Selection) *CheckGroup {
+	return &CheckGroup{
+		query: q,
+	}
+}
+
+// A unique identifier for this CheckGroup.
+func (r *CheckGroup) ID(ctx context.Context) (CheckGroupID, error) {
+	if r.id != nil {
+		return *r.id, nil
+	}
+	q := r.query.Select("id")
+
+	var response CheckGroupID
+
+	q = q.Bind(&response)
+	return response, q.Execute(ctx)
+}
+
+// XXX_GraphQLType is an internal function. It returns the native GraphQL type name
+func (r *CheckGroup) XXX_GraphQLType() string {
+	return "CheckGroup"
+}
+
+// XXX_GraphQLIDType is an internal function. It returns the native GraphQL type name for the ID of this object
+func (r *CheckGroup) XXX_GraphQLIDType() string {
+	return "CheckGroupID"
+}
+
+// XXX_GraphQLID is an internal function. It returns the underlying type ID
+func (r *CheckGroup) XXX_GraphQLID(ctx context.Context) (string, error) {
+	id, err := r.ID(ctx)
+	if err != nil {
+		return "", err
+	}
+	return string(id), nil
+}
+
+func (r *CheckGroup) MarshalJSON() ([]byte, error) {
+	id, err := r.ID(marshalCtx)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(id)
+}
+
+// Return a list of individual checks and their details
+func (r *CheckGroup) List(ctx context.Context) ([]Check, error) {
+	q := r.query.Select("list")
+
+	q = q.Select("id")
+
+	type list struct {
+		Id CheckID
+	}
+
+	convert := func(fields []list) []Check {
+		out := []Check{}
+
+		for i := range fields {
+			val := Check{id: &fields[i].Id}
+			val.query = q.Root().Select("loadCheckFromID").Arg("id", fields[i].Id)
+			out = append(out, val)
+		}
+
+		return out
+	}
+	var response []list
+
+	q = q.Bind(&response)
+
+	err := q.Execute(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return convert(response), nil
+}
+
+// Generate a markdown report
+func (r *CheckGroup) Report() *File {
+	q := r.query.Select("report")
+
+	return &File{
+		query: q,
+	}
+}
+
+// Execute all selected checks
+func (r *CheckGroup) Run() *CheckGroup {
+	q := r.query.Select("run")
+
+	return &CheckGroup{
+		query: q,
+	}
 }
 
 // Dagger Cloud configuration and state
@@ -1801,6 +2186,28 @@ func (r *Container) Rootfs() *Directory {
 	}
 }
 
+// ContainerStatOpts contains options for Container.Stat
+type ContainerStatOpts struct {
+	// If specified, do not follow symlinks.
+	DoNotFollowSymlinks bool
+}
+
+// Return file status
+func (r *Container) Stat(path string, opts ...ContainerStatOpts) *Stat {
+	q := r.query.Select("stat")
+	for i := len(opts) - 1; i >= 0; i-- {
+		// `doNotFollowSymlinks` optional argument
+		if !querybuilder.IsZeroValue(opts[i].DoNotFollowSymlinks) {
+			q = q.Arg("doNotFollowSymlinks", opts[i].DoNotFollowSymlinks)
+		}
+	}
+	q = q.Arg("path", path)
+
+	return &Stat{
+		query: q,
+	}
+}
+
 // The buffered standard error stream of the last executed command
 //
 // Returns an error if no command was executed
@@ -1964,7 +2371,7 @@ func (r *Container) User(ctx context.Context) (string, error) {
 	return response, q.Execute(ctx)
 }
 
-// Retrieves this container plus the given OCI anotation.
+// Retrieves this container plus the given OCI annotation.
 func (r *Container) WithAnnotation(name string, value string) *Container {
 	q := r.query.Select("withAnnotation")
 	q = q.Arg("name", name)
@@ -2081,6 +2488,17 @@ func (r *Container) WithEntrypoint(args []string, opts ...ContainerWithEntrypoin
 		}
 	}
 	q = q.Arg("args", args)
+
+	return &Container{
+		query: q,
+	}
+}
+
+// Export environment variables from an env-file to the container.
+func (r *Container) WithEnvFileVariables(source *EnvFile) *Container {
+	assertNotNil("source", source)
+	q := r.query.Select("withEnvFileVariables")
+	q = q.Arg("source", source)
 
 	return &Container{
 		query: q,
@@ -2994,6 +3412,71 @@ func (r *CurrentModule) WithGraphQLQuery(q *querybuilder.Selection) *CurrentModu
 	}
 }
 
+// The dependencies of the module.
+func (r *CurrentModule) Dependencies(ctx context.Context) ([]Module, error) {
+	q := r.query.Select("dependencies")
+
+	q = q.Select("id")
+
+	type dependencies struct {
+		Id ModuleID
+	}
+
+	convert := func(fields []dependencies) []Module {
+		out := []Module{}
+
+		for i := range fields {
+			val := Module{id: &fields[i].Id}
+			val.query = q.Root().Select("loadModuleFromID").Arg("id", fields[i].Id)
+			out = append(out, val)
+		}
+
+		return out
+	}
+	var response []dependencies
+
+	q = q.Bind(&response)
+
+	err := q.Execute(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return convert(response), nil
+}
+
+// The generated files and directories made on top of the module source's context directory.
+func (r *CurrentModule) GeneratedContextDirectory() *Directory {
+	q := r.query.Select("generatedContextDirectory")
+
+	return &Directory{
+		query: q,
+	}
+}
+
+// CurrentModuleGeneratorsOpts contains options for CurrentModule.Generators
+type CurrentModuleGeneratorsOpts struct {
+	// Only include generators matching the specified patterns
+	Include []string
+}
+
+// Return all generators defined by the module
+//
+// Experimental: This API is highly experimental and may be removed or replaced entirely.
+func (r *CurrentModule) Generators(opts ...CurrentModuleGeneratorsOpts) *GeneratorGroup {
+	q := r.query.Select("generators")
+	for i := len(opts) - 1; i >= 0; i-- {
+		// `include` optional argument
+		if !querybuilder.IsZeroValue(opts[i].Include) {
+			q = q.Arg("include", opts[i].Include)
+		}
+	}
+
+	return &GeneratorGroup{
+		query: q,
+	}
+}
+
 // A unique identifier for this CurrentModule.
 func (r *CurrentModule) ID(ctx context.Context) (CurrentModuleID, error) {
 	if r.id != nil {
@@ -3264,6 +3747,12 @@ type DirectoryDockerBuildOpts struct {
 	//
 	// This should only be used if the user requires that their exec processes be the pid 1 process in the container. Otherwise it may result in unexpected behavior.
 	NoInit bool
+	// A socket to use for SSH authentication during the build
+	//
+	// (e.g., for Dockerfile RUN --mount=type=ssh instructions).
+	//
+	// Typically obtained via host.unixSocket() pointing to the SSH_AUTH_SOCK.
+	SSH *Socket
 }
 
 // Use Dockerfile compatibility to build a container from this directory. Only use this function for Dockerfile compatibility. Otherwise use the native Container type directly, it is feature-complete and supports all Dockerfile features.
@@ -3293,6 +3782,10 @@ func (r *Directory) DockerBuild(opts ...DirectoryDockerBuildOpts) *Container {
 		// `noInit` optional argument
 		if !querybuilder.IsZeroValue(opts[i].NoInit) {
 			q = q.Arg("noInit", opts[i].NoInit)
+		}
+		// `ssh` optional argument
+		if !querybuilder.IsZeroValue(opts[i].SSH) {
+			q = q.Arg("ssh", opts[i].SSH)
 		}
 	}
 
@@ -3603,6 +4096,28 @@ func (r *Directory) Search(ctx context.Context, pattern string, opts ...Director
 	}
 
 	return convert(response), nil
+}
+
+// DirectoryStatOpts contains options for Directory.Stat
+type DirectoryStatOpts struct {
+	// If specified, do not follow symlinks.
+	DoNotFollowSymlinks bool
+}
+
+// Return file status
+func (r *Directory) Stat(path string, opts ...DirectoryStatOpts) *Stat {
+	q := r.query.Select("stat")
+	for i := len(opts) - 1; i >= 0; i-- {
+		// `doNotFollowSymlinks` optional argument
+		if !querybuilder.IsZeroValue(opts[i].DoNotFollowSymlinks) {
+			q = q.Arg("doNotFollowSymlinks", opts[i].DoNotFollowSymlinks)
+		}
+	}
+	q = q.Arg("path", path)
+
+	return &Stat{
+		query: q,
+	}
 }
 
 // Force evaluation in the engine.
@@ -4100,6 +4615,14 @@ func (r *EngineCache) MinFreeSpace(ctx context.Context) (int, error) {
 type EngineCachePruneOpts struct {
 	// Use the engine-wide default pruning policy if true, otherwise prune the whole cache of any releasable entries.
 	UseDefaultPolicy bool
+	// Override the maximum disk space to keep before pruning (e.g. "200GB" or "80%").
+	MaxUsedSpace string
+	// Override the minimum disk space to retain during pruning (e.g. "500GB" or "10%").
+	ReservedSpace string
+	// Override the minimum free disk space target during pruning (e.g. "20GB" or "20%").
+	MinFreeSpace string
+	// Override the target disk space to keep after pruning (e.g. "200GB" or "50%").
+	TargetSpace string
 }
 
 // Prune the cache of releaseable entries
@@ -4112,6 +4635,22 @@ func (r *EngineCache) Prune(ctx context.Context, opts ...EngineCachePruneOpts) e
 		// `useDefaultPolicy` optional argument
 		if !querybuilder.IsZeroValue(opts[i].UseDefaultPolicy) {
 			q = q.Arg("useDefaultPolicy", opts[i].UseDefaultPolicy)
+		}
+		// `maxUsedSpace` optional argument
+		if !querybuilder.IsZeroValue(opts[i].MaxUsedSpace) {
+			q = q.Arg("maxUsedSpace", opts[i].MaxUsedSpace)
+		}
+		// `reservedSpace` optional argument
+		if !querybuilder.IsZeroValue(opts[i].ReservedSpace) {
+			q = q.Arg("reservedSpace", opts[i].ReservedSpace)
+		}
+		// `minFreeSpace` optional argument
+		if !querybuilder.IsZeroValue(opts[i].MinFreeSpace) {
+			q = q.Arg("minFreeSpace", opts[i].MinFreeSpace)
+		}
+		// `targetSpace` optional argument
+		if !querybuilder.IsZeroValue(opts[i].TargetSpace) {
+			q = q.Arg("targetSpace", opts[i].TargetSpace)
 		}
 	}
 
@@ -4555,6 +5094,7 @@ func (r *EnumTypeDef) Values(ctx context.Context) ([]EnumValueTypeDef, error) {
 type EnumValueTypeDef struct {
 	query *querybuilder.Selection
 
+	deprecated  *string
 	description *string
 	id          *EnumValueTypeDefID
 	name        *string
@@ -4565,6 +5105,19 @@ func (r *EnumValueTypeDef) WithGraphQLQuery(q *querybuilder.Selection) *EnumValu
 	return &EnumValueTypeDef{
 		query: q,
 	}
+}
+
+// The reason this enum member is deprecated, if any.
+func (r *EnumValueTypeDef) Deprecated(ctx context.Context) (string, error) {
+	if r.deprecated != nil {
+		return *r.deprecated, nil
+	}
+	q := r.query.Select("deprecated")
+
+	var response string
+
+	q = q.Bind(&response)
+	return response, q.Execute(ctx)
 }
 
 // A doc string for the enum member, if any.
@@ -4671,6 +5224,41 @@ func (r *Env) With(f WithEnvFunc) *Env {
 
 func (r *Env) WithGraphQLQuery(q *querybuilder.Selection) *Env {
 	return &Env{
+		query: q,
+	}
+}
+
+// Return the check with the given name from the installed modules. Must match exactly one check.
+//
+// Experimental: Checks API is highly experimental and may be removed or replaced entirely.
+func (r *Env) Check(name string) *Check {
+	q := r.query.Select("check")
+	q = q.Arg("name", name)
+
+	return &Check{
+		query: q,
+	}
+}
+
+// EnvChecksOpts contains options for Env.Checks
+type EnvChecksOpts struct {
+	// Only include checks matching the specified patterns
+	Include []string
+}
+
+// Return all checks defined by the installed modules
+//
+// Experimental: Checks API is highly experimental and may be removed or replaced entirely.
+func (r *Env) Checks(opts ...EnvChecksOpts) *CheckGroup {
+	q := r.query.Select("checks")
+	for i := len(opts) - 1; i >= 0; i-- {
+		// `include` optional argument
+		if !querybuilder.IsZeroValue(opts[i].Include) {
+			q = q.Arg("include", opts[i].Include)
+		}
+	}
+
+	return &CheckGroup{
 		query: q,
 	}
 }
@@ -4873,6 +5461,54 @@ func (r *Env) WithChangesetOutput(name string, description string) *Env {
 	}
 }
 
+// Create or update a binding of type CheckGroup in the environment
+func (r *Env) WithCheckGroupInput(name string, value *CheckGroup, description string) *Env {
+	assertNotNil("value", value)
+	q := r.query.Select("withCheckGroupInput")
+	q = q.Arg("name", name)
+	q = q.Arg("value", value)
+	q = q.Arg("description", description)
+
+	return &Env{
+		query: q,
+	}
+}
+
+// Declare a desired CheckGroup output to be assigned in the environment
+func (r *Env) WithCheckGroupOutput(name string, description string) *Env {
+	q := r.query.Select("withCheckGroupOutput")
+	q = q.Arg("name", name)
+	q = q.Arg("description", description)
+
+	return &Env{
+		query: q,
+	}
+}
+
+// Create or update a binding of type Check in the environment
+func (r *Env) WithCheckInput(name string, value *Check, description string) *Env {
+	assertNotNil("value", value)
+	q := r.query.Select("withCheckInput")
+	q = q.Arg("name", name)
+	q = q.Arg("value", value)
+	q = q.Arg("description", description)
+
+	return &Env{
+		query: q,
+	}
+}
+
+// Declare a desired Check output to be assigned in the environment
+func (r *Env) WithCheckOutput(name string, description string) *Env {
+	q := r.query.Select("withCheckOutput")
+	q = q.Arg("name", name)
+	q = q.Arg("description", description)
+
+	return &Env{
+		query: q,
+	}
+}
+
 // Create or update a binding of type Cloud in the environment
 func (r *Env) WithCloudInput(name string, value *Cloud, description string) *Env {
 	assertNotNil("value", value)
@@ -5028,6 +5664,54 @@ func (r *Env) WithFileOutput(name string, description string) *Env {
 	}
 }
 
+// Create or update a binding of type GeneratorGroup in the environment
+func (r *Env) WithGeneratorGroupInput(name string, value *GeneratorGroup, description string) *Env {
+	assertNotNil("value", value)
+	q := r.query.Select("withGeneratorGroupInput")
+	q = q.Arg("name", name)
+	q = q.Arg("value", value)
+	q = q.Arg("description", description)
+
+	return &Env{
+		query: q,
+	}
+}
+
+// Declare a desired GeneratorGroup output to be assigned in the environment
+func (r *Env) WithGeneratorGroupOutput(name string, description string) *Env {
+	q := r.query.Select("withGeneratorGroupOutput")
+	q = q.Arg("name", name)
+	q = q.Arg("description", description)
+
+	return &Env{
+		query: q,
+	}
+}
+
+// Create or update a binding of type Generator in the environment
+func (r *Env) WithGeneratorInput(name string, value *Generator, description string) *Env {
+	assertNotNil("value", value)
+	q := r.query.Select("withGeneratorInput")
+	q = q.Arg("name", name)
+	q = q.Arg("value", value)
+	q = q.Arg("description", description)
+
+	return &Env{
+		query: q,
+	}
+}
+
+// Declare a desired Generator output to be assigned in the environment
+func (r *Env) WithGeneratorOutput(name string, description string) *Env {
+	q := r.query.Select("withGeneratorOutput")
+	q = q.Arg("name", name)
+	q = q.Arg("description", description)
+
+	return &Env{
+		query: q,
+	}
+}
+
 // Create or update a binding of type GitRef in the environment
 func (r *Env) WithGitRefInput(name string, value *GitRef, description string) *Env {
 	assertNotNil("value", value)
@@ -5100,9 +5784,24 @@ func (r *Env) WithJSONValueOutput(name string, description string) *Env {
 	}
 }
 
+// Sets the main module for this environment (the project being worked on)
+//
+// Contextual path arguments will be populated using the environment's workspace.
+func (r *Env) WithMainModule(module *Module) *Env {
+	assertNotNil("module", module)
+	q := r.query.Select("withMainModule")
+	q = q.Arg("module", module)
+
+	return &Env{
+		query: q,
+	}
+}
+
 // Installs a module into the environment, exposing its functions to the model
 //
 // Contextual path arguments will be populated using the environment's workspace.
+//
+// Deprecated: Use withMainModule instead
 func (r *Env) WithModule(module *Module) *Env {
 	assertNotNil("module", module)
 	q := r.query.Select("withModule")
@@ -5297,6 +5996,30 @@ func (r *Env) WithSocketInput(name string, value *Socket, description string) *E
 // Declare a desired Socket output to be assigned in the environment
 func (r *Env) WithSocketOutput(name string, description string) *Env {
 	q := r.query.Select("withSocketOutput")
+	q = q.Arg("name", name)
+	q = q.Arg("description", description)
+
+	return &Env{
+		query: q,
+	}
+}
+
+// Create or update a binding of type Stat in the environment
+func (r *Env) WithStatInput(name string, value *Stat, description string) *Env {
+	assertNotNil("value", value)
+	q := r.query.Select("withStatInput")
+	q = q.Arg("name", name)
+	q = q.Arg("value", value)
+	q = q.Arg("description", description)
+
+	return &Env{
+		query: q,
+	}
+}
+
+// Declare a desired Stat output to be assigned in the environment
+func (r *Env) WithStatOutput(name string, description string) *Env {
+	q := r.query.Select("withStatOutput")
 	q = q.Arg("name", name)
 	q = q.Arg("description", description)
 
@@ -5853,6 +6576,7 @@ func (r *ErrorValue) Value(ctx context.Context) (JSON, error) {
 type FieldTypeDef struct {
 	query *querybuilder.Selection
 
+	deprecated  *string
 	description *string
 	id          *FieldTypeDefID
 	name        *string
@@ -5862,6 +6586,19 @@ func (r *FieldTypeDef) WithGraphQLQuery(q *querybuilder.Selection) *FieldTypeDef
 	return &FieldTypeDef{
 		query: q,
 	}
+}
+
+// The reason this enum member is deprecated, if any.
+func (r *FieldTypeDef) Deprecated(ctx context.Context) (string, error) {
+	if r.deprecated != nil {
+		return *r.deprecated, nil
+	}
+	q := r.query.Select("deprecated")
+
+	var response string
+
+	q = q.Bind(&response)
+	return response, q.Execute(ctx)
 }
 
 // A doc string for the field, if any.
@@ -5978,6 +6715,7 @@ func (r *File) WithGraphQLQuery(q *querybuilder.Selection) *File {
 // FileAsEnvFileOpts contains options for File.AsEnvFile
 type FileAsEnvFileOpts struct {
 	// Replace "${VAR}" or "$VAR" with the value of other vars
+	// Deprecated: Variable expansion is now enabled by default
 	Expand bool
 }
 
@@ -5992,6 +6730,15 @@ func (r *File) AsEnvFile(opts ...FileAsEnvFileOpts) *EnvFile {
 	}
 
 	return &EnvFile{
+		query: q,
+	}
+}
+
+// Parse the file contents as JSON.
+func (r *File) AsJSON() *JSONValue {
+	q := r.query.Select("asJSON")
+
+	return &JSONValue{
 		query: q,
 	}
 }
@@ -6256,6 +7003,15 @@ func (r *File) Size(ctx context.Context) (int, error) {
 	return response, q.Execute(ctx)
 }
 
+// Return file status
+func (r *File) Stat() *Stat {
+	q := r.query.Select("stat")
+
+	return &Stat{
+		query: q,
+	}
+}
+
 // Force evaluation in the engine.
 func (r *File) Sync(ctx context.Context) (*File, error) {
 	q := r.query.Select("sync")
@@ -6332,6 +7088,7 @@ func (r *File) WithTimestamps(timestamp int) *File {
 type Function struct {
 	query *querybuilder.Selection
 
+	deprecated  *string
 	description *string
 	id          *FunctionID
 	name        *string
@@ -6382,6 +7139,19 @@ func (r *Function) Args(ctx context.Context) ([]FunctionArg, error) {
 	}
 
 	return convert(response), nil
+}
+
+// The reason this function is deprecated, if any.
+func (r *Function) Deprecated(ctx context.Context) (string, error) {
+	if r.deprecated != nil {
+		return *r.deprecated, nil
+	}
+	q := r.query.Select("deprecated")
+
+	var response string
+
+	q = q.Bind(&response)
+	return response, q.Execute(ctx)
 }
 
 // A doc string for the function, if any.
@@ -6480,6 +7250,10 @@ type FunctionWithArgOpts struct {
 	Ignore []string
 	// The source map for the argument definition.
 	SourceMap *SourceMap
+	// If deprecated, the reason or migration path.
+	Deprecated string
+
+	DefaultAddress string
 }
 
 // Returns the function with the provided argument
@@ -6506,6 +7280,14 @@ func (r *Function) WithArg(name string, typeDef *TypeDef, opts ...FunctionWithAr
 		// `sourceMap` optional argument
 		if !querybuilder.IsZeroValue(opts[i].SourceMap) {
 			q = q.Arg("sourceMap", opts[i].SourceMap)
+		}
+		// `deprecated` optional argument
+		if !querybuilder.IsZeroValue(opts[i].Deprecated) {
+			q = q.Arg("deprecated", opts[i].Deprecated)
+		}
+		// `defaultAddress` optional argument
+		if !querybuilder.IsZeroValue(opts[i].DefaultAddress) {
+			q = q.Arg("defaultAddress", opts[i].DefaultAddress)
 		}
 	}
 	q = q.Arg("name", name)
@@ -6538,10 +7320,49 @@ func (r *Function) WithCachePolicy(policy FunctionCachePolicy, opts ...FunctionW
 	}
 }
 
+// Returns the function with a flag indicating it's a check.
+func (r *Function) WithCheck() *Function {
+	q := r.query.Select("withCheck")
+
+	return &Function{
+		query: q,
+	}
+}
+
+// FunctionWithDeprecatedOpts contains options for Function.WithDeprecated
+type FunctionWithDeprecatedOpts struct {
+	// Reason or migration path describing the deprecation.
+	Reason string
+}
+
+// Returns the function with the provided deprecation reason.
+func (r *Function) WithDeprecated(opts ...FunctionWithDeprecatedOpts) *Function {
+	q := r.query.Select("withDeprecated")
+	for i := len(opts) - 1; i >= 0; i-- {
+		// `reason` optional argument
+		if !querybuilder.IsZeroValue(opts[i].Reason) {
+			q = q.Arg("reason", opts[i].Reason)
+		}
+	}
+
+	return &Function{
+		query: q,
+	}
+}
+
 // Returns the function with the given doc string.
 func (r *Function) WithDescription(description string) *Function {
 	q := r.query.Select("withDescription")
 	q = q.Arg("description", description)
+
+	return &Function{
+		query: q,
+	}
+}
+
+// Returns the function with a flag indicating it's a generator.
+func (r *Function) WithGenerator() *Function {
+	q := r.query.Select("withGenerator")
 
 	return &Function{
 		query: q,
@@ -6565,17 +7386,32 @@ func (r *Function) WithSourceMap(sourceMap *SourceMap) *Function {
 type FunctionArg struct {
 	query *querybuilder.Selection
 
-	defaultPath  *string
-	defaultValue *JSON
-	description  *string
-	id           *FunctionArgID
-	name         *string
+	defaultAddress *string
+	defaultPath    *string
+	defaultValue   *JSON
+	deprecated     *string
+	description    *string
+	id             *FunctionArgID
+	name           *string
 }
 
 func (r *FunctionArg) WithGraphQLQuery(q *querybuilder.Selection) *FunctionArg {
 	return &FunctionArg{
 		query: q,
 	}
+}
+
+// Only applies to arguments of type Container. If the argument is not set, load it from the given address (e.g. alpine:latest)
+func (r *FunctionArg) DefaultAddress(ctx context.Context) (string, error) {
+	if r.defaultAddress != nil {
+		return *r.defaultAddress, nil
+	}
+	q := r.query.Select("defaultAddress")
+
+	var response string
+
+	q = q.Bind(&response)
+	return response, q.Execute(ctx)
 }
 
 // Only applies to arguments of type File or Directory. If the argument is not set, load it from the given path in the context directory
@@ -6599,6 +7435,19 @@ func (r *FunctionArg) DefaultValue(ctx context.Context) (JSON, error) {
 	q := r.query.Select("defaultValue")
 
 	var response JSON
+
+	q = q.Bind(&response)
+	return response, q.Execute(ctx)
+}
+
+// The reason this function is deprecated, if any.
+func (r *FunctionArg) Deprecated(ctx context.Context) (string, error) {
+	if r.deprecated != nil {
+		return *r.deprecated, nil
+	}
+	q := r.query.Select("deprecated")
+
+	var response string
 
 	q = q.Bind(&response)
 	return response, q.Execute(ctx)
@@ -7038,6 +7887,283 @@ func (r *GeneratedCode) WithVCSIgnoredPaths(paths []string) *GeneratedCode {
 	q = q.Arg("paths", paths)
 
 	return &GeneratedCode{
+		query: q,
+	}
+}
+
+type Generator struct {
+	query *querybuilder.Selection
+
+	completed   *bool
+	description *string
+	id          *GeneratorID
+	isEmpty     *bool
+	name        *string
+}
+type WithGeneratorFunc func(r *Generator) *Generator
+
+// With calls the provided function with current Generator.
+//
+// This is useful for reusability and readability by not breaking the calling chain.
+func (r *Generator) With(f WithGeneratorFunc) *Generator {
+	return f(r)
+}
+
+func (r *Generator) WithGraphQLQuery(q *querybuilder.Selection) *Generator {
+	return &Generator{
+		query: q,
+	}
+}
+
+// The generated changeset
+func (r *Generator) Changes() *Changeset {
+	q := r.query.Select("changes")
+
+	return &Changeset{
+		query: q,
+	}
+}
+
+// Whether the generator complete
+func (r *Generator) Completed(ctx context.Context) (bool, error) {
+	if r.completed != nil {
+		return *r.completed, nil
+	}
+	q := r.query.Select("completed")
+
+	var response bool
+
+	q = q.Bind(&response)
+	return response, q.Execute(ctx)
+}
+
+// Return the description of the generator
+func (r *Generator) Description(ctx context.Context) (string, error) {
+	if r.description != nil {
+		return *r.description, nil
+	}
+	q := r.query.Select("description")
+
+	var response string
+
+	q = q.Bind(&response)
+	return response, q.Execute(ctx)
+}
+
+// A unique identifier for this Generator.
+func (r *Generator) ID(ctx context.Context) (GeneratorID, error) {
+	if r.id != nil {
+		return *r.id, nil
+	}
+	q := r.query.Select("id")
+
+	var response GeneratorID
+
+	q = q.Bind(&response)
+	return response, q.Execute(ctx)
+}
+
+// XXX_GraphQLType is an internal function. It returns the native GraphQL type name
+func (r *Generator) XXX_GraphQLType() string {
+	return "Generator"
+}
+
+// XXX_GraphQLIDType is an internal function. It returns the native GraphQL type name for the ID of this object
+func (r *Generator) XXX_GraphQLIDType() string {
+	return "GeneratorID"
+}
+
+// XXX_GraphQLID is an internal function. It returns the underlying type ID
+func (r *Generator) XXX_GraphQLID(ctx context.Context) (string, error) {
+	id, err := r.ID(ctx)
+	if err != nil {
+		return "", err
+	}
+	return string(id), nil
+}
+
+func (r *Generator) MarshalJSON() ([]byte, error) {
+	id, err := r.ID(marshalCtx)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(id)
+}
+
+// Wether changeset from the generator execution is empty or not
+func (r *Generator) IsEmpty(ctx context.Context) (bool, error) {
+	if r.isEmpty != nil {
+		return *r.isEmpty, nil
+	}
+	q := r.query.Select("isEmpty")
+
+	var response bool
+
+	q = q.Bind(&response)
+	return response, q.Execute(ctx)
+}
+
+// Return the fully qualified name of the generator
+func (r *Generator) Name(ctx context.Context) (string, error) {
+	if r.name != nil {
+		return *r.name, nil
+	}
+	q := r.query.Select("name")
+
+	var response string
+
+	q = q.Bind(&response)
+	return response, q.Execute(ctx)
+}
+
+// Execute the generator
+func (r *Generator) Run() *Generator {
+	q := r.query.Select("run")
+
+	return &Generator{
+		query: q,
+	}
+}
+
+type GeneratorGroup struct {
+	query *querybuilder.Selection
+
+	id      *GeneratorGroupID
+	isEmpty *bool
+}
+type WithGeneratorGroupFunc func(r *GeneratorGroup) *GeneratorGroup
+
+// With calls the provided function with current GeneratorGroup.
+//
+// This is useful for reusability and readability by not breaking the calling chain.
+func (r *GeneratorGroup) With(f WithGeneratorGroupFunc) *GeneratorGroup {
+	return f(r)
+}
+
+func (r *GeneratorGroup) WithGraphQLQuery(q *querybuilder.Selection) *GeneratorGroup {
+	return &GeneratorGroup{
+		query: q,
+	}
+}
+
+// GeneratorGroupChangesOpts contains options for GeneratorGroup.Changes
+type GeneratorGroupChangesOpts struct {
+	// Strategy to apply on conflicts between generators
+	//
+	// Default: FAIL_EARLY
+	OnConflict ChangesetsMergeConflict
+}
+
+// The combined changes from the generators execution
+//
+// If any conflict occurs, for instance if the same file is modified by multiple generators, or if a file is both modified and deleted, an error is raised and the merge of the changesets will failed.
+//
+// Set 'continueOnConflicts' flag to force to merge the changes in a 'last write wins' strategy.
+func (r *GeneratorGroup) Changes(opts ...GeneratorGroupChangesOpts) *Changeset {
+	q := r.query.Select("changes")
+	for i := len(opts) - 1; i >= 0; i-- {
+		// `onConflict` optional argument
+		if !querybuilder.IsZeroValue(opts[i].OnConflict) {
+			q = q.Arg("onConflict", opts[i].OnConflict)
+		}
+	}
+
+	return &Changeset{
+		query: q,
+	}
+}
+
+// A unique identifier for this GeneratorGroup.
+func (r *GeneratorGroup) ID(ctx context.Context) (GeneratorGroupID, error) {
+	if r.id != nil {
+		return *r.id, nil
+	}
+	q := r.query.Select("id")
+
+	var response GeneratorGroupID
+
+	q = q.Bind(&response)
+	return response, q.Execute(ctx)
+}
+
+// XXX_GraphQLType is an internal function. It returns the native GraphQL type name
+func (r *GeneratorGroup) XXX_GraphQLType() string {
+	return "GeneratorGroup"
+}
+
+// XXX_GraphQLIDType is an internal function. It returns the native GraphQL type name for the ID of this object
+func (r *GeneratorGroup) XXX_GraphQLIDType() string {
+	return "GeneratorGroupID"
+}
+
+// XXX_GraphQLID is an internal function. It returns the underlying type ID
+func (r *GeneratorGroup) XXX_GraphQLID(ctx context.Context) (string, error) {
+	id, err := r.ID(ctx)
+	if err != nil {
+		return "", err
+	}
+	return string(id), nil
+}
+
+func (r *GeneratorGroup) MarshalJSON() ([]byte, error) {
+	id, err := r.ID(marshalCtx)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(id)
+}
+
+// Whether the generated changeset is empty or not
+func (r *GeneratorGroup) IsEmpty(ctx context.Context) (bool, error) {
+	if r.isEmpty != nil {
+		return *r.isEmpty, nil
+	}
+	q := r.query.Select("isEmpty")
+
+	var response bool
+
+	q = q.Bind(&response)
+	return response, q.Execute(ctx)
+}
+
+// Return a list of individual generators and their details
+func (r *GeneratorGroup) List(ctx context.Context) ([]Generator, error) {
+	q := r.query.Select("list")
+
+	q = q.Select("id")
+
+	type list struct {
+		Id GeneratorID
+	}
+
+	convert := func(fields []list) []Generator {
+		out := []Generator{}
+
+		for i := range fields {
+			val := Generator{id: &fields[i].Id}
+			val.query = q.Root().Select("loadGeneratorFromID").Arg("id", fields[i].Id)
+			out = append(out, val)
+		}
+
+		return out
+	}
+	var response []list
+
+	q = q.Bind(&response)
+
+	err := q.Execute(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return convert(response), nil
+}
+
+// Execute all selected generators
+func (r *GeneratorGroup) Run() *GeneratorGroup {
+	q := r.query.Select("run")
+
+	return &GeneratorGroup{
 		query: q,
 	}
 }
@@ -8374,6 +9500,24 @@ func (r *LLM) WithoutDefaultSystemPrompt() *LLM {
 	}
 }
 
+// Clear the message history, leaving only the system prompts
+func (r *LLM) WithoutMessageHistory() *LLM {
+	q := r.query.Select("withoutMessageHistory")
+
+	return &LLM{
+		query: q,
+	}
+}
+
+// Clear the system prompts, leaving only the default system prompt
+func (r *LLM) WithoutSystemPrompts() *LLM {
+	q := r.query.Select("withoutSystemPrompts")
+
+	return &LLM{
+		query: q,
+	}
+}
+
 type LLMTokenUsage struct {
 	query *querybuilder.Selection
 
@@ -8659,6 +9803,41 @@ func (r *Module) WithGraphQLQuery(q *querybuilder.Selection) *Module {
 	}
 }
 
+// Return the check defined by the module with the given name. Must match to exactly one check.
+//
+// Experimental: This API is highly experimental and may be removed or replaced entirely.
+func (r *Module) Check(name string) *Check {
+	q := r.query.Select("check")
+	q = q.Arg("name", name)
+
+	return &Check{
+		query: q,
+	}
+}
+
+// ModuleChecksOpts contains options for Module.Checks
+type ModuleChecksOpts struct {
+	// Only include checks matching the specified patterns
+	Include []string
+}
+
+// Return all checks defined by the module
+//
+// Experimental: This API is highly experimental and may be removed or replaced entirely.
+func (r *Module) Checks(opts ...ModuleChecksOpts) *CheckGroup {
+	q := r.query.Select("checks")
+	for i := len(opts) - 1; i >= 0; i-- {
+		// `include` optional argument
+		if !querybuilder.IsZeroValue(opts[i].Include) {
+			q = q.Arg("include", opts[i].Include)
+		}
+	}
+
+	return &CheckGroup{
+		query: q,
+	}
+}
+
 // The dependencies of the module.
 func (r *Module) Dependencies(ctx context.Context) ([]Module, error) {
 	q := r.query.Select("dependencies")
@@ -8743,6 +9922,41 @@ func (r *Module) GeneratedContextDirectory() *Directory {
 	q := r.query.Select("generatedContextDirectory")
 
 	return &Directory{
+		query: q,
+	}
+}
+
+// Return the generator defined by the module with the given name. Must match to exactly one generator.
+//
+// Experimental: This API is highly experimental and may be removed or replaced entirely.
+func (r *Module) Generator(name string) *Generator {
+	q := r.query.Select("generator")
+	q = q.Arg("name", name)
+
+	return &Generator{
+		query: q,
+	}
+}
+
+// ModuleGeneratorsOpts contains options for Module.Generators
+type ModuleGeneratorsOpts struct {
+	// Only include generators matching the specified patterns
+	Include []string
+}
+
+// Return all generators defined by the module
+//
+// Experimental: This API is highly experimental and may be removed or replaced entirely.
+func (r *Module) Generators(opts ...ModuleGeneratorsOpts) *GeneratorGroup {
+	q := r.query.Select("generators")
+	for i := len(opts) - 1; i >= 0; i-- {
+		// `include` optional argument
+		if !querybuilder.IsZeroValue(opts[i].Include) {
+			q = q.Arg("include", opts[i].Include)
+		}
+	}
+
+	return &GeneratorGroup{
 		query: q,
 	}
 }
@@ -9773,6 +10987,7 @@ func (r *ModuleSource) WithoutToolchains(toolchains []string) *ModuleSource {
 type ObjectTypeDef struct {
 	query *querybuilder.Selection
 
+	deprecated       *string
 	description      *string
 	id               *ObjectTypeDefID
 	name             *string
@@ -9792,6 +11007,19 @@ func (r *ObjectTypeDef) Constructor() *Function {
 	return &Function{
 		query: q,
 	}
+}
+
+// The reason this enum member is deprecated, if any.
+func (r *ObjectTypeDef) Deprecated(ctx context.Context) (string, error) {
+	if r.deprecated != nil {
+		return *r.deprecated, nil
+	}
+	q := r.query.Select("deprecated")
+
+	var response string
+
+	q = q.Bind(&response)
+	return response, q.Execute(ctx)
 }
 
 // The doc string for the object, if any.
@@ -10244,6 +11472,7 @@ func (r *Client) Env(opts ...EnvOpts) *Env {
 // EnvFileOpts contains options for Client.EnvFile
 type EnvFileOpts struct {
 	// Replace "${VAR}" or "$VAR" with the value of other vars
+	// Deprecated: Variable expansion is now enabled by default
 	Expand bool
 }
 
@@ -10325,6 +11554,7 @@ type GitOpts struct {
 	// DEPRECATED: Set to true to keep .git directory.
 	//
 	// Default: true
+	// Deprecated: Set to true to keep .git directory.
 	KeepGitDir bool
 	// Set SSH known hosts
 	SSHKnownHosts string
@@ -10503,6 +11733,26 @@ func (r *Client) LoadChangesetFromID(id ChangesetID) *Changeset {
 	q = q.Arg("id", id)
 
 	return &Changeset{
+		query: q,
+	}
+}
+
+// Load a Check from its ID.
+func (r *Client) LoadCheckFromID(id CheckID) *Check {
+	q := r.query.Select("loadCheckFromID")
+	q = q.Arg("id", id)
+
+	return &Check{
+		query: q,
+	}
+}
+
+// Load a CheckGroup from its ID.
+func (r *Client) LoadCheckGroupFromID(id CheckGroupID) *CheckGroup {
+	q := r.query.Select("loadCheckGroupFromID")
+	q = q.Arg("id", id)
+
+	return &CheckGroup{
 		query: q,
 	}
 }
@@ -10723,6 +11973,26 @@ func (r *Client) LoadGeneratedCodeFromID(id GeneratedCodeID) *GeneratedCode {
 	q = q.Arg("id", id)
 
 	return &GeneratedCode{
+		query: q,
+	}
+}
+
+// Load a Generator from its ID.
+func (r *Client) LoadGeneratorFromID(id GeneratorID) *Generator {
+	q := r.query.Select("loadGeneratorFromID")
+	q = q.Arg("id", id)
+
+	return &Generator{
+		query: q,
+	}
+}
+
+// Load a GeneratorGroup from its ID.
+func (r *Client) LoadGeneratorGroupFromID(id GeneratorGroupID) *GeneratorGroup {
+	q := r.query.Select("loadGeneratorGroupFromID")
+	q = q.Arg("id", id)
+
+	return &GeneratorGroup{
 		query: q,
 	}
 }
@@ -10957,6 +12227,16 @@ func (r *Client) LoadSourceMapFromID(id SourceMapID) *SourceMap {
 	}
 }
 
+// Load a Stat from its ID.
+func (r *Client) LoadStatFromID(id StatID) *Stat {
+	q := r.query.Select("loadStatFromID")
+	q = q.Arg("id", id)
+
+	return &Stat{
+		query: q,
+	}
+}
+
 // Load a Terminal from its ID.
 func (r *Client) LoadTerminalFromID(id TerminalID) *Terminal {
 	q := r.query.Select("loadTerminalFromID")
@@ -11124,6 +12404,7 @@ func (r *Client) Version(ctx context.Context) (string, error) {
 type SDKConfig struct {
 	query *querybuilder.Selection
 
+	debug  *bool
 	id     *SDKConfigID
 	source *string
 }
@@ -11132,6 +12413,19 @@ func (r *SDKConfig) WithGraphQLQuery(q *querybuilder.Selection) *SDKConfig {
 	return &SDKConfig{
 		query: q,
 	}
+}
+
+// Whether to start the SDK runtime in debug mode with an interactive terminal.
+func (r *SDKConfig) Debug(ctx context.Context) (bool, error) {
+	if r.debug != nil {
+		return *r.debug, nil
+	}
+	q := r.query.Select("debug")
+
+	var response bool
+
+	q = q.Bind(&response)
+	return response, q.Execute(ctx)
 }
 
 // A unique identifier for this SDKConfig.
@@ -12048,6 +13342,115 @@ func (r *SourceMap) URL(ctx context.Context) (string, error) {
 	return response, q.Execute(ctx)
 }
 
+// A file or directory status object.
+type Stat struct {
+	query *querybuilder.Selection
+
+	fileType    *FileType
+	id          *StatID
+	name        *string
+	permissions *int
+	size        *int
+}
+
+func (r *Stat) WithGraphQLQuery(q *querybuilder.Selection) *Stat {
+	return &Stat{
+		query: q,
+	}
+}
+
+// file type
+func (r *Stat) FileType(ctx context.Context) (FileType, error) {
+	if r.fileType != nil {
+		return *r.fileType, nil
+	}
+	q := r.query.Select("fileType")
+
+	var response FileType
+
+	q = q.Bind(&response)
+	return response, q.Execute(ctx)
+}
+
+// A unique identifier for this Stat.
+func (r *Stat) ID(ctx context.Context) (StatID, error) {
+	if r.id != nil {
+		return *r.id, nil
+	}
+	q := r.query.Select("id")
+
+	var response StatID
+
+	q = q.Bind(&response)
+	return response, q.Execute(ctx)
+}
+
+// XXX_GraphQLType is an internal function. It returns the native GraphQL type name
+func (r *Stat) XXX_GraphQLType() string {
+	return "Stat"
+}
+
+// XXX_GraphQLIDType is an internal function. It returns the native GraphQL type name for the ID of this object
+func (r *Stat) XXX_GraphQLIDType() string {
+	return "StatID"
+}
+
+// XXX_GraphQLID is an internal function. It returns the underlying type ID
+func (r *Stat) XXX_GraphQLID(ctx context.Context) (string, error) {
+	id, err := r.ID(ctx)
+	if err != nil {
+		return "", err
+	}
+	return string(id), nil
+}
+
+func (r *Stat) MarshalJSON() ([]byte, error) {
+	id, err := r.ID(marshalCtx)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(id)
+}
+
+// file name
+func (r *Stat) Name(ctx context.Context) (string, error) {
+	if r.name != nil {
+		return *r.name, nil
+	}
+	q := r.query.Select("name")
+
+	var response string
+
+	q = q.Bind(&response)
+	return response, q.Execute(ctx)
+}
+
+// permission bits
+func (r *Stat) Permissions(ctx context.Context) (int, error) {
+	if r.permissions != nil {
+		return *r.permissions, nil
+	}
+	q := r.query.Select("permissions")
+
+	var response int
+
+	q = q.Bind(&response)
+	return response, q.Execute(ctx)
+}
+
+// file size
+func (r *Stat) Size(ctx context.Context) (int, error) {
+	if r.size != nil {
+		return *r.size, nil
+	}
+	q := r.query.Select("size")
+
+	var response int
+
+	q = q.Bind(&response)
+	return response, q.Execute(ctx)
+}
+
 // An interactive terminal that clients can connect to.
 type Terminal struct {
 	query *querybuilder.Selection
@@ -12309,6 +13712,8 @@ type TypeDefWithEnumMemberOpts struct {
 	Description string
 	// The source map for the enum member definition.
 	SourceMap *SourceMap
+	// If deprecated, the reason or migration path.
+	Deprecated string
 }
 
 // Adds a static value for an Enum TypeDef, failing if the type is not an enum.
@@ -12327,6 +13732,10 @@ func (r *TypeDef) WithEnumMember(name string, opts ...TypeDefWithEnumMemberOpts)
 		if !querybuilder.IsZeroValue(opts[i].SourceMap) {
 			q = q.Arg("sourceMap", opts[i].SourceMap)
 		}
+		// `deprecated` optional argument
+		if !querybuilder.IsZeroValue(opts[i].Deprecated) {
+			q = q.Arg("deprecated", opts[i].Deprecated)
+		}
 	}
 	q = q.Arg("name", name)
 
@@ -12341,6 +13750,8 @@ type TypeDefWithEnumValueOpts struct {
 	Description string
 	// The source map for the enum value definition.
 	SourceMap *SourceMap
+	// If deprecated, the reason or migration path.
+	Deprecated string
 }
 
 // Adds a static value for an Enum TypeDef, failing if the type is not an enum.
@@ -12357,6 +13768,10 @@ func (r *TypeDef) WithEnumValue(value string, opts ...TypeDefWithEnumValueOpts) 
 		if !querybuilder.IsZeroValue(opts[i].SourceMap) {
 			q = q.Arg("sourceMap", opts[i].SourceMap)
 		}
+		// `deprecated` optional argument
+		if !querybuilder.IsZeroValue(opts[i].Deprecated) {
+			q = q.Arg("deprecated", opts[i].Deprecated)
+		}
 	}
 	q = q.Arg("value", value)
 
@@ -12371,6 +13786,8 @@ type TypeDefWithFieldOpts struct {
 	Description string
 	// The source map for the field definition.
 	SourceMap *SourceMap
+	// If deprecated, the reason or migration path.
+	Deprecated string
 }
 
 // Adds a static field for an Object TypeDef, failing if the type is not an object.
@@ -12385,6 +13802,10 @@ func (r *TypeDef) WithField(name string, typeDef *TypeDef, opts ...TypeDefWithFi
 		// `sourceMap` optional argument
 		if !querybuilder.IsZeroValue(opts[i].SourceMap) {
 			q = q.Arg("sourceMap", opts[i].SourceMap)
+		}
+		// `deprecated` optional argument
+		if !querybuilder.IsZeroValue(opts[i].Deprecated) {
+			q = q.Arg("deprecated", opts[i].Deprecated)
 		}
 	}
 	q = q.Arg("name", name)
@@ -12459,6 +13880,8 @@ type TypeDefWithObjectOpts struct {
 	Description string
 
 	SourceMap *SourceMap
+
+	Deprecated string
 }
 
 // Returns a TypeDef of kind Object with the provided name.
@@ -12474,6 +13897,10 @@ func (r *TypeDef) WithObject(name string, opts ...TypeDefWithObjectOpts) *TypeDe
 		// `sourceMap` optional argument
 		if !querybuilder.IsZeroValue(opts[i].SourceMap) {
 			q = q.Arg("sourceMap", opts[i].SourceMap)
+		}
+		// `deprecated` optional argument
+		if !querybuilder.IsZeroValue(opts[i].Deprecated) {
+			q = q.Arg("deprecated", opts[i].Deprecated)
 		}
 	}
 	q = q.Arg("name", name)
@@ -12631,6 +14058,141 @@ const (
 	CacheSharingModeLocked CacheSharingMode = "LOCKED"
 )
 
+// Strategy to use when merging changesets with conflicting changes.
+type ChangesetMergeConflict string
+
+func (ChangesetMergeConflict) IsEnum() {}
+
+func (v ChangesetMergeConflict) Name() string {
+	switch v {
+	case ChangesetMergeConflictFailEarly:
+		return "FAIL_EARLY"
+	case ChangesetMergeConflictFail:
+		return "FAIL"
+	case ChangesetMergeConflictLeaveConflictMarkers:
+		return "LEAVE_CONFLICT_MARKERS"
+	case ChangesetMergeConflictPreferOurs:
+		return "PREFER_OURS"
+	case ChangesetMergeConflictPreferTheirs:
+		return "PREFER_THEIRS"
+	default:
+		return ""
+	}
+}
+
+func (v ChangesetMergeConflict) Value() string {
+	return string(v)
+}
+
+func (v *ChangesetMergeConflict) MarshalJSON() ([]byte, error) {
+	if *v == "" {
+		return []byte(`""`), nil
+	}
+	name := v.Name()
+	if name == "" {
+		return nil, fmt.Errorf("invalid enum value %q", *v)
+	}
+	return json.Marshal(name)
+}
+
+func (v *ChangesetMergeConflict) UnmarshalJSON(dt []byte) error {
+	var s string
+	if err := json.Unmarshal(dt, &s); err != nil {
+		return err
+	}
+	switch s {
+	case "":
+		*v = ""
+	case "FAIL":
+		*v = ChangesetMergeConflictFail
+	case "FAIL_EARLY":
+		*v = ChangesetMergeConflictFailEarly
+	case "LEAVE_CONFLICT_MARKERS":
+		*v = ChangesetMergeConflictLeaveConflictMarkers
+	case "PREFER_OURS":
+		*v = ChangesetMergeConflictPreferOurs
+	case "PREFER_THEIRS":
+		*v = ChangesetMergeConflictPreferTheirs
+	default:
+		return fmt.Errorf("invalid enum value %q", s)
+	}
+	return nil
+}
+
+const (
+	// Fail before attempting merge if file-level conflicts are detected
+	ChangesetMergeConflictFailEarly ChangesetMergeConflict = "FAIL_EARLY"
+
+	// Attempt the merge and fail if git merge fails due to conflicts
+	ChangesetMergeConflictFail ChangesetMergeConflict = "FAIL"
+
+	// Let git create conflict markers in files. For modify/delete conflicts, keeps the modified version. Fails on binary conflicts.
+	ChangesetMergeConflictLeaveConflictMarkers ChangesetMergeConflict = "LEAVE_CONFLICT_MARKERS"
+
+	// The conflict is resolved by applying the version of the calling changeset
+	ChangesetMergeConflictPreferOurs ChangesetMergeConflict = "PREFER_OURS"
+
+	// The conflict is resolved by applying the version of the other changeset
+	ChangesetMergeConflictPreferTheirs ChangesetMergeConflict = "PREFER_THEIRS"
+)
+
+// Strategy to use when merging multiple changesets with git octopus merge.
+type ChangesetsMergeConflict string
+
+func (ChangesetsMergeConflict) IsEnum() {}
+
+func (v ChangesetsMergeConflict) Name() string {
+	switch v {
+	case ChangesetsMergeConflictFailEarly:
+		return "FAIL_EARLY"
+	case ChangesetsMergeConflictFail:
+		return "FAIL"
+	default:
+		return ""
+	}
+}
+
+func (v ChangesetsMergeConflict) Value() string {
+	return string(v)
+}
+
+func (v *ChangesetsMergeConflict) MarshalJSON() ([]byte, error) {
+	if *v == "" {
+		return []byte(`""`), nil
+	}
+	name := v.Name()
+	if name == "" {
+		return nil, fmt.Errorf("invalid enum value %q", *v)
+	}
+	return json.Marshal(name)
+}
+
+func (v *ChangesetsMergeConflict) UnmarshalJSON(dt []byte) error {
+	var s string
+	if err := json.Unmarshal(dt, &s); err != nil {
+		return err
+	}
+	switch s {
+	case "":
+		*v = ""
+	case "FAIL":
+		*v = ChangesetsMergeConflictFail
+	case "FAIL_EARLY":
+		*v = ChangesetsMergeConflictFailEarly
+	default:
+		return fmt.Errorf("invalid enum value %q", s)
+	}
+	return nil
+}
+
+const (
+	// Fail before attempting merge if file-level conflicts are detected between any changesets
+	ChangesetsMergeConflictFailEarly ChangesetsMergeConflict = "FAIL_EARLY"
+
+	// Attempt the octopus merge and fail if git merge fails due to conflicts
+	ChangesetsMergeConflictFail ChangesetsMergeConflict = "FAIL"
+)
+
 // File type.
 type ExistsType string
 
@@ -12693,6 +14255,89 @@ const (
 
 	// Tests path is a symlink
 	ExistsTypeSymlinkType ExistsType = "SYMLINK_TYPE"
+)
+
+// File type.
+type FileType string
+
+func (FileType) IsEnum() {}
+
+func (v FileType) Name() string {
+	switch v {
+	case FileTypeUnknown:
+		return "UNKNOWN"
+	case FileTypeRegular:
+		return "REGULAR"
+	case FileTypeDirectory:
+		return "DIRECTORY"
+	case FileTypeSymlink:
+		return "SYMLINK"
+	default:
+		return ""
+	}
+}
+
+func (v FileType) Value() string {
+	return string(v)
+}
+
+func (v *FileType) MarshalJSON() ([]byte, error) {
+	if *v == "" {
+		return []byte(`""`), nil
+	}
+	name := v.Name()
+	if name == "" {
+		return nil, fmt.Errorf("invalid enum value %q", *v)
+	}
+	return json.Marshal(name)
+}
+
+func (v *FileType) UnmarshalJSON(dt []byte) error {
+	var s string
+	if err := json.Unmarshal(dt, &s); err != nil {
+		return err
+	}
+	switch s {
+	case "":
+		*v = ""
+	case "DIRECTORY":
+		*v = FileTypeDirectory
+	case "DIRECTORY_TYPE":
+		*v = FileTypeDirectoryType
+	case "REGULAR":
+		*v = FileTypeRegular
+	case "REGULAR_TYPE":
+		*v = FileTypeRegularType
+	case "SYMLINK":
+		*v = FileTypeSymlink
+	case "SYMLINK_TYPE":
+		*v = FileTypeSymlinkType
+	case "UNKNOWN":
+		*v = FileTypeUnknown
+	default:
+		return fmt.Errorf("invalid enum value %q", s)
+	}
+	return nil
+}
+
+const (
+	// unknown file type
+	FileTypeUnknown FileType = "UNKNOWN"
+
+	// regular file type
+	FileTypeRegular FileType = "REGULAR"
+	// regular file type
+	FileTypeRegularType FileType = FileTypeRegular
+
+	// directory file type
+	FileTypeDirectory FileType = "DIRECTORY"
+	// directory file type
+	FileTypeDirectoryType FileType = FileTypeDirectory
+
+	// symlink file type
+	FileTypeSymlink FileType = "SYMLINK"
+	// symlink file type
+	FileTypeSymlinkType FileType = FileTypeSymlink
 )
 
 // The behavior configured for function result caching.
@@ -13119,10 +14764,10 @@ const (
 	// A successful execution (exit code 0)
 	ReturnTypeSuccess ReturnType = "SUCCESS"
 
-	// A failed execution (exit codes 1-127)
+	// A failed execution (exit codes 1-127 and 192-255)
 	ReturnTypeFailure ReturnType = "FAILURE"
 
-	// Any execution (exit codes 0-127)
+	// Any execution (exit codes 0-127 and 192-255)
 	ReturnTypeAny ReturnType = "ANY"
 )
 

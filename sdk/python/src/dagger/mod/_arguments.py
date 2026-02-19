@@ -30,6 +30,29 @@ class Name:
 
 
 @dataclasses.dataclass(slots=True, frozen=True)
+class DefaultAddress:
+    """If the argument is omitted, load it from the given container address.
+
+    Only applies to arguments of type :py:class:`dagger.Container`.
+
+    Mutually exclusive with setting a default value for the parameter. When
+    used within Python, the parameter should be required.
+
+    Example usage::
+
+        @function
+        def build(
+            self, ctr: Annotated[dagger.Container, DefaultAddress("alpine:latest")]
+        ): ...
+    """
+
+    address: str
+
+    def __str__(self) -> str:
+        return self.address
+
+
+@dataclasses.dataclass(slots=True, frozen=True)
 class DefaultPath:
     """If the argument is omitted, load it from the given path in the context directory.
 
@@ -83,6 +106,22 @@ class Ignore:
         return hash(tuple(self.patterns))
 
 
+@dataclasses.dataclass(slots=True, frozen=True)
+class Deprecated:
+    """Mark a function argument as deprecated.
+
+    Example usage::
+
+        @function
+        def old(self, value: Annotated[str, Deprecated("Use new instead")]): ...
+    """
+
+    reason: str = ""
+
+    def __str__(self) -> str:
+        return self.reason
+
+
 @dataclasses.dataclass(slots=True, kw_only=True)
 class Parameter:
     """Parameter from function signature in :py:class:`FunctionResolver`."""
@@ -98,7 +137,9 @@ class Parameter:
     doc: str | None = None
     ignore: list[str] | None = None
     default_path: ContextPath | None = None
+    default_address: str | None = None
     default_value: dagger.JSON | None = None
+    deprecated: str | None = None
 
     conv: dataclasses.InitVar[JsonConverter]
 
@@ -132,6 +173,7 @@ class Parameter:
             [
                 self.has_default,
                 self.default_path is not None,
+                self.default_address is not None,
                 self.is_nullable,
             ]
         )
@@ -166,3 +208,10 @@ class Parameter:
                     f"parameter '{self.signature.name}'"
                 )
                 raise BadUsageError(msg, extra=extra)
+
+        if self.deprecated and not self.is_optional:
+            msg = (
+                f"Can't deprecate required parameter '{self.signature.name}'. "
+                "Mark it optional or provide a default value."
+            )
+            raise BadUsageError(msg, extra=extra)

@@ -141,10 +141,10 @@ type ShellHandler interface {
 	Prompt(ctx context.Context, out TermOutput, fg termenv.Color) (string, tea.Cmd)
 
 	// Keys returns the keys that will be displayed when the input is focused
-	KeyBindings() []key.Binding
+	KeyBindings(out TermOutput) []key.Binding
 
 	// ReactToInput allows reacting to live input before it's submitted
-	ReactToInput(ctx context.Context, msg tea.KeyMsg) tea.Cmd
+	ReactToInput(ctx context.Context, msg tea.KeyMsg, editing bool, edit *editline.Model) tea.Cmd
 
 	// Shell handlers can man-in-the-middle history items to preserve per-entry modes etc.
 	editline.HistoryEncoder
@@ -168,11 +168,11 @@ func (d *Dump) DumpID(out *termenv.Output, id *call.ID) error {
 
 	db := dagui.NewDB()
 	maps.Copy(db.Calls, dag.CallsByDigest)
-	r := newRenderer(db, -1, dagui.FrontendOpts{})
+	r := newRenderer(db, -1, dagui.FrontendOpts{}, true)
 	if d.Newline != "" {
 		r.newline = d.Newline
 	}
-	err = r.renderCall(out, nil, id.Call(), d.Prefix, true, 0, false, nil)
+	err = r.renderCall(out, nil, id.Call(), d.Prefix, true, 0, false, nil, false)
 	fmt.Fprint(out, r.newline)
 	return err
 }
@@ -185,9 +185,10 @@ type renderer struct {
 	db            *dagui.DB
 	maxLiteralLen int
 	rendering     map[string]bool
+	final         bool
 }
 
-func newRenderer(db *dagui.DB, maxLiteralLen int, fe dagui.FrontendOpts) *renderer {
+func newRenderer(db *dagui.DB, maxLiteralLen int, fe dagui.FrontendOpts, final bool) *renderer {
 	return &renderer{
 		FrontendOpts:  fe,
 		now:           time.Now(),
@@ -195,6 +196,7 @@ func newRenderer(db *dagui.DB, maxLiteralLen int, fe dagui.FrontendOpts) *render
 		maxLiteralLen: maxLiteralLen,
 		rendering:     map[string]bool{},
 		newline:       "\n",
+		final:         final,
 	}
 }
 
@@ -287,7 +289,7 @@ func (r *renderer) renderIDBase(out TermOutput, call *callpbv1.Call) {
 	}
 }
 
-func (r *renderer) renderCall(
+func (r *renderer) renderCall( //nolint: gocyclo
 	out TermOutput,
 	span *dagui.Span,
 	call *callpbv1.Call,
@@ -296,6 +298,7 @@ func (r *renderer) renderCall(
 	depth int,
 	internal bool,
 	row *dagui.TraceRow,
+	abridged bool,
 ) error {
 	if r.rendering[call.Digest] {
 		fmt.Fprintf(out, "<cycle detected: %s>", call.Digest)
@@ -304,19 +307,38 @@ func (r *renderer) renderCall(
 	r.rendering[call.Digest] = true
 	defer func() { delete(r.rendering, call.Digest) }()
 
-	if call.ReceiverDigest != "" {
-		if !chained {
-			r.renderIDBase(out, r.db.MustCall(call.ReceiverDigest))
+	var specialTitle bool
+	var elideArgs map[string]struct{}
+	if r.Verbosity < dagui.ShowDigestsVerbosity {
+		// Use the DSL to render field calls
+		if title, elidedArgs, isSpecial := r.renderFieldCall(call, out, prefix, depth); isSpecial {
+			fmt.Fprint(out, title)
+			specialTitle = isSpecial
+			elideArgs = elidedArgs
 		}
-		fmt.Fprint(out, out.String("."))
 	}
 
-	fmt.Fprint(out, out.String(call.Field).Bold())
+	if !specialTitle {
+		if call.ReceiverDigest != "" {
+			if !chained {
+				r.renderIDBase(out, r.db.MustCall(call.ReceiverDigest))
+			}
+			fmt.Fprint(out, out.String("."))
+		}
 
-	if len(call.Args) > 0 {
+		fmt.Fprint(out, out.String(call.Field).Bold())
+	}
+
+	if len(call.Args) > len(elideArgs) {
+		if specialTitle {
+			fmt.Fprint(out, " ")
+		}
 		fmt.Fprint(out, out.String("("))
 		var needIndent bool
 		for _, arg := range call.Args {
+			if _, elided := elideArgs[arg.Name]; elided {
+				continue
+			}
 			if arg.GetValue().GetCallDigest() != "" {
 				needIndent = true
 				break
@@ -331,12 +353,19 @@ func (r *renderer) renderCall(
 			depth++
 			depth++
 			for _, arg := range call.Args {
+				if _, elided := elideArgs[arg.Name]; elided {
+					continue
+				}
 				fmt.Fprint(out, prefix)
 				indentLevel := depth
 				if row != nil {
 					r.fancyIndent(out, row, true, false)
 					indentLevel -= row.Depth
 					indentLevel -= 1
+				}
+				if !r.final {
+					// extra space to account for togglers only visible while interactive
+					fmt.Fprint(out, "  ")
 				}
 				r.indent(out, indentLevel)
 				fmt.Fprintf(out, out.String("%s:").Foreground(kwColor).String(), arg.GetName())
@@ -353,7 +382,7 @@ func (r *renderer) renderCall(
 						}
 					}
 					argCall := r.db.Simplify(r.db.MustCall(argDig), forceSimplify)
-					if err := r.renderCall(out, argSpan, argCall, prefix, false, depth-1, internal, row); err != nil {
+					if err := r.renderCall(out, argSpan, argCall, prefix, false, depth-1, internal, row, abridged); err != nil {
 						return err
 					}
 				} else {
@@ -369,13 +398,22 @@ func (r *renderer) renderCall(
 				indentLevel -= row.Depth
 				indentLevel -= 1
 			}
+			if !r.final {
+				// extra space to account for togglers only visible while interactive
+				fmt.Fprint(out, "  ")
+			}
 			r.indent(out, indentLevel)
 			depth-- //nolint:ineffassign
 		} else {
-			for i, arg := range call.Args {
-				if i > 0 {
+			printed := 0
+			for _, arg := range call.Args {
+				if _, elided := elideArgs[arg.Name]; elided {
+					continue
+				}
+				if printed > 0 {
 					fmt.Fprint(out, out.String(", "))
 				}
+				printed++
 				fmt.Fprintf(out, out.String("%s: ").Foreground(kwColor).String(), arg.GetName())
 				r.renderLiteral(out, arg.GetValue())
 			}
@@ -383,7 +421,7 @@ func (r *renderer) renderCall(
 		fmt.Fprint(out, out.String(")"))
 	}
 
-	if call.Type != nil {
+	if call.Type != nil && !specialTitle && !abridged {
 		typeStr := out.String(": " + call.Type.ToAST().String()).Faint()
 		fmt.Fprint(out, typeStr)
 	}
