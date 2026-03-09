@@ -17,7 +17,7 @@ function bump() {
 }
 
 function pin() {
-  ref=$(go mod graph | grep $1 | grep dagger.io/dagger | awk '{print $NF}')
+  ref=$(go mod graph | grep $1 | grep github.com/G-Research/dagger | awk '{print $NF}')
   go mod edit -replace=$1=$ref
 }
 

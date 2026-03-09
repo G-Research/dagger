@@ -3,7 +3,7 @@
  *
  * Further documentation for the module here.
  */
-import { object, func } from "@dagger.io/dagger"
+import { object, func } from "@github.com/G-Research/dagger"
 
 @object()
 class MyModule {

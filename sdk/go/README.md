@@ -4,7 +4,7 @@ The Dagger Go SDK contains everything you need to develop CI/CD pipelines in Go,
 
 This SDK contains:
 
-* A Go package: `dagger.io/dagger`
+* A Go package: `github.com/G-Research/dagger`
 * The [`dagger` CLI][cli]
 * [Documentation][docs]
 

@@ -43,7 +43,7 @@ oc adm taint nodes NODE-NAME dagger-node=true:NoSchedule
 Install Dagger using the Dagger Helm chart and the configuration above:
 
 ```shell
-helm upgrade --create-namespace --install --namespace dagger dagger oci://registry.dagger.io/dagger-helm -f values.yaml
+helm upgrade --create-namespace --install --namespace dagger dagger oci://registry.github.com/G-Research/dagger-helm -f values.yaml
 ```
 
 Finally, grant the necessary permissions for the `default` service account in the `dagger` namespace:

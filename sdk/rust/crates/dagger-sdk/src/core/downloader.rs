@@ -76,7 +76,7 @@ const DEFAULT_CLI_HOST: &str = "dl.dagger.io";
 #[allow(dead_code)]
 const CLI_BIN_PREFIX: &str = "dagger-";
 #[allow(dead_code)]
-const CLI_BASE_URL: &str = "https://dl.dagger.io/dagger/releases";
+const CLI_BASE_URL: &str = "https://dl.github.com/G-Research/dagger/releases";
 
 #[allow(dead_code)]
 impl Downloader {

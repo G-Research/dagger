@@ -1,4 +1,4 @@
-import {  object, func, Directory } from "@dagger.io/dagger"
+import {  object, func, Directory } from "@github.com/G-Research/dagger"
 
 @object()
 export class Impl {

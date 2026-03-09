@@ -3145,7 +3145,7 @@ class Container(Type):
         ----------
         address:
             The image address that needs authentication. Same format as
-            "docker push". Example: "registry.dagger.io/dagger:latest"
+            "docker push". Example: "registry.github.com/G-Research/dagger:latest"
         username:
             The username to authenticate with. Example: "alice"
         secret:

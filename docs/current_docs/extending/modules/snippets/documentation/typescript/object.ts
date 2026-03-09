@@ -1,4 +1,4 @@
-import { object } from "@dagger.io/dagger"
+import { object } from "@github.com/G-Research/dagger"
 
 /**
  * The object represents a single user of the system.

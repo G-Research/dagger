@@ -135,7 +135,7 @@ jobs:
               RUNNER_HOST="docker-image://${{ vars.RELEASE_DAGGER_ENGINE_IMAGE }}:${GITHUB_REF_NAME}"
             fi
           else
-            BASE_URL="https://dl.dagger.io/dagger"
+            BASE_URL="https://dl.github.com/G-Research/dagger"
 
             # this is a pr, just default to main artifacts
             ARCHIVE_URL="${BASE_URL}/main/head/dagger_head_darwin_amd64.tar.gz"
@@ -221,7 +221,7 @@ jobs:
               RUNNER_HOST="docker-image://${{ vars.RELEASE_DAGGER_ENGINE_IMAGE }}:${GITHUB_REF_NAME}"
             fi
           else
-            BASE_URL="https://dl.dagger.io/dagger"
+            BASE_URL="https://dl.github.com/G-Research/dagger"
 
             # this is a pr, just default to main artifacts
             ARCHIVE_URL="${BASE_URL}/main/head/dagger_head_linux_amd64.tar.gz"
@@ -275,7 +275,7 @@ jobs:
               RUNNER_HOST="docker-image://${{ vars.RELEASE_DAGGER_ENGINE_IMAGE }}:${GITHUB_REF_NAME}"
             fi
           else
-            BASE_URL="https://dl.dagger.io/dagger"
+            BASE_URL="https://dl.github.com/G-Research/dagger"
 
             # this is a pr, just default to main artifacts
             ARCHIVE_URL="${BASE_URL}/main/head/dagger_head_linux_arm64.tar.gz"
@@ -322,7 +322,7 @@ jobs:
               RUNNER_HOST="docker-image://${{ vars.RELEASE_DAGGER_ENGINE_IMAGE }}:${GITHUB_REF_NAME}"
             fi
           else
-            BASE_URL="https://dl.dagger.io/dagger"
+            BASE_URL="https://dl.github.com/G-Research/dagger"
 
             # this is a pr, just default to main artifacts
             ARCHIVE_URL="${BASE_URL}/main/head/dagger_head_linux_amd64.tar.gz"
@@ -375,7 +375,7 @@ jobs:
               RUNNER_HOST="docker-image://${{ vars.RELEASE_DAGGER_ENGINE_IMAGE }}:${GITHUB_REF_NAME}"
             fi
           else
-            BASE_URL="https://dl.dagger.io/dagger"
+            BASE_URL="https://dl.github.com/G-Research/dagger"
 
             # this is a pr, just default to main artifacts
             ARCHIVE_URL="${BASE_URL}/main/head/dagger_head_linux_arm64.tar.gz"
@@ -422,7 +422,7 @@ jobs:
               RUNNER_HOST="docker-image://${{ vars.RELEASE_DAGGER_ENGINE_IMAGE }}:${GITHUB_REF_NAME}"
             fi
           else
-            BASE_URL="https://dl.dagger.io/dagger"
+            BASE_URL="https://dl.github.com/G-Research/dagger"
 
             # this is a pr, just default to main artifacts
             ARCHIVE_URL="${BASE_URL}/main/head/dagger_head_linux_amd64.tar.gz"
@@ -484,7 +484,7 @@ jobs:
               RUNNER_HOST="docker-image://${{ vars.RELEASE_DAGGER_ENGINE_IMAGE }}:${GITHUB_REF_NAME}"
             fi
           else
-            BASE_URL="https://dl.dagger.io/dagger"
+            BASE_URL="https://dl.github.com/G-Research/dagger"
 
             # this is a pr, just default to main artifacts
             ARCHIVE_URL="${BASE_URL}/main/head/dagger_head_linux_arm64.tar.gz"

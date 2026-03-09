@@ -1,5 +1,5 @@
-import { dag } from '@dagger.io/dagger'
-import * as dagger from '@dagger.io/dagger'
+import { dag } from '@github.com/G-Research/dagger'
+import * as dagger from '@github.com/G-Research/dagger'
 
 // initialize Dagger client
 await dagger.connection(async () => {

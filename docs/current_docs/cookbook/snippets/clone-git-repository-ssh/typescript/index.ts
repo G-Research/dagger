@@ -1,4 +1,4 @@
-import { dag, Container, object, func, Socket } from "@dagger.io/dagger"
+import { dag, Container, object, func, Socket } from "@github.com/G-Research/dagger"
 
 @object()
 class MyModule {

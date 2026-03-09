@@ -43,6 +43,6 @@
   },
   "type": "module",
   "devDependencies": {
-    "@dagger.io/dagger": "^0.3.2"
+    "@github.com/G-Research/dagger": "^0.3.2"
   }
 }

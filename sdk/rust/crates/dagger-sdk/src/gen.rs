@@ -4745,7 +4745,7 @@ impl Container {
     ///
     /// # Arguments
     ///
-    /// * `address` - The image address that needs authentication. Same format as "docker push". Example: "registry.dagger.io/dagger:latest"
+    /// * `address` - The image address that needs authentication. Same format as "docker push". Example: "registry.github.com/G-Research/dagger:latest"
     /// * `username` - The username to authenticate with. Example: "alice"
     /// * `secret` - The API key, password or token to authenticate to this registry
     pub fn with_registry_auth(

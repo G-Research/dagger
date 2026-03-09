@@ -96,7 +96,7 @@ class CLIDownloader {
   private Map<String, String> fetchChecksumMap(String version) throws IOException {
     Map<String, String> checksums = new HashMap<>();
     String checksumMapURL =
-        String.format("https://dl.dagger.io/dagger/releases/%s/checksums.txt", version);
+        String.format("https://dl.github.com/G-Research/dagger/releases/%s/checksums.txt", version);
     try (BufferedInputStream in = new BufferedInputStream(fetcher.fetch(checksumMapURL))) {
       ByteArrayOutputStream out = new ByteArrayOutputStream();
       byte[] dataBuffer = new byte[1024];
@@ -117,7 +117,7 @@ class CLIDownloader {
 
   private String extractCLI(String archiveName, String version, Path dest) throws IOException {
     String cliArchiveURL =
-        String.format("https://dl.dagger.io/dagger/releases/%s/%s", version, archiveName);
+        String.format("https://dl.github.com/G-Research/dagger/releases/%s/%s", version, archiveName);
     LOG.info("Downloading Dagger CLI from " + cliArchiveURL);
     MessageDigest sha256;
     try {

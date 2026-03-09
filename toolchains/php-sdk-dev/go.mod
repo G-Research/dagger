@@ -28,7 +28,7 @@ require github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirec
 replace github.com/dagger/dagger => ../..
 
 require (
-	dagger.io/dagger v0.19.11
+	github.com/G-Research/dagger v0.19.11
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/go-logr/logr v1.4.3 // indirect

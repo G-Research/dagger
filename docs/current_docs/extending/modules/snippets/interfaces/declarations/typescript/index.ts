@@ -1,4 +1,4 @@
-import { func, object } from "@dagger.io/dagger"
+import { func, object } from "@github.com/G-Research/dagger"
 
 export interface Fooer {
   // You can also declare it as a method signature (e.g., `foo(): Promise<string>`)

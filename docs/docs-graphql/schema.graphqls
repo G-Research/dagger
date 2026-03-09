@@ -1317,7 +1317,7 @@ type Container {
   """
   withRegistryAuth(
     """
-    The image address that needs authentication. Same format as "docker push". Example: "registry.dagger.io/dagger:latest"
+    The image address that needs authentication. Same format as "docker push". Example: "registry.github.com/G-Research/dagger:latest"
     """
     address: String!
 

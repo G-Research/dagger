@@ -11,7 +11,7 @@ phases:
   install:
     commands:
       - echo "Installing Dagger CLI"
-      - curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=$HOME/.local/bin sh
+      - curl -fsSL https://dl.github.com/G-Research/dagger/install.sh | BIN_DIR=$HOME/.local/bin sh
       - echo "Adding Dagger CLI to $PATH"
       - export PATH=$PATH:$HOME/.local/bin/
 

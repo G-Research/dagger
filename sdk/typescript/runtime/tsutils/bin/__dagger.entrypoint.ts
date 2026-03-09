@@ -1,5 +1,5 @@
 // THIS FILE IS AUTO GENERATED. PLEASE DO NOT EDIT.
-import { entrypoint } from "@dagger.io/dagger"
+import { entrypoint } from "@github.com/G-Research/dagger"
 import * as fs from "fs"
 import * as path from "path"
 

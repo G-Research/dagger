@@ -233,13 +233,13 @@ to dagger.
 
   This will kick off [`.github/workflows/publish.yml`](https://github.com/dagger/dagger/actions/workflows/publish.yml) which publishes:
   - A new image to [ghcr.io/dagger/engine](https://github.com/dagger/dagger/pkgs/container/engine) (mirrored to registry.dagger.io/engine using https://github.com/dagger/registry-redirect).
-  - Go packages to [🐙 dagger.io/dagger](https://pkg.go.dev/dagger.io/dagger) via [github.com/dagger/dagger-go-sdk](https://github.com/dagger/dagger-go-sdk/tags).
+  - Go packages to [🐙 github.com/G-Research/dagger](https://pkg.go.dev/github.com/G-Research/dagger) via [github.com/dagger/dagger-go-sdk](https://github.com/dagger/dagger-go-sdk/tags).
   - Python packages to [🐍 dagger-io](https://pypi.org/project/dagger-io).
-  - Typescript packages to [⬢ npmjs.com/package/@dagger.io/dagger](https://www.npmjs.com/package/@dagger.io/dagger).
+  - Typescript packages to [⬢ npmjs.com/package/@github.com/G-Research/dagger](https://www.npmjs.com/package/@github.com/G-Research/dagger).
   - Elixir packages to [🧪 hex.pm/packages/dagger](https://hex.pm/packages/dagger).
   - Rust crates to [⚙️ crates.io/crate/dagger-sdk](https://crates.io/crates/dagger-sdk).
   - PHP packages to [🐘 packagist.org/packages/dagger/dagger](https://packagist.org/packages/dagger/dagger) via [github.com/dagger/dagger-php-sdk](https://github.com/dagger/dagger-php-sdk/tags).
-  - Helm charts to [☸️ registry.dagger.io/dagger-helm](https://github.com/dagger/dagger/pkgs/container/dagger-helm).
+  - Helm charts to [☸️ registry.github.com/G-Research/dagger-helm](https://github.com/dagger/dagger/pkgs/container/dagger-helm).
 
 This will also kick off [`.github/workflows/evals.yml`], which is currently broken at the moment.
 
@@ -248,7 +248,7 @@ This will also kick off [`.github/workflows/evals.yml`], which is currently brok
   ```console
   # install the cli to dagger-<version>, and symlink dagger to it
   export BIN_DIR=$HOME/.local/bin
-  curl -fsSL https://dl.dagger.io/dagger/install.sh | DAGGER_VERSION=$ENGINE_VERSION sh
+  curl -fsSL https://dl.github.com/G-Research/dagger/install.sh | DAGGER_VERSION=$ENGINE_VERSION sh
   mv $BIN_DIR/dagger{,-$ENGINE_VERSION}
   ln -s $BIN_DIR/dagger{-$ENGINE_VERSION,}
 
@@ -263,7 +263,7 @@ This will also kick off [`.github/workflows/evals.yml`], which is currently brok
 
 - [ ] Double-check that all the above packages have been correctly published
       and updated to their latest versions.
-      _Note_: the [Go package](https://pkg.go.dev/dagger.io/dagger) may not be instantly updated due to caching.
+      _Note_: the [Go package](https://pkg.go.dev/github.com/G-Research/dagger) may not be instantly updated due to caching.
 
 - [ ] Double-check that git tags + github releases have been made for each component.
 
@@ -305,7 +305,7 @@ find .github/ -type f -exec sed -i '' -e 's/0-19-1/0-19-2/g' -e 's/0\.19\.1/0\.1
   rm -rf .dagger/internal/
 
   # update deps at root
-  go get dagger.io/dagger@$ENGINE_VERSION github.com/dagger/dagger/engine/distconsts@$ENGINE_VERSION
+  go get github.com/G-Research/dagger@$ENGINE_VERSION github.com/dagger/dagger/engine/distconsts@$ENGINE_VERSION
 
   # update deps in .dagger (use go mod edit + tidy to avoid adding versioned require for replaced module)
   cd .dagger

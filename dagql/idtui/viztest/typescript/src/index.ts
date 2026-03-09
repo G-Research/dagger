@@ -1,5 +1,5 @@
-import { dag, Container, object, func } from "@dagger.io/dagger"
-import { getTracer } from "@dagger.io/dagger/telemetry"
+import { dag, Container, object, func } from "@github.com/G-Research/dagger"
+import { getTracer } from "@github.com/G-Research/dagger/telemetry"
 
 let now = new Date().toISOString()
 

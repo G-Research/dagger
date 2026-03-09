@@ -118,18 +118,18 @@ function Get-DownloadUrl {
     $fileName = Get-FileName
 
     if (-not [string]::IsNullOrWhiteSpace($DaggerCommit)) {
-        return "https://dl.dagger.io/dagger/main/${DaggerCommit}/${fileName}"
+        return "https://dl.github.com/G-Research/dagger/main/${DaggerCommit}/${fileName}"
     }
 
-    return "https://dl.dagger.io/dagger/releases/${DaggerVersion}/${fileName}"
+    return "https://dl.github.com/G-Research/dagger/releases/${DaggerVersion}/${fileName}"
 }
 
 function Get-ChecksumUrl {
     if (-not [string]::IsNullOrWhiteSpace($DaggerCommit)) {
-        return "https://dl.dagger.io/dagger/main/${DaggerCommit}/checksums.txt"
+        return "https://dl.github.com/G-Research/dagger/main/${DaggerCommit}/checksums.txt"
     }
 
-    return "https://dl.dagger.io/dagger/releases/${DaggerVersion}/checksums.txt"
+    return "https://dl.github.com/G-Research/dagger/releases/${DaggerVersion}/checksums.txt"
 }
 
 # Used for interactive mode to get a true or false response from the user
@@ -153,7 +153,7 @@ function Get-TrueFalse {
 
 function Find-LatestVersion {
     $body = $null
-    $response = Invoke-RestMethod "https://dl.dagger.io/dagger/latest_version" -Body $body -ErrorVariable LatestVersionError
+    $response = Invoke-RestMethod "https://dl.github.com/G-Research/dagger/latest_version" -Body $body -ErrorVariable LatestVersionError
 
     if ($LatestVersionError) {
         Write-Error @"
@@ -173,7 +173,7 @@ Please check https://docs.dagger.io/install
 function Find-Version {
     $body = $null
     try {
-        $response = Invoke-RestMethod "https://dl.dagger.io/dagger/versions/$DaggerVersion" -Body $body
+        $response = Invoke-RestMethod "https://dl.github.com/G-Research/dagger/versions/$DaggerVersion" -Body $body
     } catch {
         return $DaggerVersion
     }

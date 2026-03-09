@@ -1,4 +1,4 @@
-import { connect } from "@dagger.io/dagger"
+import { connect } from "@github.com/G-Research/dagger"
 
 connect(
   async (client) => {

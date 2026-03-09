@@ -241,7 +241,7 @@ module.exports = {
             {
               type: "link",
               label: "Go SDK Reference",
-              href: "https://pkg.go.dev/dagger.io/dagger",
+              href: "https://pkg.go.dev/github.com/G-Research/dagger",
             },
             {
               type: "link",

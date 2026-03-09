@@ -119,7 +119,7 @@ class CliDownloader implements LoggerAwareInterface
 
     private function getExpectedChecksum(string $daggerVersion, string $archiveName): ?string
     {
-        $checksumMapUrl = "https://dl.dagger.io/dagger/releases/{$daggerVersion}/checksums.txt";
+        $checksumMapUrl = "https://dl.github.com/G-Research/dagger/releases/{$daggerVersion}/checksums.txt";
         $checksumMapContent = file_get_contents($checksumMapUrl);
 
         $checksumArray = explode("\n", trim($checksumMapContent));
@@ -136,7 +136,7 @@ class CliDownloader implements LoggerAwareInterface
     private function extractCli(string $archiveName, string $daggerVersion, string $tmpBinFile): string
     {
         $tmpArchiveFile = $this->getCacheDir() . DIRECTORY_SEPARATOR . $archiveName;
-        $archiveUrl = "https://dl.dagger.io/dagger/releases/{$daggerVersion}/{$archiveName}";
+        $archiveUrl = "https://dl.github.com/G-Research/dagger/releases/{$daggerVersion}/{$archiveName}";
         $this->logger->info("Downloading dagger {$daggerVersion} from {$archiveUrl}");
         file_put_contents($tmpArchiveFile, file_get_contents($archiveUrl));
 

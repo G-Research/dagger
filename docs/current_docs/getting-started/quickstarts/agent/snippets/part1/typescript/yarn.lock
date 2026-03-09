@@ -2,7 +2,7 @@
 # yarn lockfile v1
 
 
-"@dagger.io/dagger@./sdk":
+"@github.com/G-Research/dagger@./sdk":
   version "0.0.0"
   dependencies:
     "@grpc/grpc-js" "^1.13.0"

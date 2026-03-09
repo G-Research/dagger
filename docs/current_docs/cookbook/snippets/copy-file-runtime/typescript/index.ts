@@ -1,4 +1,4 @@
-import { object, func, File } from "@dagger.io/dagger"
+import { object, func, File } from "@github.com/G-Research/dagger"
 import * as fs from "fs"
 
 @object()

@@ -1,4 +1,4 @@
-import { dag, Changeset, object, func, generate } from "@dagger.io/dagger";
+import { dag, Changeset, object, func, generate } from "@github.com/G-Research/dagger";
 
 @object()
 export class HelloWithGeneratorsTs {

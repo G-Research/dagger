@@ -1,4 +1,4 @@
-import { dag, object, func, Service } from "@dagger.io/dagger"
+import { dag, object, func, Service } from "@github.com/G-Research/dagger"
 
 @object()
 class MyModule {

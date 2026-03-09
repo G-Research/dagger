@@ -1,4 +1,4 @@
-import { Directory, File, argument, object, func } from "@dagger.io/dagger"
+import { Directory, File, argument, object, func } from "@github.com/G-Research/dagger"
 
 @object()
 class MyModule {

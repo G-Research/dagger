@@ -1,4 +1,4 @@
-module dagger.io/dagger
+module github.com/G-Research/dagger
 
 go 1.24.0
 

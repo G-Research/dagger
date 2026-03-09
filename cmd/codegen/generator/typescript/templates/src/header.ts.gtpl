@@ -12,7 +12,7 @@ import { Context } from "./core.js"
 {{- else if (not IsClientOnly)}}
 import { Context } from "../common/context.js"
 {{- else }}
-import { Context, connect as _connect, connection as _connection, ConnectOpts, CallbackFct } from "@dagger.io/dagger"
+import { Context, connect as _connect, connection as _connection, ConnectOpts, CallbackFct } from "@github.com/G-Research/dagger"
 {{- end }}
 
 {{ if IsClientOnly }}

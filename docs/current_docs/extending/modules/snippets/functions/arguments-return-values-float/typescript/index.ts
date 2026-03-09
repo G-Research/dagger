@@ -1,5 +1,5 @@
-import type { float } from "@dagger.io/dagger"
-import { object, func } from "@dagger.io/dagger"
+import type { float } from "@github.com/G-Research/dagger"
+import { object, func } from "@github.com/G-Research/dagger"
 
 @object()
 export class MyModule {

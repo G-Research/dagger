@@ -1,4 +1,4 @@
-import { Directory, object, func } from "@dagger.io/dagger"
+import { Directory, object, func } from "@github.com/G-Research/dagger"
 
 @object()
 export class Minimal {

@@ -1,4 +1,4 @@
-import { dag, object, func, File, ReturnType } from "@dagger.io/dagger"
+import { dag, object, func, File, ReturnType } from "@github.com/G-Research/dagger"
 
 const SCRIPT = `#!/bin/sh
 echo "Test Suite"

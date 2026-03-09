@@ -28,7 +28,7 @@ require (
 )
 
 require (
-	dagger.io/dagger v0.19.11
+	github.com/G-Research/dagger v0.19.11
 	github.com/alecthomas/chroma/v2 v2.19.0
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect

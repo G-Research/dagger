@@ -2,17 +2,15 @@ module github.com/dagger/dagger
 
 go 1.24.4
 
-require (
-	dagger.io/dagger v0.19.11
-	github.com/dagger/dagger/engine/distconsts v0.19.11
-)
+require github.com/dagger/dagger/engine/distconsts v0.19.11
 
 replace (
-	dagger.io/dagger => ./sdk/go
+	github.com/G-Research/dagger => ./sdk/go
 	github.com/dagger/dagger/engine/distconsts => ./engine/distconsts
 )
 
 require (
+	dagger.io/dagger v0.15.3
 	github.com/1password/onepassword-sdk-go v0.3.1
 	github.com/99designs/gqlgen v0.17.81
 	github.com/Khan/genqlient v0.8.1

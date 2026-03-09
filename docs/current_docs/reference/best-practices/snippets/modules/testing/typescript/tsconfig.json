@@ -6,8 +6,8 @@
     "strict": true,
     "skipLibCheck": true,
     "paths": {
-      "@dagger.io/dagger": ["./sdk/src"],
-      "@dagger.io/dagger/telemetry": ["./sdk/src/telemetry"]
+      "@github.com/G-Research/dagger": ["./sdk/src"],
+      "@github.com/G-Research/dagger/telemetry": ["./sdk/src/telemetry"]
     }
   }
 }

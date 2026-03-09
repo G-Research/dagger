@@ -3,7 +3,7 @@ module dagger/hello-with-generators
 go 1.25.6
 
 require (
-	dagger.io/dagger v0.19.11
+	github.com/G-Research/dagger v0.19.11
 	github.com/Khan/genqlient v0.8.1
 	github.com/vektah/gqlparser/v2 v2.5.30
 	go.opentelemetry.io/otel v1.38.0

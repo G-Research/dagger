@@ -1,4 +1,4 @@
-import { dag, object, func, GitRepository } from "@dagger.io/dagger"
+import { dag, object, func, GitRepository } from "@github.com/G-Research/dagger"
 
 @object()
 class Account {

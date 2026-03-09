@@ -28,20 +28,20 @@ type dagger
 If you do not have Homebrew installed, you can use [install.sh](https://github.com/dagger/dagger/blob/main/install.sh):
 
 <CodeBlock language="shell">
-{`curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=/usr/local/bin sh`}
+{`curl -fsSL https://dl.github.com/G-Research/dagger/install.sh | BIN_DIR=/usr/local/bin sh`}
 </CodeBlock>
 
 If your user account doesn't have sufficient privileges to install in
 `/usr/local` and `sudo` is available, you can set `BIN_DIR` and use `sudo -E`:
 
 <CodeBlock language="shell">
-{`curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=/usr/local/bin sudo -E sh`}
+{`curl -fsSL https://dl.github.com/G-Research/dagger/install.sh | BIN_DIR=/usr/local/bin sudo -E sh`}
 </CodeBlock>
 
 If you want to set a specific version, you can set `DAGGER_VERSION`:
 
 <CodeBlock language="shell">
-{`curl -fsSL https://dl.dagger.io/dagger/install.sh | DAGGER_VERSION=${daggerVersion} BIN_DIR=/usr/local/bin sh`}
+{`curl -fsSL https://dl.github.com/G-Research/dagger/install.sh | DAGGER_VERSION=${daggerVersion} BIN_DIR=/usr/local/bin sh`}
 </CodeBlock>
 
 To see the installed version of dagger:
@@ -56,7 +56,7 @@ To see the installed version of dagger:
 The quickest way of installing the latest stable release of `dagger` on Linux is to use [install.sh](https://github.com/dagger/dagger/blob/main/install.sh):
 
 ```shell
-curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=$HOME/.local/bin sh
+curl -fsSL https://dl.github.com/G-Research/dagger/install.sh | BIN_DIR=$HOME/.local/bin sh
 ```
 
 :::note
@@ -74,13 +74,13 @@ If you want to install globally, and `sudo` is available, you can specify an
 alternative install location by setting `BIN_DIR` and using `sudo -E`:
 
 ```shell
-curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=/usr/local/bin sudo -E sh
+curl -fsSL https://dl.github.com/G-Research/dagger/install.sh | BIN_DIR=/usr/local/bin sudo -E sh
 ```
 
 If you want to set a specific version, you can set `DAGGER_VERSION`:
 
 <CodeBlock language="shell">
-{`curl -fsSL https://dl.dagger.io/dagger/install.sh | DAGGER_VERSION=${daggerVersion} BIN_DIR=$HOME/.local/bin sh`}
+{`curl -fsSL https://dl.github.com/G-Research/dagger/install.sh | DAGGER_VERSION=${daggerVersion} BIN_DIR=$HOME/.local/bin sh`}
 </CodeBlock>
 
 To see the installed version of dagger:
@@ -120,7 +120,7 @@ Development releases should be considered unfinished.
 To install the latest development release, use the following command:
 
 ```shell
-curl -fsSL https://dl.dagger.io/dagger/install.sh | DAGGER_COMMIT=head sh
+curl -fsSL https://dl.github.com/G-Research/dagger/install.sh | DAGGER_COMMIT=head sh
 ```
 
 This will install the development release of the Dagger CLI in `./bin/dagger`.
@@ -129,7 +129,7 @@ This will install the development release of the Dagger CLI in `./bin/dagger`.
 To install the latest development release, use the following command:
 
 ```shell
-curl -fsSL https://dl.dagger.io/dagger/install.sh | DAGGER_COMMIT=head sh
+curl -fsSL https://dl.github.com/G-Research/dagger/install.sh | DAGGER_COMMIT=head sh
 ```
 
 This will install the development release of the Dagger CLI in `./bin/dagger`.
@@ -139,7 +139,7 @@ This will install the development release of the Dagger CLI in `./bin/dagger`.
 To install the latest development release, use the following command in PowerShell 7.0:
 
 ```powershell
-iwr -useb https://dl.dagger.io/dagger/install.ps1 | iex; Install-Dagger -DaggerCommit head
+iwr -useb https://dl.github.com/G-Research/dagger/install.ps1 | iex; Install-Dagger -DaggerCommit head
 ```
 
 This will install the development release of the Dagger CLI in the `<your home folder>\dagger` directory.

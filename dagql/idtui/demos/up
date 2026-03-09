@@ -2,7 +2,7 @@
 
 set -e -u -x
 
-cd ~/src/dagger.io/daggerverse
+cd ~/src/github.com/G-Research/daggerverse
 
 dagger -m dag call --help
 dagger -m dag call --src ./ app --help

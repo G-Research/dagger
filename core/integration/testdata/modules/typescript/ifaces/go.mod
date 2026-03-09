@@ -3,7 +3,7 @@ module dagger/caller
 go 1.24.0
 
 require (
-	dagger.io/dagger v0.19.11
+	github.com/G-Research/dagger v0.19.11
 	github.com/Khan/genqlient v0.8.1
 	github.com/stretchr/testify v1.11.1
 	github.com/vektah/gqlparser/v2 v2.5.30

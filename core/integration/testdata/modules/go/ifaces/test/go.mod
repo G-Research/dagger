@@ -5,7 +5,7 @@ go 1.24.0
 toolchain go1.24.4
 
 require (
-	dagger.io/dagger v0.19.11
+	github.com/G-Research/dagger v0.19.11
 	github.com/Khan/genqlient v0.8.1
 )
 

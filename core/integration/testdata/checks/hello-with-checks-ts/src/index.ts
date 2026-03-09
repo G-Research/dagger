@@ -1,7 +1,7 @@
 /**
  * A module for HelloWithChecksTs functions
  */
-import { Container, dag, object, func, check } from "@dagger.io/dagger";
+import { Container, dag, object, func, check } from "@github.com/G-Research/dagger";
 
 @object()
 class HelloWithChecksTs {

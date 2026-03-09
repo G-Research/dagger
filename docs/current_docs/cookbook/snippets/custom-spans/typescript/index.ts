@@ -1,5 +1,5 @@
-import { dag, object, func } from "@dagger.io/dagger"
-import * as trace from "@dagger.io/dagger/telemetry"
+import { dag, object, func } from "@github.com/G-Research/dagger"
+import * as trace from "@github.com/G-Research/dagger/telemetry"
 
 @object()
 export class MyModule {

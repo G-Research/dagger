@@ -2,7 +2,7 @@ module dagger.sdk/test
 
 go 1.24.3
 
-require dagger.io/dagger v0.18.9
+require github.com/G-Research/dagger v0.18.9
 
 require (
 	github.com/99designs/gqlgen v0.17.73 // indirect

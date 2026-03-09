@@ -1,4 +1,4 @@
-import { Container, object, func } from "@dagger.io/dagger"
+import { Container, object, func } from "@github.com/G-Research/dagger"
 
 @object()
 class MyModule {

@@ -1,4 +1,4 @@
-import { Directory, func, object } from "@dagger.io/dagger";
+import { Directory, func, object } from "@github.com/G-Research/dagger";
 
 export interface CustomIface {
   void(): Promise<void>;

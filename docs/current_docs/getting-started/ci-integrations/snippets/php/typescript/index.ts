@@ -5,7 +5,7 @@ import {
   Secret,
   object,
   func,
-} from "@dagger.io/dagger"
+} from "@github.com/G-Research/dagger"
 
 @object()
 class MyModule {

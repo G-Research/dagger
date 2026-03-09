@@ -5,7 +5,7 @@ import {
   object,
   func,
   argument,
-} from "@dagger.io/dagger"
+} from "@github.com/G-Research/dagger"
 
 @object()
 export class HelloDagger {

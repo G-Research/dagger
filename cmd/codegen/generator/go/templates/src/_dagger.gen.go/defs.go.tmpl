@@ -22,8 +22,8 @@ import (
 {{ end }}
 
 {{- if IsStandaloneClient }}
-	"dagger.io/dagger/querybuilder"
-	"dagger.io/dagger"
+	"github.com/G-Research/dagger/querybuilder"
+	"github.com/G-Research/dagger"
 {{ end }}
 )
 
@@ -228,7 +228,7 @@ func fallbackSpanContext(ctx context.Context) context.Context {
 	return telemetry.Propagator.Extract(ctx, telemetry.NewEnvCarrier(true))
 }
 
-// TODO: pollutes namespace, move to non internal package in dagger.io/dagger
+// TODO: pollutes namespace, move to non internal package in github.com/G-Research/dagger
 type roundTripperFunc func(*http.Request) (*http.Response, error)
 
 func (fn roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {

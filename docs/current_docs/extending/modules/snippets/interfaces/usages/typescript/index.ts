@@ -1,4 +1,4 @@
-import { dag, func, object } from "@dagger.io/dagger"
+import { dag, func, object } from "@github.com/G-Research/dagger"
 
 @object()
 export class Usage {
