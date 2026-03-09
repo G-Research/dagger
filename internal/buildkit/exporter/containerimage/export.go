@@ -19,18 +19,18 @@ import (
 	"github.com/containerd/containerd/v2/pkg/rootfs"
 	cerrdefs "github.com/containerd/errdefs"
 	"github.com/containerd/platforms"
-	"github.com/dagger/dagger/internal/buildkit/cache"
-	cacheconfig "github.com/dagger/dagger/internal/buildkit/cache/config"
-	"github.com/dagger/dagger/internal/buildkit/client"
-	"github.com/dagger/dagger/internal/buildkit/exporter"
-	"github.com/dagger/dagger/internal/buildkit/exporter/containerimage/exptypes"
-	"github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/snapshot"
-	"github.com/dagger/dagger/internal/buildkit/util/compression"
-	"github.com/dagger/dagger/internal/buildkit/util/contentutil"
-	"github.com/dagger/dagger/internal/buildkit/util/leaseutil"
-	"github.com/dagger/dagger/internal/buildkit/util/progress"
-	"github.com/dagger/dagger/internal/buildkit/util/push"
+	"github.com/G-Research/dagger/internal/buildkit/cache"
+	cacheconfig "github.com/G-Research/dagger/internal/buildkit/cache/config"
+	"github.com/G-Research/dagger/internal/buildkit/client"
+	"github.com/G-Research/dagger/internal/buildkit/exporter"
+	"github.com/G-Research/dagger/internal/buildkit/exporter/containerimage/exptypes"
+	"github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/snapshot"
+	"github.com/G-Research/dagger/internal/buildkit/util/compression"
+	"github.com/G-Research/dagger/internal/buildkit/util/contentutil"
+	"github.com/G-Research/dagger/internal/buildkit/util/leaseutil"
+	"github.com/G-Research/dagger/internal/buildkit/util/progress"
+	"github.com/G-Research/dagger/internal/buildkit/util/push"
 	digest "github.com/opencontainers/go-digest"
 	"github.com/opencontainers/image-spec/identity"
 	ocispecs "github.com/opencontainers/image-spec/specs-go/v1"
@@ -296,7 +296,7 @@ func (e *imageExporterInstance) Export(ctx context.Context, src *exporter.Source
 						// e.unpackImage cannot be used because src ref does not point to the rewritten image
 						// /
 						// TODO: change e.unpackImage so that it takes Result[Remote] as parameter.
-						// https://github.com/dagger/dagger/internal/buildkit/pull/4057#discussion_r1324106088
+						// https://github.com/G-Research/dagger/internal/buildkit/pull/4057#discussion_r1324106088
 						return nil, nil, errors.New("exporter option \"rewrite-timestamp\" conflicts with \"unpack\"")
 					}
 					if err := e.unpackImage(ctx, img, src, session.NewGroup(sessionID)); err != nil {

@@ -17,24 +17,24 @@ import (
 
 	"github.com/containerd/containerd/v2/core/mount"
 	containerdfs "github.com/containerd/continuity/fs"
-	bkcache "github.com/dagger/dagger/internal/buildkit/cache"
-	bkclient "github.com/dagger/dagger/internal/buildkit/client"
-	"github.com/dagger/dagger/internal/buildkit/client/llb"
-	bkgw "github.com/dagger/dagger/internal/buildkit/frontend/gateway/client"
-	"github.com/dagger/dagger/internal/buildkit/snapshot"
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
-	fscopy "github.com/dagger/dagger/internal/fsutil/copy"
-	"github.com/dagger/dagger/util/patternmatcher"
+	bkcache "github.com/G-Research/dagger/internal/buildkit/cache"
+	bkclient "github.com/G-Research/dagger/internal/buildkit/client"
+	"github.com/G-Research/dagger/internal/buildkit/client/llb"
+	bkgw "github.com/G-Research/dagger/internal/buildkit/frontend/gateway/client"
+	"github.com/G-Research/dagger/internal/buildkit/snapshot"
+	"github.com/G-Research/dagger/internal/buildkit/solver/pb"
+	fscopy "github.com/G-Research/dagger/internal/fsutil/copy"
+	"github.com/G-Research/dagger/util/patternmatcher"
 	"github.com/dustin/go-humanize"
 	"github.com/vektah/gqlparser/v2/ast"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sys/unix"
 
-	"dagger.io/dagger/telemetry"
-	"github.com/dagger/dagger/dagql"
-	"github.com/dagger/dagger/dagql/call"
-	"github.com/dagger/dagger/engine/buildkit"
-	"github.com/dagger/dagger/engine/slog"
+	"github.com/G-Research/dagger/telemetry"
+	"github.com/G-Research/dagger/dagql"
+	"github.com/G-Research/dagger/dagql/call"
+	"github.com/G-Research/dagger/engine/buildkit"
+	"github.com/G-Research/dagger/engine/slog"
 )
 
 // Directory is a content-addressed directory.
@@ -1104,7 +1104,7 @@ func (dir *Directory) WithFile(
 	return dir, nil
 }
 
-// TODO: address https://github.com/dagger/dagger/pull/6556/files#r1482830091
+// TODO: address https://github.com/G-Research/dagger/pull/6556/files#r1482830091
 func (dir *Directory) WithFiles(
 	ctx context.Context,
 	srv *dagql.Server,

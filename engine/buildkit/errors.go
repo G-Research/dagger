@@ -6,16 +6,16 @@ import (
 	"strconv"
 	"strings"
 
-	bkexecutor "github.com/dagger/dagger/internal/buildkit/executor"
-	bksession "github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/snapshot"
-	bksolver "github.com/dagger/dagger/internal/buildkit/solver"
-	"github.com/dagger/dagger/internal/buildkit/solver/llbsolver/errdefs"
-	bksolverpb "github.com/dagger/dagger/internal/buildkit/solver/pb"
-	bkworker "github.com/dagger/dagger/internal/buildkit/worker"
+	bkexecutor "github.com/G-Research/dagger/internal/buildkit/executor"
+	bksession "github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/snapshot"
+	bksolver "github.com/G-Research/dagger/internal/buildkit/solver"
+	"github.com/G-Research/dagger/internal/buildkit/solver/llbsolver/errdefs"
+	bksolverpb "github.com/G-Research/dagger/internal/buildkit/solver/pb"
+	bkworker "github.com/G-Research/dagger/internal/buildkit/worker"
 	"go.opentelemetry.io/otel/trace"
 
-	"dagger.io/dagger/telemetry"
+	"github.com/G-Research/dagger/telemetry"
 )
 
 // ExecError is a custom dagger error that occurs during a `withExec` execution.

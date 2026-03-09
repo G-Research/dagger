@@ -7,8 +7,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/dagger/dagger/internal/buildkit/util/grpcerrors"
-	"github.com/dagger/dagger/util/grpcutil"
+	"github.com/G-Research/dagger/internal/buildkit/util/grpcerrors"
+	"github.com/G-Research/dagger/util/grpcutil"
 	"github.com/mattn/go-isatty"
 	"golang.org/x/term"
 	"google.golang.org/grpc"

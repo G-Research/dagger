@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/dagger/dagger/internal/testutil"
+	"github.com/G-Research/dagger/internal/testutil"
 	"github.com/dagger/testctx"
 	"github.com/dagger/testctx/oteltest"
 )

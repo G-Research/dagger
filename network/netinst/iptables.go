@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
 )
 
 const iptablesBinDir = "/usr/bin"

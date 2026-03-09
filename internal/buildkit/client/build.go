@@ -4,12 +4,12 @@ import (
 	"context"
 	"maps"
 
-	"github.com/dagger/dagger/internal/buildkit/client/buildid"
-	gateway "github.com/dagger/dagger/internal/buildkit/frontend/gateway/client"
-	"github.com/dagger/dagger/internal/buildkit/frontend/gateway/grpcclient"
-	gatewayapi "github.com/dagger/dagger/internal/buildkit/frontend/gateway/pb"
-	"github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/util/apicaps"
+	"github.com/G-Research/dagger/internal/buildkit/client/buildid"
+	gateway "github.com/G-Research/dagger/internal/buildkit/frontend/gateway/client"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/gateway/grpcclient"
+	gatewayapi "github.com/G-Research/dagger/internal/buildkit/frontend/gateway/pb"
+	"github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/util/apicaps"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 )

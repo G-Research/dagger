@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/dagger/dagger/modules/gha/api"
-	"github.com/dagger/dagger/modules/gha/internal/dagger"
+	"github.com/G-Research/dagger/modules/gha/api"
+	"github.com/G-Research/dagger/modules/gha/internal/dagger"
 	"gopkg.in/yaml.v3"
 )
 
@@ -338,7 +338,7 @@ func (w *Workflow) onSchedule(
 	return w
 }
 
-const configHeader = "# This file was generated. See https://daggerverse.dev/mod/github.com/dagger/dagger/modules/gha"
+const configHeader = "# This file was generated. See https://daggerverse.dev/mod/github.com/G-Research/dagger/modules/gha"
 
 // A Dagger workflow to be called from a Github Actions configuration
 func (w *Workflow) config(

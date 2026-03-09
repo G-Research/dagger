@@ -12,7 +12,7 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 	"golang.org/x/exp/constraints"
 
-	"github.com/dagger/dagger/dagql/call"
+	"github.com/G-Research/dagger/dagql/call"
 )
 
 // Typed is any value that knows its GraphQL type.

@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/containerd/console"
-	"github.com/dagger/dagger/internal/buildkit/client"
+	"github.com/G-Research/dagger/internal/buildkit/client"
 	"github.com/morikuni/aec"
 	digest "github.com/opencontainers/go-digest"
 	"github.com/pkg/errors"

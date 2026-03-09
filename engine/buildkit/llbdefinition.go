@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
-	srctypes "github.com/dagger/dagger/internal/buildkit/source/types"
+	"github.com/G-Research/dagger/internal/buildkit/solver/pb"
+	srctypes "github.com/G-Research/dagger/internal/buildkit/source/types"
 	"github.com/opencontainers/go-digest"
 	"github.com/pkg/errors"
 
-	"github.com/dagger/dagger/engine/sources/blob"
+	"github.com/G-Research/dagger/engine/sources/blob"
 )
 
 func DefToDAG(def *pb.Definition) (*OpDAG, error) {

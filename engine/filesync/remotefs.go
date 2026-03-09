@@ -10,10 +10,10 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/dagger/dagger/engine"
-	"github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/session/filesync"
-	"github.com/dagger/dagger/internal/fsutil/types"
+	"github.com/G-Research/dagger/engine"
+	"github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/session/filesync"
+	"github.com/G-Research/dagger/internal/fsutil/types"
 )
 
 type remoteFS struct {

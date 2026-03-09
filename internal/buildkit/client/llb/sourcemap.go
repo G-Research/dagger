@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
+	"github.com/G-Research/dagger/internal/buildkit/solver/pb"
 	digest "github.com/opencontainers/go-digest"
 )
 

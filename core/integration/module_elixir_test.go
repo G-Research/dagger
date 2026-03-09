@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"dagger.io/dagger"
+	"github.com/G-Research/dagger"
 	"github.com/dagger/testctx"
 	"github.com/stretchr/testify/require"
 )
@@ -42,7 +42,7 @@ func (ElixirSuite) TestInit(ctx context.Context, t *testctx.T) {
 		modGen := c.Container().From(golangImage).
 			WithMountedFile(testCLIBinPath, daggerCliFile(t, c)).
 			WithWorkdir("/work").
-			With(daggerExec("init", "--name=bare", "--sdk=github.com/dagger/dagger/sdk/elixir"))
+			With(daggerExec("init", "--name=bare", "--sdk=github.com/G-Research/dagger/sdk/elixir"))
 
 		out, err := modGen.
 			With(daggerCall("container-echo", "--string-arg=hello", "stdout")).

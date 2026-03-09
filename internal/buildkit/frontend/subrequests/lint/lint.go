@@ -7,12 +7,12 @@ import (
 	"io"
 	"sort"
 
-	"github.com/dagger/dagger/internal/buildkit/client/llb"
-	"github.com/dagger/dagger/internal/buildkit/frontend/dockerfile/parser"
-	"github.com/dagger/dagger/internal/buildkit/frontend/gateway/client"
-	"github.com/dagger/dagger/internal/buildkit/frontend/subrequests"
-	"github.com/dagger/dagger/internal/buildkit/solver/errdefs"
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
+	"github.com/G-Research/dagger/internal/buildkit/client/llb"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/dockerfile/parser"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/gateway/client"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/subrequests"
+	"github.com/G-Research/dagger/internal/buildkit/solver/errdefs"
+	"github.com/G-Research/dagger/internal/buildkit/solver/pb"
 	"github.com/pkg/errors"
 )
 

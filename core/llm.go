@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"dagger.io/dagger/telemetry"
+	"github.com/G-Research/dagger/telemetry"
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/iancoleman/strcase"
@@ -24,9 +24,9 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/dagger/dagger/dagql"
-	"github.com/dagger/dagger/engine"
-	"github.com/dagger/dagger/engine/client/secretprovider"
+	"github.com/G-Research/dagger/dagql"
+	"github.com/G-Research/dagger/engine"
+	"github.com/G-Research/dagger/engine/client/secretprovider"
 )
 
 func init() {

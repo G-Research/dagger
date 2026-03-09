@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"dagger.io/dagger"
+	"github.com/G-Research/dagger"
 )
 
 // Introspect gets the Dagger Schema

@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"dagger.io/dagger"
+	"github.com/G-Research/dagger"
 	. "github.com/dave/jennifer/jen" //nolint:staticcheck
 )
 

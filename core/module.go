@@ -9,15 +9,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dagger/dagger/engine"
-	"github.com/dagger/dagger/util/hashutil"
+	"github.com/G-Research/dagger/engine"
+	"github.com/G-Research/dagger/util/hashutil"
 	"github.com/opencontainers/go-digest"
 	"github.com/vektah/gqlparser/v2/ast"
 
-	"github.com/dagger/dagger/dagql"
-	"github.com/dagger/dagger/dagql/call"
-	"github.com/dagger/dagger/engine/buildkit"
-	"github.com/dagger/dagger/engine/slog"
+	"github.com/G-Research/dagger/dagql"
+	"github.com/G-Research/dagger/dagql/call"
+	"github.com/G-Research/dagger/engine/buildkit"
+	"github.com/G-Research/dagger/engine/slog"
 )
 
 type Module struct {

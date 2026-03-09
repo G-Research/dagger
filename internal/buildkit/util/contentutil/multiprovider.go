@@ -6,7 +6,7 @@ import (
 
 	"github.com/containerd/containerd/v2/core/content"
 	cerrdefs "github.com/containerd/errdefs"
-	"github.com/dagger/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/session"
 	digest "github.com/opencontainers/go-digest"
 	ocispecs "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/pkg/errors"

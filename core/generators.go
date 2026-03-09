@@ -3,7 +3,7 @@ package core
 import (
 	"context"
 
-	"github.com/dagger/dagger/util/parallel"
+	"github.com/G-Research/dagger/util/parallel"
 	"github.com/vektah/gqlparser/v2/ast"
 )
 

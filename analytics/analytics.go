@@ -14,9 +14,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dagger/dagger/engine"
-	"github.com/dagger/dagger/engine/slog"
-	"github.com/dagger/dagger/engine/telemetry"
+	"github.com/G-Research/dagger/engine"
+	"github.com/G-Research/dagger/engine/slog"
+	"github.com/G-Research/dagger/engine/telemetry"
 )
 
 const (

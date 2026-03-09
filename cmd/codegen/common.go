@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"dagger.io/dagger"
-	"github.com/dagger/dagger/cmd/codegen/generator"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/cmd/codegen/generator"
 )
 
 var (

@@ -12,7 +12,7 @@ import (
 	"github.com/cilium/ebpf/ringbuf"
 	"github.com/cilium/ebpf/rlimit"
 
-	"github.com/dagger/dagger/engine/slog"
+	"github.com/G-Research/dagger/engine/slog"
 )
 
 // Prepare configures the process and validates kernel capabilities needed for eBPF.

@@ -17,8 +17,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
-	"github.com/dagger/dagger/internal/buildkit/util/stack"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/buildkit/util/stack"
 )
 
 // StartSpan starts a new span as a child of the span in context.

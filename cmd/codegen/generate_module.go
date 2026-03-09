@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log/slog"
 
-	"dagger.io/dagger/telemetry"
-	"github.com/dagger/dagger/cmd/codegen/generator"
+	"github.com/G-Research/dagger/telemetry"
+	"github.com/G-Research/dagger/cmd/codegen/generator"
 	"github.com/spf13/cobra"
 )
 
@@ -77,5 +77,5 @@ func init() {
 	generateModuleCmd.MarkFlagRequired("module-source-path")
 
 	generateModuleCmd.Flags().BoolVar(&isInit, "is-init", false, "whether this command is initializing a new module")
-	generateModuleCmd.Flags().StringVar(&libVersion, "lib-version", "", "if set, use the given version of dagger.io/dagger in the generated client")
+	generateModuleCmd.Flags().StringVar(&libVersion, "lib-version", "", "if set, use the given version of github.com/G-Research/dagger in the generated client")
 }

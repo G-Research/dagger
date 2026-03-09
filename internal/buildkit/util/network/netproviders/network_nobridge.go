@@ -6,8 +6,8 @@ package netproviders
 import (
 	"runtime"
 
-	"github.com/dagger/dagger/internal/buildkit/util/network"
-	"github.com/dagger/dagger/internal/buildkit/util/network/cniprovider"
+	"github.com/G-Research/dagger/internal/buildkit/util/network"
+	"github.com/G-Research/dagger/internal/buildkit/util/network/cniprovider"
 	"github.com/pkg/errors"
 )
 

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/dagger/dagger/core/modules"
-	"github.com/dagger/dagger/dagql"
-	"github.com/dagger/dagger/dagql/call"
+	"github.com/G-Research/dagger/core/modules"
+	"github.com/G-Research/dagger/dagql"
+	"github.com/G-Research/dagger/dagql/call"
 )
 
 // ToolchainRegistry manages toolchain modules for a parent module.

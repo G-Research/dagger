@@ -7,10 +7,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
 
-	"github.com/dagger/dagger/internal/fsutil"
-	fstypes "github.com/dagger/dagger/internal/fsutil/types"
+	"github.com/G-Research/dagger/internal/fsutil"
+	fstypes "github.com/G-Research/dagger/internal/fsutil/types"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 )

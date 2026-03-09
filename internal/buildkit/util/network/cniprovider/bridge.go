@@ -11,8 +11,8 @@ import (
 	"path/filepath"
 
 	cni "github.com/containerd/go-cni"
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
-	"github.com/dagger/dagger/internal/buildkit/util/network"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/buildkit/util/network"
 	"github.com/pkg/errors"
 	"github.com/vishvananda/netlink"
 )

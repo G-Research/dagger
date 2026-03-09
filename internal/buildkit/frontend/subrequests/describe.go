@@ -8,9 +8,9 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/dagger/dagger/internal/buildkit/frontend/gateway/client"
-	gwpb "github.com/dagger/dagger/internal/buildkit/frontend/gateway/pb"
-	"github.com/dagger/dagger/internal/buildkit/solver/errdefs"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/gateway/client"
+	gwpb "github.com/G-Research/dagger/internal/buildkit/frontend/gateway/pb"
+	"github.com/G-Research/dagger/internal/buildkit/solver/errdefs"
 	"github.com/pkg/errors"
 )
 

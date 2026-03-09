@@ -2,11 +2,11 @@ module dagger/python-sdk-dev
 
 go 1.25.2
 
-replace github.com/dagger/dagger => ../..
+replace github.com/G-Research/dagger => ../..
 
-replace github.com/dagger/dagger/engine/distconsts => ../../engine/distconsts
+replace github.com/G-Research/dagger/engine/distconsts => ../../engine/distconsts
 
-require github.com/dagger/dagger v0.0.0-00010101000000-000000000000
+require github.com/G-Research/dagger v0.0.0-00010101000000-000000000000
 
 require (
 	github.com/sourcegraph/conc v0.3.0 // indirect

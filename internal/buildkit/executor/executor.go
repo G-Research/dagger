@@ -7,8 +7,8 @@ import (
 	"syscall"
 
 	"github.com/containerd/containerd/v2/core/mount"
-	resourcestypes "github.com/dagger/dagger/internal/buildkit/executor/resources/types"
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
+	resourcestypes "github.com/G-Research/dagger/internal/buildkit/executor/resources/types"
+	"github.com/G-Research/dagger/internal/buildkit/solver/pb"
 	"github.com/docker/docker/pkg/idtools"
 )
 

@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/solver"
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
-	"github.com/dagger/dagger/internal/buildkit/source"
-	srctypes "github.com/dagger/dagger/internal/buildkit/source/types"
+	"github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/solver"
+	"github.com/G-Research/dagger/internal/buildkit/solver/pb"
+	"github.com/G-Research/dagger/internal/buildkit/source"
+	srctypes "github.com/G-Research/dagger/internal/buildkit/source/types"
 )
 
 // Return a new local source placeholder.
@@ -19,7 +19,7 @@ func NewSource() source.Source {
 // localSource is a placeholder for unsupported llb.Local operations.
 // We don't want to panic in the solver, so we return an error here but
 // we expect that this should never be called on purpose.
-// See https://github.com/dagger/dagger/pull/10995#discussion_r2410110392 for more details
+// See https://github.com/G-Research/dagger/pull/10995#discussion_r2410110392 for more details
 type localSource struct{}
 
 func (ls *localSource) Schemes() []string {

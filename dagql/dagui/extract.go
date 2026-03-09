@@ -1,7 +1,7 @@
 package dagui
 
 import (
-	"github.com/dagger/dagger/dagql/call/callpbv1"
+	"github.com/G-Research/dagger/dagql/call/callpbv1"
 )
 
 // extractIntoDAG recursively populates dag.CallsByDigest from the call and its dependencies.

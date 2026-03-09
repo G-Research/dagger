@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"dagger.io/dagger/dag"
+	"github.com/G-Research/dagger/dag"
 )
 
 func main() {

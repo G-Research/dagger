@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/containerd/continuity/fs"
-	copy "github.com/dagger/dagger/internal/fsutil/copy"
+	copy "github.com/G-Research/dagger/internal/fsutil/copy"
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/docker/pkg/chrootarchive"
 	"github.com/docker/docker/pkg/idtools"

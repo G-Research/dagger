@@ -4,7 +4,7 @@ import (
 	context "context"
 	"sync"
 
-	"github.com/dagger/dagger/util/grpcutil"
+	"github.com/G-Research/dagger/util/grpcutil"
 	grpc "google.golang.org/grpc"
 )
 

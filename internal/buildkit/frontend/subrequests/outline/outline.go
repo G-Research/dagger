@@ -7,9 +7,9 @@ import (
 	"io"
 	"text/tabwriter"
 
-	"github.com/dagger/dagger/internal/buildkit/frontend/gateway/client"
-	"github.com/dagger/dagger/internal/buildkit/frontend/subrequests"
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/gateway/client"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/subrequests"
+	"github.com/G-Research/dagger/internal/buildkit/solver/pb"
 )
 
 const RequestSubrequestsOutline = "frontend.outline"

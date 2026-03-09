@@ -7,13 +7,13 @@ import (
 	"net/url"
 	"time"
 
-	bkclient "github.com/dagger/dagger/internal/buildkit/client"
+	bkclient "github.com/G-Research/dagger/internal/buildkit/client"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
 
-	"github.com/dagger/dagger/engine"
-	"github.com/dagger/dagger/engine/client/drivers"
+	"github.com/G-Research/dagger/engine"
+	"github.com/G-Research/dagger/engine/client/drivers"
 )
 
 const (

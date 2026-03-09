@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 
-	"dagger.io/dagger"
+	"github.com/G-Research/dagger"
 )
 
 func main() {

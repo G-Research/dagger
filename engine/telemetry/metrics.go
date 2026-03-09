@@ -8,7 +8,7 @@ import (
 	colmetricspb "go.opentelemetry.io/proto/otlp/collector/metrics/v1"
 	"golang.org/x/sync/errgroup"
 
-	"dagger.io/dagger/telemetry"
+	"github.com/G-Research/dagger/telemetry"
 )
 
 func ReexportMetricsFromPB(ctx context.Context, exps []sdkmetric.Exporter, req *colmetricspb.ExportMetricsServiceRequest) error {

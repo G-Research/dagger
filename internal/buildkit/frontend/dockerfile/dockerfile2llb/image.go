@@ -1,7 +1,7 @@
 package dockerfile2llb
 
 import (
-	"github.com/dagger/dagger/internal/buildkit/util/system"
+	"github.com/G-Research/dagger/internal/buildkit/util/system"
 	dockerspec "github.com/moby/docker-image-spec/specs-go/v1"
 	ocispecs "github.com/opencontainers/image-spec/specs-go/v1"
 )

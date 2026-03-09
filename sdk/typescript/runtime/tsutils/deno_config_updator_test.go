@@ -20,8 +20,8 @@ func TestUpdateDenoConfigForModule(t *testing.T) {
 			expected: `{
   "imports": {
     "typescript": "npm:typescript@5.9.3",
-		"@dagger.io/dagger": "./sdk/index.ts",
-		"@dagger.io/dagger/telemetry": "./sdk/telemetry.ts"
+		"@github.com/G-Research/dagger": "./sdk/index.ts",
+		"@github.com/G-Research/dagger/telemetry": "./sdk/telemetry.ts"
   },
   "nodeModulesDir": "auto",
   "compilerOptions": {
@@ -40,14 +40,14 @@ func TestUpdateDenoConfigForModule(t *testing.T) {
 			denoConfig: `{
   "imports": {
     "typescript": "npm:typescript@5.9.3",
-		"@dagger.io/dagger": "./sdk/index.ts"
+		"@github.com/G-Research/dagger": "./sdk/index.ts"
   }
 }`,
 			expected: `{
   "imports": {
     "typescript": "npm:typescript@5.9.3",
-		"@dagger.io/dagger": "./sdk/index.ts",
-		"@dagger.io/dagger/telemetry": "./sdk/telemetry.ts"
+		"@github.com/G-Research/dagger": "./sdk/index.ts",
+		"@github.com/G-Research/dagger/telemetry": "./sdk/telemetry.ts"
   },
   "nodeModulesDir": "auto",
   "compilerOptions": {
@@ -73,8 +73,8 @@ func TestUpdateDenoConfigForModule(t *testing.T) {
 			expected: `{
   "imports": {
     "typescript": "npm:typescript@5.9.3",
-		"@dagger.io/dagger": "./sdk/index.ts",
-		"@dagger.io/dagger/telemetry": "./sdk/telemetry.ts"
+		"@github.com/G-Research/dagger": "./sdk/index.ts",
+		"@github.com/G-Research/dagger/telemetry": "./sdk/telemetry.ts"
   },
   "nodeModulesDir": "auto",
   "compilerOptions": {
@@ -105,8 +105,8 @@ func TestUpdateDenoConfigForModule(t *testing.T) {
 			expected: `{
   "imports": {
     "typescript": "npm:typescript@5.9.3",
-		"@dagger.io/dagger": "./sdk/index.ts",
-		"@dagger.io/dagger/telemetry": "./sdk/telemetry.ts"
+		"@github.com/G-Research/dagger": "./sdk/index.ts",
+		"@github.com/G-Research/dagger/telemetry": "./sdk/telemetry.ts"
   },
   "nodeModulesDir": "auto",
   "compilerOptions": {
@@ -125,15 +125,15 @@ func TestUpdateDenoConfigForModule(t *testing.T) {
 			denoConfig: `{
   "imports": {
     "typescript": "npm:typescript@5.9.0",
-		"@dagger.io/dagger": "./sdk/index.ts",
-		"@dagger.io/dagger/telemetry": "./sdk/telemetry.ts"
+		"@github.com/G-Research/dagger": "./sdk/index.ts",
+		"@github.com/G-Research/dagger/telemetry": "./sdk/telemetry.ts"
   }
 }`,
 			expected: `{
   "imports": {
     "typescript": "npm:typescript@5.9.0",
-		"@dagger.io/dagger": "./sdk/index.ts",
-		"@dagger.io/dagger/telemetry": "./sdk/telemetry.ts"
+		"@github.com/G-Research/dagger": "./sdk/index.ts",
+		"@github.com/G-Research/dagger/telemetry": "./sdk/telemetry.ts"
   },
   "nodeModulesDir": "auto",
   "compilerOptions": {
@@ -165,8 +165,8 @@ func TestUpdateDenoConfigForModule(t *testing.T) {
   "imports": {
     "@std/assert": "jsr:@std/assert@1",
     "typescript": "npm:typescript@5.9.3",
-    "@dagger.io/dagger": "./sdk/index.ts",
-    "@dagger.io/dagger/telemetry": "./sdk/telemetry.ts"
+    "@github.com/G-Research/dagger": "./sdk/index.ts",
+    "@github.com/G-Research/dagger/telemetry": "./sdk/telemetry.ts"
   },
   "unstable": [
     "bare-node-builtins",
@@ -209,8 +209,8 @@ func TestUpdateDenoConfigForClient(t *testing.T) {
 			expected: `{
   "imports": {
     "typescript": "npm:typescript@5.9.3",
-		"@dagger.io/dagger": "./sdk/index.ts",
-		"@dagger.io/dagger/telemetry": "./sdk/telemetry.ts"
+		"@github.com/G-Research/dagger": "./sdk/index.ts",
+		"@github.com/G-Research/dagger/telemetry": "./sdk/telemetry.ts"
   },
   "nodeModulesDir": "auto",
   "unstable": [
@@ -227,13 +227,13 @@ func TestUpdateDenoConfigForClient(t *testing.T) {
 			denoConfig: `{
   "imports": {
     "typescript": "npm:typescript@5.9.3",
-		"@dagger.io/dagger": "npm:@dagger.io/dagger@0.18.0"
+		"@github.com/G-Research/dagger": "npm:@github.com/G-Research/dagger@0.18.0"
   }
 }`,
 			expected: `{
   "imports": {
     "typescript": "npm:typescript@5.9.3",
-		"@dagger.io/dagger": "npm:@dagger.io/dagger@0.18.0"
+		"@github.com/G-Research/dagger": "npm:@github.com/G-Research/dagger@0.18.0"
   },
   "nodeModulesDir": "auto",
   "unstable": [

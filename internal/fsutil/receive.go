@@ -38,7 +38,7 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/dagger/dagger/internal/fsutil/types"
+	"github.com/G-Research/dagger/internal/fsutil/types"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 )

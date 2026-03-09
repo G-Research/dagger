@@ -8,7 +8,7 @@ package pb
 
 import (
 	fmt "fmt"
-	github_com_dagger_dagger_internal_buildkit_util_apicaps "github.com/dagger/dagger/internal/buildkit/util/apicaps"
+	github_com_dagger_dagger_internal_buildkit_util_apicaps "github.com/G-Research/dagger/internal/buildkit/util/apicaps"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
@@ -1326,7 +1326,7 @@ type OpMetadata struct {
 	// index 3 reserved for WorkerConstraint in previous versions
 	// WorkerConstraint worker_constraint = 3;
 	ExportCache   *ExportCache                                                           `protobuf:"bytes,4,opt,name=export_cache,json=exportCache,proto3" json:"export_cache,omitempty"`
-	Caps          map[github_com_dagger_dagger_internal_buildkit_util_apicaps.CapID]bool `protobuf:"bytes,5,rep,name=caps,proto3,castkey=github.com/dagger/dagger/internal/buildkit/util/apicaps.CapID" json:"caps" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
+	Caps          map[github_com_dagger_dagger_internal_buildkit_util_apicaps.CapID]bool `protobuf:"bytes,5,rep,name=caps,proto3,castkey=github.com/G-Research/dagger/internal/buildkit/util/apicaps.CapID" json:"caps" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
 	ProgressGroup *ProgressGroup                                                         `protobuf:"bytes,6,opt,name=progress_group,json=progressGroup,proto3" json:"progress_group,omitempty"`
 	SkipEdgeMerge bool                                                                   `protobuf:"varint,7,opt,name=skip_edge_merge,json=skipEdgeMerge,proto3" json:"skip_edge_merge,omitempty"`
 }

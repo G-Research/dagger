@@ -13,9 +13,9 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/dagger/dagger/core"
-	"github.com/dagger/dagger/dagql/call"
-	"github.com/dagger/dagger/engine"
+	"github.com/G-Research/dagger/core"
+	"github.com/G-Research/dagger/dagql/call"
+	"github.com/G-Research/dagger/engine"
 )
 
 func TestServicesStartHappy(t *testing.T) {

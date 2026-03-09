@@ -3,13 +3,13 @@ package frontend
 import (
 	"context"
 
-	"github.com/dagger/dagger/internal/buildkit/client/llb/sourceresolver"
-	"github.com/dagger/dagger/internal/buildkit/executor"
-	gw "github.com/dagger/dagger/internal/buildkit/frontend/gateway/client"
-	"github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/solver"
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
-	"github.com/dagger/dagger/internal/buildkit/solver/result"
+	"github.com/G-Research/dagger/internal/buildkit/client/llb/sourceresolver"
+	"github.com/G-Research/dagger/internal/buildkit/executor"
+	gw "github.com/G-Research/dagger/internal/buildkit/frontend/gateway/client"
+	"github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/solver"
+	"github.com/G-Research/dagger/internal/buildkit/solver/pb"
+	"github.com/G-Research/dagger/internal/buildkit/solver/result"
 	digest "github.com/opencontainers/go-digest"
 )
 

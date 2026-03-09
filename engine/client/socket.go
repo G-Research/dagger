@@ -8,9 +8,9 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/dagger/dagger/engine"
-	"github.com/dagger/dagger/internal/buildkit/session/sshforward"
-	"github.com/dagger/dagger/util/grpcutil"
+	"github.com/G-Research/dagger/engine"
+	"github.com/G-Research/dagger/internal/buildkit/session/sshforward"
+	"github.com/G-Research/dagger/util/grpcutil"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"

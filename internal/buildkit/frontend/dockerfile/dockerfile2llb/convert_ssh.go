@@ -1,9 +1,9 @@
 package dockerfile2llb
 
 import (
-	"github.com/dagger/dagger/internal/buildkit/client/llb"
-	"github.com/dagger/dagger/internal/buildkit/frontend/dockerfile/instructions"
-	"github.com/dagger/dagger/internal/buildkit/frontend/dockerfile/parser"
+	"github.com/G-Research/dagger/internal/buildkit/client/llb"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/dockerfile/instructions"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/dockerfile/parser"
 	"github.com/pkg/errors"
 )
 

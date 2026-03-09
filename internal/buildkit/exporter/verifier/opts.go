@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/containerd/platforms"
-	"github.com/dagger/dagger/internal/buildkit/solver/result"
+	"github.com/G-Research/dagger/internal/buildkit/solver/result"
 )
 
 const requestOptsKeys = "verifier.requestopts"

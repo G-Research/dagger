@@ -10,7 +10,7 @@ import (
 	"sort"
 
 	cdcompression "github.com/containerd/containerd/v2/pkg/archive/compression"
-	"github.com/dagger/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/session"
 )
 
 const keyFileList = "filelist"

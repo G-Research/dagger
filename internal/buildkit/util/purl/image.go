@@ -98,7 +98,7 @@ func PURLToRef(purl string) (string, *ocispecs.Platform, error) {
 			//
 			// See:
 			// - https://github.com/containerd/containerd/commit/cfb30a31a8507e4417d42d38c9a99b04fc8af8a9 (https://github.com/containerd/containerd/pull/8778)
-			// - https://github.com/dagger/dagger/internal/buildkit/pull/4315#discussion_r1355141241
+			// - https://github.com/G-Research/dagger/internal/buildkit/pull/4315#discussion_r1355141241
 			p.OSVersion = ""
 			p.OSFeatures = nil
 			platform = &p

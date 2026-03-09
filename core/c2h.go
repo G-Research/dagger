@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/dagger/dagger/engine/buildkit"
-	"github.com/dagger/dagger/engine/slog"
-	"github.com/dagger/dagger/internal/buildkit/session/sshforward"
+	"github.com/G-Research/dagger/engine/buildkit"
+	"github.com/G-Research/dagger/engine/slog"
+	"github.com/G-Research/dagger/internal/buildkit/session/sshforward"
 	"github.com/sourcegraph/conc/pool"
 )
 

@@ -5,10 +5,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dagger/dagger/internal/buildkit/client/buildid"
-	"github.com/dagger/dagger/internal/buildkit/frontend/gateway"
-	gwapi "github.com/dagger/dagger/internal/buildkit/frontend/gateway/pb"
-	"github.com/dagger/dagger/internal/buildkit/solver/errdefs"
+	"github.com/G-Research/dagger/internal/buildkit/client/buildid"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/gateway"
+	gwapi "github.com/G-Research/dagger/internal/buildkit/frontend/gateway/pb"
+	"github.com/G-Research/dagger/internal/buildkit/solver/errdefs"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 )

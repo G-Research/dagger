@@ -3,15 +3,15 @@ module dagger/cli-dev
 go 1.24.4
 
 replace (
-	github.com/dagger/dagger => ../..
-	github.com/dagger/dagger/engine/distconsts => ../../engine/distconsts
+	github.com/G-Research/dagger => ../..
+	github.com/G-Research/dagger/engine/distconsts => ../../engine/distconsts
 )
 
 require (
 	github.com/99designs/gqlgen v0.17.81
 	github.com/Khan/genqlient v0.8.1
 	github.com/containerd/platforms v1.0.0-rc.1
-	github.com/dagger/dagger v0.0.0-00010101000000-000000000000
+	github.com/G-Research/dagger v0.0.0-00010101000000-000000000000
 	github.com/vektah/gqlparser/v2 v2.5.30
 	go.opentelemetry.io/otel v1.38.0
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.14.2

@@ -10,12 +10,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dagger/dagger/internal/buildkit/identity"
-	"github.com/dagger/dagger/util/gitutil"
+	"github.com/G-Research/dagger/internal/buildkit/identity"
+	"github.com/G-Research/dagger/util/gitutil"
 	"github.com/vektah/gqlparser/v2/ast"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/dagger/dagger/dagql"
+	"github.com/G-Research/dagger/dagql"
 )
 
 type GitRepository struct {

@@ -16,8 +16,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 
-	"github.com/dagger/dagger/engine/client"
-	enginetel "github.com/dagger/dagger/engine/telemetry"
+	"github.com/G-Research/dagger/engine/client"
+	enginetel "github.com/G-Research/dagger/engine/telemetry"
 )
 
 var (

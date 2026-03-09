@@ -3,10 +3,10 @@ package worker
 import (
 	"context"
 
-	"github.com/dagger/dagger/internal/buildkit/cache"
-	cacheconfig "github.com/dagger/dagger/internal/buildkit/cache/config"
-	"github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/solver"
+	"github.com/G-Research/dagger/internal/buildkit/cache"
+	cacheconfig "github.com/G-Research/dagger/internal/buildkit/cache/config"
+	"github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/solver"
 )
 
 func NewWorkerRefResult(ref cache.ImmutableRef, worker Worker) solver.Result {

@@ -8,7 +8,7 @@ import (
 	contentapi "github.com/containerd/containerd/api/services/content/v1"
 	imagesapi "github.com/containerd/containerd/api/services/images/v1"
 	leasesapi "github.com/containerd/containerd/api/services/leases/v1"
-	"github.com/dagger/dagger/util/grpcutil"
+	"github.com/G-Research/dagger/util/grpcutil"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/emptypb"

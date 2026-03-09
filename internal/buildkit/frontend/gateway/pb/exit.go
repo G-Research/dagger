@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/containerd/typeurl/v2"
-	"github.com/dagger/dagger/internal/buildkit/util/grpcerrors"
+	"github.com/G-Research/dagger/internal/buildkit/util/grpcerrors"
 )
 
 const (
@@ -18,7 +18,7 @@ const (
 )
 
 func init() {
-	typeurl.Register((*ExitMessage)(nil), "github.com/dagger/dagger/internal/buildkit", "gatewayapi.ExitMessage+json")
+	typeurl.Register((*ExitMessage)(nil), "github.com/G-Research/dagger/internal/buildkit", "gatewayapi.ExitMessage+json")
 }
 
 // ExitError will be returned when the container process exits with a non-zero

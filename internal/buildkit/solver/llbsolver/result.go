@@ -3,12 +3,12 @@ package llbsolver
 import (
 	"context"
 
-	cacheconfig "github.com/dagger/dagger/internal/buildkit/cache/config"
-	"github.com/dagger/dagger/internal/buildkit/frontend"
-	"github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/solver"
-	"github.com/dagger/dagger/internal/buildkit/solver/llbsolver/provenance"
-	"github.com/dagger/dagger/internal/buildkit/worker"
+	cacheconfig "github.com/G-Research/dagger/internal/buildkit/cache/config"
+	"github.com/G-Research/dagger/internal/buildkit/frontend"
+	"github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/solver"
+	"github.com/G-Research/dagger/internal/buildkit/solver/llbsolver/provenance"
+	"github.com/G-Research/dagger/internal/buildkit/worker"
 	"github.com/pkg/errors"
 )
 

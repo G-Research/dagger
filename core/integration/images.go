@@ -1,6 +1,6 @@
 package core
 
-import "github.com/dagger/dagger/engine/distconsts"
+import "github.com/G-Research/dagger/engine/distconsts"
 
 const (
 	alpineImage  = distconsts.AlpineImage

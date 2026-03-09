@@ -3,19 +3,19 @@ module dagger/engine-dev
 go 1.24.4
 
 require (
-	github.com/dagger/dagger/engine/distconsts v0.19.11
-	github.com/dagger/dagger/sdk/typescript/runtime v0.15.3
+	github.com/G-Research/dagger/engine/distconsts v0.19.11
+	github.com/G-Research/dagger/sdk/typescript/runtime v0.15.3
 )
 
 replace (
-	github.com/dagger/dagger => ../..
-	github.com/dagger/dagger/engine/distconsts => ../../engine/distconsts
-	github.com/dagger/dagger/sdk/typescript/runtime => ../../sdk/typescript/runtime
+	github.com/G-Research/dagger => ../..
+	github.com/G-Research/dagger/engine/distconsts => ../../engine/distconsts
+	github.com/G-Research/dagger/sdk/typescript/runtime => ../../sdk/typescript/runtime
 )
 
 require (
 	github.com/containerd/platforms v1.0.0-rc.1
-	github.com/dagger/dagger v0.0.0-00010101000000-000000000000
+	github.com/G-Research/dagger v0.0.0-00010101000000-000000000000
 	github.com/opencontainers/image-spec v1.1.1
 	golang.org/x/exp v0.0.0-20251023183803-a4bb9ffd2546
 	golang.org/x/sync v0.17.0

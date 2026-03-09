@@ -2,7 +2,7 @@ package mountopts
 
 import (
 	"github.com/containerd/containerd/v2/core/mount"
-	"github.com/dagger/dagger/internal/buildkit/util/strutil"
+	"github.com/G-Research/dagger/internal/buildkit/util/strutil"
 	specs "github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
@@ -42,7 +42,7 @@ func UnprivilegedMountFlags(path string) ([]string, error) {
 	return flags, nil
 }
 
-// FixUp is for https://github.com/dagger/dagger/internal/buildkit/issues/3098
+// FixUp is for https://github.com/G-Research/dagger/internal/buildkit/issues/3098
 func FixUp(mounts []mount.Mount) ([]mount.Mount, error) {
 	for i, m := range mounts {
 		var isBind bool

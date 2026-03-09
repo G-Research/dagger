@@ -4,11 +4,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/dagger/dagger/internal/buildkit/identity"
-	"github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/solver"
-	"github.com/dagger/dagger/internal/buildkit/util/compression"
-	"github.com/dagger/dagger/internal/buildkit/worker"
+	"github.com/G-Research/dagger/internal/buildkit/identity"
+	"github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/solver"
+	"github.com/G-Research/dagger/internal/buildkit/util/compression"
+	"github.com/G-Research/dagger/internal/buildkit/worker"
 	digest "github.com/opencontainers/go-digest"
 	"github.com/pkg/errors"
 )

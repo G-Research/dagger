@@ -18,8 +18,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/oauth2"
 
-	"github.com/dagger/dagger/engine"
-	"github.com/dagger/dagger/internal/cloud/auth"
+	"github.com/G-Research/dagger/engine"
+	"github.com/G-Research/dagger/internal/cloud/auth"
 )
 
 var ErrNoOrg = errors.New("no org associated with this Engine")

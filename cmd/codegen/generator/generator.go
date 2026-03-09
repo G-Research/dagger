@@ -6,7 +6,7 @@ import (
 	"io/fs"
 	"os/exec"
 
-	"github.com/dagger/dagger/cmd/codegen/introspection"
+	"github.com/G-Research/dagger/cmd/codegen/introspection"
 )
 
 var ErrUnknownSDKLang = errors.New("unknown sdk language")

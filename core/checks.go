@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 
-	"github.com/dagger/dagger/dagql"
-	"github.com/dagger/dagger/util/parallel"
+	"github.com/G-Research/dagger/dagql"
+	"github.com/G-Research/dagger/util/parallel"
 	"github.com/vektah/gqlparser/v2/ast"
 )
 

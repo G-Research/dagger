@@ -9,7 +9,7 @@ type MyModule struct{}
 
 func (m *MyModule) AdvancedDirectory(ctx context.Context) (string, error) {
 	return dag.
-		Git("https://github.com/dagger/dagger.git").
+		Git("https://github.com/G-Research/dagger.git").
 		Head().
 		Tree().
 		Terminal(dagger.DirectoryTerminalOpts{

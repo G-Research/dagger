@@ -1,4 +1,4 @@
-module github.com/dagger/dagger/modules/gha/examples/go
+module github.com/G-Research/dagger/modules/gha/examples/go
 
 go 1.24.0
 

@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/dagger/dagger/internal/buildkit/cache/metadata"
-	"github.com/dagger/dagger/internal/buildkit/client"
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/buildkit/cache/metadata"
+	"github.com/G-Research/dagger/internal/buildkit/client"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
 	digest "github.com/opencontainers/go-digest"
 	"github.com/pkg/errors"
 	bolt "go.etcd.io/bbolt"
@@ -468,7 +468,7 @@ func (md *cacheMetadata) ClearValueAndIndex(key string, index string) error {
 			return err
 		}
 		if currentVal != "" {
-			// force clearing index, see #1836 https://github.com/dagger/dagger/internal/buildkit/pull/1836
+			// force clearing index, see #1836 https://github.com/G-Research/dagger/internal/buildkit/pull/1836
 			return md.si.ClearIndex(b.Tx(), index+currentVal)
 		}
 		return nil

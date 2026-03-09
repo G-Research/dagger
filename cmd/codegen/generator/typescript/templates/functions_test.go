@@ -6,9 +6,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"dagger.io/dagger"
-	"github.com/dagger/dagger/cmd/codegen/generator"
-	"github.com/dagger/dagger/cmd/codegen/introspection"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/cmd/codegen/generator"
+	"github.com/G-Research/dagger/cmd/codegen/introspection"
 )
 
 var currentSchema *introspection.Schema

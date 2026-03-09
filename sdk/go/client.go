@@ -7,8 +7,8 @@ import (
 	"github.com/Khan/genqlient/graphql"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 
-	"dagger.io/dagger/engineconn"
-	"dagger.io/dagger/querybuilder"
+	"github.com/G-Research/dagger/engineconn"
+	"github.com/G-Research/dagger/querybuilder"
 )
 
 // Client is the Dagger Engine Client

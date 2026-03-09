@@ -17,13 +17,13 @@ import (
 	"syscall"
 	"time"
 
-	bksession "github.com/dagger/dagger/internal/buildkit/session"
+	bksession "github.com/G-Research/dagger/internal/buildkit/session"
 	"golang.org/x/sys/unix"
 
-	"github.com/dagger/dagger/engine/client"
-	"github.com/dagger/dagger/engine/client/secretprovider"
-	"github.com/dagger/dagger/engine/session/git"
-	"github.com/dagger/dagger/engine/session/h2c"
+	"github.com/G-Research/dagger/engine/client"
+	"github.com/G-Research/dagger/engine/client/secretprovider"
+	"github.com/G-Research/dagger/engine/session/git"
+	"github.com/G-Research/dagger/engine/session/h2c"
 )
 
 func main() {

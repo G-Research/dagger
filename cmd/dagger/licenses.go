@@ -10,7 +10,7 @@ import (
 
 	"github.com/mitchellh/go-spdx"
 
-	"github.com/dagger/dagger/engine/slog"
+	"github.com/G-Research/dagger/engine/slog"
 )
 
 const (

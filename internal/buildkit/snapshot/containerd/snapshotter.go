@@ -6,7 +6,7 @@ import (
 	"github.com/containerd/containerd/v2/core/mount"
 	"github.com/containerd/containerd/v2/core/snapshots"
 	"github.com/containerd/containerd/v2/pkg/namespaces"
-	"github.com/dagger/dagger/internal/buildkit/snapshot"
+	"github.com/G-Research/dagger/internal/buildkit/snapshot"
 	"github.com/docker/docker/pkg/idtools"
 	"github.com/pkg/errors"
 )

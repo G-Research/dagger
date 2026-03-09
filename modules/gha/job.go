@@ -5,7 +5,7 @@ import (
 	"errors"
 	"regexp"
 
-	"github.com/dagger/dagger/modules/gha/internal/dagger"
+	"github.com/G-Research/dagger/modules/gha/internal/dagger"
 )
 
 type Job struct {

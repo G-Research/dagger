@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dagger/dagger/dagql/call"
+	"github.com/G-Research/dagger/dagql/call"
 	"github.com/opencontainers/go-digest"
 	"github.com/zeebo/xxh3"
 )

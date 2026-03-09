@@ -6,8 +6,8 @@ import (
 	fmt "fmt"
 	io "io"
 
-	"github.com/dagger/dagger/internal/buildkit/util/grpcerrors"
-	"github.com/dagger/dagger/util/grpcutil"
+	"github.com/G-Research/dagger/internal/buildkit/util/grpcerrors"
+	"github.com/G-Research/dagger/util/grpcutil"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	"google.golang.org/protobuf/types/known/anypb"

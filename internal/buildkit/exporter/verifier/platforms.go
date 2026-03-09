@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	"github.com/containerd/platforms"
-	"github.com/dagger/dagger/internal/buildkit/client"
-	"github.com/dagger/dagger/internal/buildkit/exporter/containerimage/exptypes"
-	"github.com/dagger/dagger/internal/buildkit/solver/result"
+	"github.com/G-Research/dagger/internal/buildkit/client"
+	"github.com/G-Research/dagger/internal/buildkit/exporter/containerimage/exptypes"
+	"github.com/G-Research/dagger/internal/buildkit/solver/result"
 	"github.com/pkg/errors"
 )
 

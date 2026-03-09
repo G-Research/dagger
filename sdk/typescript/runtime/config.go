@@ -305,14 +305,14 @@ func analyzeClientConfig(ctx context.Context, modSource *dagger.ModuleSource) (c
 // detectSDKLibOrigin return the SDK library config based on the user's module config.
 // For Node & Bun:
 // - if there's no package.json -> default to Bundle.
-// - if the package.json has `dependencies[@dagger.io/dagger]=./sdk` -> Return Local.
-// - if the package.json has `dependencies[@dagger.io/dagger] = <version>` -> Return Remote.
-// - if the package.json has no `dependencies[@dagger.io/dagger]` -> Return Bundle.
+// - if the package.json has `dependencies[@github.com/G-Research/dagger]=./sdk` -> Return Local.
+// - if the package.json has `dependencies[@github.com/G-Research/dagger] = <version>` -> Return Remote.
+// - if the package.json has no `dependencies[@github.com/G-Research/dagger]` -> Return Bundle.
 // For Deno:
 // - if there's no deno.json -> default to Bundle.
 // - if deno.json has `workspaces` with `./sdk` in it -> Return Local
-// - if deno.json has `imports` with `@dagger.io/dagger="npm:@dagger.io/dagger@<version>` -> Return Remote
-// - if deno.json has no `imports` with  `@dagger.io/dagger` -> Return Bundle
+// - if deno.json has `imports` with `@github.com/G-Research/dagger="npm:@github.com/G-Research/dagger@<version>` -> Return Remote
+// - if deno.json has no `imports` with  `@github.com/G-Research/dagger` -> Return Bundle
 //
 // Return Bundle by default since it's more performant.
 func (c *moduleConfig) detectSDKLibOrigin() (SDKLibOrigin, error) {
@@ -324,7 +324,7 @@ func (c *moduleConfig) detectSDKLibOrigin() (SDKLibOrigin, error) {
 			return Bundle, nil
 		}
 
-		daggerDep, exist := c.packageJSONConfig.Dependencies["@dagger.io/dagger"]
+		daggerDep, exist := c.packageJSONConfig.Dependencies["@github.com/G-Research/dagger"]
 		if !exist {
 			return Bundle, nil
 		}
@@ -343,16 +343,16 @@ func (c *moduleConfig) detectSDKLibOrigin() (SDKLibOrigin, error) {
 			return Local, nil
 		}
 
-		daggerDep, exist := c.denoJSONConfig.Imports["@dagger.io/dagger"]
+		daggerDep, exist := c.denoJSONConfig.Imports["@github.com/G-Research/dagger"]
 		if !exist {
 			return Bundle, nil
 		}
 
-		if strings.HasPrefix(daggerDep, "npm:@dagger.io/dagger") {
+		if strings.HasPrefix(daggerDep, "npm:@github.com/G-Research/dagger") {
 			return Remote, nil
 		}
 
-		// dagger.io/dagger is imported but points to the local SDK directory so it must be local.
+		// github.com/G-Research/dagger is imported but points to the local SDK directory so it must be local.
 		if strings.HasPrefix(daggerDep, "./sdk/src") {
 			return Local, nil
 		}

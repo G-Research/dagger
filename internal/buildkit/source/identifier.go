@@ -1,7 +1,7 @@
 package source
 
 import (
-	"github.com/dagger/dagger/internal/buildkit/solver/llbsolver/provenance"
+	"github.com/G-Research/dagger/internal/buildkit/solver/llbsolver/provenance"
 	"github.com/pkg/errors"
 )
 

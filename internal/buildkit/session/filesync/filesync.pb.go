@@ -7,7 +7,7 @@ import (
 	bytes "bytes"
 	context "context"
 	fmt "fmt"
-	types "github.com/dagger/dagger/internal/fsutil/types"
+	types "github.com/G-Research/dagger/internal/fsutil/types"
 	proto "github.com/gogo/protobuf/proto"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"

@@ -9,9 +9,9 @@ import (
 
 	"github.com/psanford/memfs"
 
-	"github.com/dagger/dagger/cmd/codegen/generator"
-	"github.com/dagger/dagger/cmd/codegen/generator/typescript/templates"
-	"github.com/dagger/dagger/cmd/codegen/introspection"
+	"github.com/G-Research/dagger/cmd/codegen/generator"
+	"github.com/G-Research/dagger/cmd/codegen/generator/typescript/templates"
+	"github.com/G-Research/dagger/cmd/codegen/introspection"
 )
 
 const ClientGenFile = "client.gen.ts"

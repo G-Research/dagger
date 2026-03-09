@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
-	"github.com/dagger/dagger/internal/buildkit/util/flightcontrol"
+	"github.com/G-Research/dagger/internal/buildkit/solver/pb"
+	"github.com/G-Research/dagger/internal/buildkit/util/flightcontrol"
 	"github.com/docker/docker/libnetwork/resolvconf"
 	"github.com/docker/docker/pkg/idtools"
 	"github.com/pkg/errors"
@@ -20,10 +20,10 @@ var lastNotEmpty bool
 var resolvconfPath = func(netMode pb.NetMode) string {
 	// The implementation of resolvconf.Path checks if systemd resolved is activated and chooses the internal
 	// resolv.conf (/run/systemd/resolve/resolv.conf) in such a case - see resolvconf_path.go of libnetwork.
-	// This, however, can be problematic, see https://github.com/dagger/dagger/internal/buildkit/issues/2404 and is not necessary
+	// This, however, can be problematic, see https://github.com/G-Research/dagger/internal/buildkit/issues/2404 and is not necessary
 	// in case the networking mode is set to host since the locally (127.0.0.53) running resolved daemon is
 	// accessible from inside a host networked container.
-	// For details of the implementation see https://github.com/dagger/dagger/internal/buildkit/pull/5207#discussion_r1705362230.
+	// For details of the implementation see https://github.com/G-Research/dagger/internal/buildkit/pull/5207#discussion_r1705362230.
 	if netMode == pb.NetMode_HOST {
 		return "/etc/resolv.conf"
 	}

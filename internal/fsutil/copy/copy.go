@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/containerd/continuity/fs"
-	"github.com/dagger/dagger/engine/slog"
-	"github.com/dagger/dagger/internal/fsutil"
-	"github.com/dagger/dagger/util/fsxutil"
+	"github.com/G-Research/dagger/engine/slog"
+	"github.com/G-Research/dagger/internal/fsutil"
+	"github.com/G-Research/dagger/util/fsxutil"
 	"github.com/moby/patternmatcher"
 	"github.com/pkg/errors"
 )

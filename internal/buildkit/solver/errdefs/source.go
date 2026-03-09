@@ -5,8 +5,8 @@ import (
 	"io"
 	"strings"
 
-	pb "github.com/dagger/dagger/internal/buildkit/solver/pb"
-	"github.com/dagger/dagger/internal/buildkit/util/grpcerrors"
+	pb "github.com/G-Research/dagger/internal/buildkit/solver/pb"
+	"github.com/G-Research/dagger/internal/buildkit/util/grpcerrors"
 	"github.com/pkg/errors"
 )
 

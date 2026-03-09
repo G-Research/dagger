@@ -9,9 +9,9 @@ import (
 	"os/exec"
 	"strings"
 
-	"dagger.io/dagger/telemetry"
-	"github.com/dagger/dagger/engine/client/imageload"
-	"github.com/dagger/dagger/util/traceexec"
+	"github.com/G-Research/dagger/telemetry"
+	"github.com/G-Research/dagger/engine/client/imageload"
+	"github.com/G-Research/dagger/util/traceexec"
 	"github.com/docker/cli/cli/connhelper/commandconn"
 )
 

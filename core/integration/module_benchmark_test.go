@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dagger/dagger/core/modules"
+	"github.com/G-Research/dagger/core/modules"
 	"github.com/dagger/testctx"
 	"github.com/iancoleman/strcase"
 	"github.com/stretchr/testify/require"
@@ -108,7 +108,7 @@ class PotatoSack:
 		c := connect(ctx, b)
 
 		mainSrc := `
-		import { object, func } from "@dagger.io/dagger"
+		import { object, func } from "@github.com/G-Research/dagger"
 
 @object()
 export class PotatoSack {
@@ -281,8 +281,8 @@ func (m *Test) Fn() string {
 	}
 }
 
-// regression test for https://github.com/dagger/dagger/issues/7334
-// and https://github.com/dagger/dagger/pull/7336
+// regression test for https://github.com/G-Research/dagger/issues/7334
+// and https://github.com/G-Research/dagger/pull/7336
 func (ModuleSuite) BenchmarkCallSameModuleInParallel(ctx context.Context, b *testctx.B) {
 	for b.Unwrap().Loop() {
 		c := connect(ctx, b)

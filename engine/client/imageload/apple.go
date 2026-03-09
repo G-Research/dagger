@@ -7,8 +7,8 @@ import (
 	"os/exec"
 	"regexp"
 
-	"dagger.io/dagger/telemetry"
-	"github.com/dagger/dagger/util/traceexec"
+	"github.com/G-Research/dagger/telemetry"
+	"github.com/G-Research/dagger/util/traceexec"
 	"go.opentelemetry.io/otel"
 )
 

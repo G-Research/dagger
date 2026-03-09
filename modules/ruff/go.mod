@@ -1,4 +1,4 @@
-module github.com/dagger/dagger/modules/ruff
+module github.com/G-Research/dagger/modules/ruff
 
 go 1.24.0
 

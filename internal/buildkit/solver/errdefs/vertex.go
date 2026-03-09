@@ -2,13 +2,13 @@ package errdefs
 
 import (
 	"github.com/containerd/typeurl/v2"
-	"github.com/dagger/dagger/internal/buildkit/util/grpcerrors"
+	"github.com/G-Research/dagger/internal/buildkit/util/grpcerrors"
 	digest "github.com/opencontainers/go-digest"
 )
 
 func init() {
-	typeurl.Register((*Vertex)(nil), "github.com/dagger/dagger/internal/buildkit", "errdefs.Vertex+json")
-	typeurl.Register((*Source)(nil), "github.com/dagger/dagger/internal/buildkit", "errdefs.Source+json")
+	typeurl.Register((*Vertex)(nil), "github.com/G-Research/dagger/internal/buildkit", "errdefs.Vertex+json")
+	typeurl.Register((*Source)(nil), "github.com/G-Research/dagger/internal/buildkit", "errdefs.Source+json")
 }
 
 type VertexError struct {

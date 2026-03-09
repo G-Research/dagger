@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dagger/dagger/engine/distconsts"
-	"github.com/dagger/dagger/util/parallel"
+	"github.com/G-Research/dagger/engine/distconsts"
+	"github.com/G-Research/dagger/util/parallel"
 
 	"dagger/engine-dev/build"
 

@@ -9,7 +9,7 @@ import (
 
 	"dagger/engine-dev/internal/dagger"
 
-	"github.com/dagger/dagger/engine/distconsts"
+	"github.com/G-Research/dagger/engine/distconsts"
 )
 
 // List all core engine tests
@@ -183,8 +183,8 @@ func (dev *EngineDev) test(
 		return dag.Container().WithError(err.Error())
 	}
 	ldflags := []string{
-		"-X", "github.com/dagger/dagger/engine.Version=" + version,
-		"-X", "github.com/dagger/dagger/engine.Tag=" + tag,
+		"-X", "github.com/G-Research/dagger/engine.Version=" + version,
+		"-X", "github.com/G-Research/dagger/engine.Tag=" + tag,
 	}
 	args = append(args, "-ldflags", strings.Join(ldflags, " "))
 
@@ -260,7 +260,7 @@ func (dev *EngineDev) testContainer(ctx context.Context, ebpfProgs []string) (*d
 		return nil, "", err
 	}
 
-	// TODO: mitigation for https://github.com/dagger/dagger/issues/8031
+	// TODO: mitigation for https://github.com/G-Research/dagger/issues/8031
 	// during our test suite
 	devEngine = devEngine.
 		WithEnvVariable("_DAGGER_ENGINE_SYSTEMENV_GODEBUG", "goindex=0")

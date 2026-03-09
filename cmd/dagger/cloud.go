@@ -11,9 +11,9 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 
-	"github.com/dagger/dagger/dagql/idtui"
-	"github.com/dagger/dagger/internal/cloud"
-	"github.com/dagger/dagger/internal/cloud/auth"
+	"github.com/G-Research/dagger/dagql/idtui"
+	"github.com/G-Research/dagger/internal/cloud"
+	"github.com/G-Research/dagger/internal/cloud/auth"
 )
 
 var cloudGroup = &cobra.Group{

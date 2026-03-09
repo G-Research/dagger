@@ -7,7 +7,7 @@ import (
 	"os/exec"
 
 	"github.com/1password/onepassword-sdk-go"
-	"github.com/dagger/dagger/engine"
+	"github.com/G-Research/dagger/engine"
 )
 
 func opProvider(ctx context.Context, key string) ([]byte, error) {

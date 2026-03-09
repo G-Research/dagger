@@ -17,9 +17,9 @@ import (
 	"golang.org/x/tools/go/packages"
 	"golang.org/x/tools/imports"
 
-	"github.com/dagger/dagger/cmd/codegen/generator"
-	"github.com/dagger/dagger/cmd/codegen/generator/go/templates"
-	"github.com/dagger/dagger/cmd/codegen/introspection"
+	"github.com/G-Research/dagger/cmd/codegen/generator"
+	"github.com/G-Research/dagger/cmd/codegen/generator/go/templates"
+	"github.com/G-Research/dagger/cmd/codegen/introspection"
 )
 
 const (

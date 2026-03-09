@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dagger/dagger/core"
-	"github.com/dagger/dagger/dagql"
-	"github.com/dagger/dagger/util/gitutil"
+	"github.com/G-Research/dagger/core"
+	"github.com/G-Research/dagger/dagql"
+	"github.com/G-Research/dagger/util/gitutil"
 )
 
 type addressSchema struct{}

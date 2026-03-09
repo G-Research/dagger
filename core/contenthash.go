@@ -5,19 +5,19 @@ import (
 	"fmt"
 	"strings"
 
-	bkcontenthash "github.com/dagger/dagger/internal/buildkit/cache/contenthash"
-	"github.com/dagger/dagger/internal/buildkit/client/llb"
-	bkgw "github.com/dagger/dagger/internal/buildkit/frontend/gateway/client"
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
-	bkworker "github.com/dagger/dagger/internal/buildkit/worker"
+	bkcontenthash "github.com/G-Research/dagger/internal/buildkit/cache/contenthash"
+	"github.com/G-Research/dagger/internal/buildkit/client/llb"
+	bkgw "github.com/G-Research/dagger/internal/buildkit/frontend/gateway/client"
+	"github.com/G-Research/dagger/internal/buildkit/solver/pb"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
+	bkworker "github.com/G-Research/dagger/internal/buildkit/worker"
 	"github.com/opencontainers/go-digest"
 	"resenje.org/singleflight"
 
-	"dagger.io/dagger/telemetry"
-	"github.com/dagger/dagger/dagql"
-	"github.com/dagger/dagger/engine/buildkit"
-	"github.com/dagger/dagger/engine/contenthash"
+	"github.com/G-Research/dagger/telemetry"
+	"github.com/G-Research/dagger/dagql"
+	"github.com/G-Research/dagger/engine/buildkit"
+	"github.com/G-Research/dagger/engine/contenthash"
 )
 
 var checksumG singleflight.Group[string, digest.Digest]

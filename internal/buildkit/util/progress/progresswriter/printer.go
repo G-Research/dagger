@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/containerd/console"
-	"github.com/dagger/dagger/internal/buildkit/client"
-	"github.com/dagger/dagger/internal/buildkit/util/progress/progressui"
+	"github.com/G-Research/dagger/internal/buildkit/client"
+	"github.com/G-Research/dagger/internal/buildkit/util/progress/progressui"
 )
 
 type printer struct {

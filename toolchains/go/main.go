@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"dagger.io/dagger/telemetry"
+	"github.com/G-Research/dagger/telemetry"
 	doublestar "github.com/bmatcuk/doublestar/v4"
 
 	"github.com/containerd/platforms"
-	"github.com/dagger/dagger/modules/go/internal/dagger"
-	"github.com/dagger/dagger/util/parallel"
+	"github.com/G-Research/dagger/modules/go/internal/dagger"
+	"github.com/G-Research/dagger/util/parallel"
 )
 
 const (
@@ -74,12 +74,12 @@ func New(
 	if moduleCache == nil {
 		// Cache volumes should be namespaced by module, but they aren't (yet).
 		// For now, we namespace them explicitly here.
-		moduleCache = dag.CacheVolume("github.com/dagger/dagger/modules/go:modules")
+		moduleCache = dag.CacheVolume("github.com/G-Research/dagger/modules/go:modules")
 	}
 	if buildCache == nil {
 		// Cache volumes should be namespaced by module, but they aren't (yet).
 		// For now, we namespace them explicitly here.
-		buildCache = dag.CacheVolume("github.com/dagger/dagger/modules/go:build")
+		buildCache = dag.CacheVolume("github.com/G-Research/dagger/modules/go:build")
 	}
 	if base == nil {
 		packages := []string{
@@ -518,7 +518,7 @@ func (p *Go) Tidy(
 }
 
 // Merge Changesets together
-// FIXME: move this to core dagger: https://github.com/dagger/dagger/issues/11189
+// FIXME: move this to core dagger: https://github.com/G-Research/dagger/issues/11189
 // FIXME: this duplicates the same function in .dagger/util.go
 // (cross-module function sharing is a PITA)
 func changesetMerge(changesets ...*dagger.Changeset) *dagger.Changeset {

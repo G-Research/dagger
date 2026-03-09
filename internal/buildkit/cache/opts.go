@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/containerd/containerd/v2/core/content"
-	"github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/util/progress"
+	"github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/util/progress"
 	digest "github.com/opencontainers/go-digest"
 )
 

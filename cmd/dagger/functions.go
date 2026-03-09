@@ -18,14 +18,14 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"dagger.io/dagger"
-	"dagger.io/dagger/querybuilder"
-	"dagger.io/dagger/telemetry"
-	"github.com/dagger/dagger/dagql/call"
-	"github.com/dagger/dagger/dagql/idtui"
-	"github.com/dagger/dagger/engine/client"
-	"github.com/dagger/dagger/engine/client/pathutil"
-	"github.com/dagger/dagger/engine/slog"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/querybuilder"
+	"github.com/G-Research/dagger/telemetry"
+	"github.com/G-Research/dagger/dagql/call"
+	"github.com/G-Research/dagger/dagql/idtui"
+	"github.com/G-Research/dagger/engine/client"
+	"github.com/G-Research/dagger/engine/client/pathutil"
+	"github.com/G-Research/dagger/engine/slog"
 )
 
 var (

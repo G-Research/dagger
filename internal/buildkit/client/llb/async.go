@@ -3,8 +3,8 @@ package llb
 import (
 	"context"
 
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
-	"github.com/dagger/dagger/internal/buildkit/util/flightcontrol"
+	"github.com/G-Research/dagger/internal/buildkit/solver/pb"
+	"github.com/G-Research/dagger/internal/buildkit/util/flightcontrol"
 	digest "github.com/opencontainers/go-digest"
 )
 

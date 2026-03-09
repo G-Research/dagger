@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"dagger.io/dagger"
-	"dagger.io/dagger/dag"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/dag"
 	"github.com/creack/pty"
 	"github.com/dagger/testctx"
 	"github.com/stretchr/testify/require"
@@ -45,9 +45,9 @@ type LLMTestCaseFlag struct {
 
 var (
 	// llm-test-module passes a prompt to LLM and sets a random string variable to bust cache
-	directCallModuleRef = "github.com/dagger/dagger-test-modules/llm-dir-module-depender/llm-test-module"
+	directCallModuleRef = "github.com/G-Research/dagger-test-modules/llm-dir-module-depender/llm-test-module"
 	// llm-dir-module-depender depends on directCall module via a relative path
-	dependerModuleRef = "github.com/dagger/dagger-test-modules/llm-dir-module-depender"
+	dependerModuleRef = "github.com/G-Research/dagger-test-modules/llm-dir-module-depender"
 )
 
 func (flag LLMTestCaseFlag) ToCall() []string {
@@ -311,7 +311,7 @@ func (LLMSuite) TestAllowLLM(ctx context.Context, t *testctx.T) {
 			// },
 			{
 				name:     "allowed unrelated, calling direct",
-				allowLLM: "github.com/dagger/dagger",
+				allowLLM: "github.com/G-Research/dagger",
 				module:   directCallModuleRef,
 			},
 			{

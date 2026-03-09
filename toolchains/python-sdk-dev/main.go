@@ -9,7 +9,7 @@ import (
 
 	"dagger/python-sdk-dev/internal/dagger"
 
-	"github.com/dagger/dagger/util/parallel"
+	"github.com/G-Research/dagger/util/parallel"
 )
 
 // A toolchain to develop the Dagger Python SDK

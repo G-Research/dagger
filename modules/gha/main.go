@@ -7,7 +7,7 @@
 // YAML configuration from a Dagger pipeline, written in your favorite language.
 package main
 
-import "github.com/dagger/dagger/modules/gha/internal/dagger"
+import "github.com/G-Research/dagger/modules/gha/internal/dagger"
 
 type Gha struct {
 	Workflows []*Workflow

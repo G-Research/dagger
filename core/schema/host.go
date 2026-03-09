@@ -12,25 +12,25 @@ import (
 	"github.com/containerd/containerd/v2/core/content"
 	"github.com/containerd/containerd/v2/core/leases"
 	"github.com/containerd/containerd/v2/plugins/content/local"
-	"github.com/dagger/dagger/internal/buildkit/client/llb"
-	bkgw "github.com/dagger/dagger/internal/buildkit/frontend/gateway/client"
-	"github.com/dagger/dagger/internal/buildkit/util/contentutil"
-	"github.com/dagger/dagger/internal/buildkit/util/leaseutil"
-	bkworker "github.com/dagger/dagger/internal/buildkit/worker"
+	"github.com/G-Research/dagger/internal/buildkit/client/llb"
+	bkgw "github.com/G-Research/dagger/internal/buildkit/frontend/gateway/client"
+	"github.com/G-Research/dagger/internal/buildkit/util/contentutil"
+	"github.com/G-Research/dagger/internal/buildkit/util/leaseutil"
+	bkworker "github.com/G-Research/dagger/internal/buildkit/worker"
 	"github.com/distribution/reference"
 	"github.com/opencontainers/go-digest"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/dagger/dagger/core"
-	"github.com/dagger/dagger/dagql"
-	"github.com/dagger/dagger/engine"
-	"github.com/dagger/dagger/engine/buildkit"
-	"github.com/dagger/dagger/engine/distconsts"
-	"github.com/dagger/dagger/engine/slog"
-	"github.com/dagger/dagger/util/ctrns"
-	"github.com/dagger/dagger/util/hashutil"
+	"github.com/G-Research/dagger/core"
+	"github.com/G-Research/dagger/dagql"
+	"github.com/G-Research/dagger/engine"
+	"github.com/G-Research/dagger/engine/buildkit"
+	"github.com/G-Research/dagger/engine/distconsts"
+	"github.com/G-Research/dagger/engine/slog"
+	"github.com/G-Research/dagger/util/ctrns"
+	"github.com/G-Research/dagger/util/hashutil"
 )
 
 type hostSchema struct{}
@@ -60,7 +60,7 @@ func (s *hostSchema) Install(srv *dagql.Server) {
 
 			// synchronously solve+unlazy so we don't have to deal with lazy blobs in any subsequent calls
 			// that don't handle them (i.e. buildkit's cache volume code)
-			// TODO: can be deleted once https://github.com/dagger/dagger/pull/8871 is closed
+			// TODO: can be deleted once https://github.com/G-Research/dagger/pull/8871 is closed
 			bk, err := parent.Buildkit(ctx)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get buildkit client: %w", err)

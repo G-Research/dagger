@@ -6,13 +6,13 @@ import (
 	"math"
 	"time"
 
-	"dagger.io/dagger/telemetry"
+	"github.com/G-Research/dagger/telemetry"
 	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
-	"github.com/dagger/dagger/dagql/call"
-	"github.com/dagger/dagger/dagql/call/callpbv1"
-	"github.com/dagger/dagger/engine/slog"
+	"github.com/G-Research/dagger/dagql/call"
+	"github.com/G-Research/dagger/dagql/call/callpbv1"
+	"github.com/G-Research/dagger/engine/slog"
 )
 
 type SpanSet = *OrderedSet[SpanID, *Span]

@@ -4,8 +4,8 @@
 package netproviders
 
 import (
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
-	"github.com/dagger/dagger/internal/buildkit/util/network"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/buildkit/util/network"
 )
 
 func getHostProvider() (network.Provider, bool) {

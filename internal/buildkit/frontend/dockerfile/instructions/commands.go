@@ -3,7 +3,7 @@ package instructions
 import (
 	"strings"
 
-	"github.com/dagger/dagger/internal/buildkit/frontend/dockerfile/parser"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/dockerfile/parser"
 	dockerspec "github.com/moby/docker-image-spec/specs-go/v1"
 	"github.com/pkg/errors"
 )

@@ -18,7 +18,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"dagger.io/dagger/telemetry"
+	"github.com/G-Research/dagger/telemetry"
 )
 
 type Workspace struct {

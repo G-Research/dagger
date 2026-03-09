@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"dagger.io/dagger/telemetry"
+	"github.com/G-Research/dagger/telemetry"
 	"go.opentelemetry.io/otel/log"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
@@ -23,9 +23,9 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/dagger/dagger/engine/clientdb"
-	"github.com/dagger/dagger/engine/slog"
-	enginetel "github.com/dagger/dagger/engine/telemetry"
+	"github.com/G-Research/dagger/engine/clientdb"
+	"github.com/G-Research/dagger/engine/slog"
+	enginetel "github.com/G-Research/dagger/engine/telemetry"
 	"github.com/vito/go-sse/sse"
 )
 

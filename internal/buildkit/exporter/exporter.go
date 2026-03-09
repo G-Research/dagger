@@ -3,10 +3,10 @@ package exporter
 import (
 	"context"
 
-	"github.com/dagger/dagger/internal/buildkit/cache"
-	"github.com/dagger/dagger/internal/buildkit/exporter/containerimage/exptypes"
-	"github.com/dagger/dagger/internal/buildkit/solver/result"
-	"github.com/dagger/dagger/internal/buildkit/util/compression"
+	"github.com/G-Research/dagger/internal/buildkit/cache"
+	"github.com/G-Research/dagger/internal/buildkit/exporter/containerimage/exptypes"
+	"github.com/G-Research/dagger/internal/buildkit/solver/result"
+	"github.com/G-Research/dagger/internal/buildkit/util/compression"
 	ocispecs "github.com/opencontainers/image-spec/specs-go/v1"
 )
 

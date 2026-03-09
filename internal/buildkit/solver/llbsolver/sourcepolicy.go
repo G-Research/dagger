@@ -3,7 +3,7 @@ package llbsolver
 import (
 	"context"
 
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
+	"github.com/G-Research/dagger/internal/buildkit/solver/pb"
 )
 
 type SourcePolicyEvaluator interface {

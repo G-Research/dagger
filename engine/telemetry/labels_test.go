@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/dagger/dagger/engine"
-	"github.com/dagger/dagger/engine/telemetry"
+	"github.com/G-Research/dagger/engine"
+	"github.com/G-Research/dagger/engine/telemetry"
 )
 
 func TestLoadClientLabels(t *testing.T) {

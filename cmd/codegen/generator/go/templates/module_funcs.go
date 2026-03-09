@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"dagger.io/dagger"
+	"github.com/G-Research/dagger"
 	"github.com/mitchellh/mapstructure"
 )
 

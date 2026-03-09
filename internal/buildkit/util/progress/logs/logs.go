@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/armon/circbuf"
-	"github.com/dagger/dagger/internal/buildkit/client"
-	"github.com/dagger/dagger/internal/buildkit/identity"
-	"github.com/dagger/dagger/internal/buildkit/util/progress"
+	"github.com/G-Research/dagger/internal/buildkit/client"
+	"github.com/G-Research/dagger/internal/buildkit/identity"
+	"github.com/G-Research/dagger/internal/buildkit/util/progress"
 	"github.com/pkg/errors"
 	"github.com/tonistiigi/units"
 )

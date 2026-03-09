@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	"dagger.io/dagger/telemetry"
+	"github.com/G-Research/dagger/telemetry"
 )
 
 type cliSessionConn struct {
@@ -54,7 +54,7 @@ func getSDKVersion() string {
 	}
 
 	for _, dep := range info.Deps {
-		if dep.Path == "dagger.io/dagger" {
+		if dep.Path == "github.com/G-Research/dagger" {
 			version = dep.Version
 			if version[0] == 'v' {
 				version = version[1:]

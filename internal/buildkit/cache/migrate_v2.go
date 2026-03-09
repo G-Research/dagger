@@ -11,9 +11,9 @@ import (
 	"github.com/containerd/containerd/v2/core/leases"
 	"github.com/containerd/containerd/v2/core/snapshots"
 	cerrdefs "github.com/containerd/errdefs"
-	"github.com/dagger/dagger/internal/buildkit/cache/metadata"
-	"github.com/dagger/dagger/internal/buildkit/snapshot"
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/buildkit/cache/metadata"
+	"github.com/G-Research/dagger/internal/buildkit/snapshot"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
 	digest "github.com/opencontainers/go-digest"
 	"github.com/pkg/errors"
 )

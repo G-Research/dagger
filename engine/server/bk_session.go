@@ -9,17 +9,17 @@ import (
 
 	"github.com/containerd/containerd/v2/core/content"
 	"github.com/containerd/containerd/v2/plugins/content/local"
-	"github.com/dagger/dagger/internal/buildkit/identity"
-	bksession "github.com/dagger/dagger/internal/buildkit/session"
-	sessioncontent "github.com/dagger/dagger/internal/buildkit/session/content"
-	"github.com/dagger/dagger/internal/buildkit/session/secrets/secretsprovider"
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/buildkit/identity"
+	bksession "github.com/G-Research/dagger/internal/buildkit/session"
+	sessioncontent "github.com/G-Research/dagger/internal/buildkit/session/content"
+	"github.com/G-Research/dagger/internal/buildkit/session/secrets/secretsprovider"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/dagger/dagger/engine"
-	"github.com/dagger/dagger/engine/buildkit"
-	"github.com/dagger/dagger/engine/client"
-	"github.com/dagger/dagger/engine/distconsts"
+	"github.com/G-Research/dagger/engine"
+	"github.com/G-Research/dagger/engine/buildkit"
+	"github.com/G-Research/dagger/engine/client"
+	"github.com/G-Research/dagger/engine/distconsts"
 )
 
 func (srv *Server) newBuildkitSession(ctx context.Context, c *daggerClient) (*bksession.Session, error) {

@@ -6,12 +6,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dagger/dagger/internal/buildkit/identity"
+	"github.com/G-Research/dagger/internal/buildkit/identity"
 	"github.com/dagger/testctx"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 
-	"dagger.io/dagger"
+	"github.com/G-Research/dagger"
 )
 
 const cliBinPath = "/.dagger-cli"
@@ -104,7 +104,7 @@ func (RemoteCacheSuite) TestRegistry(ctx context.Context, t *testctx.T) {
 }
 
 /*
-	Regression test for https://github.com/dagger/dagger/pull/5885
+	Regression test for https://github.com/G-Research/dagger/pull/5885
 
 Idea is to:
 1. Load in a local dir, use it to force evaluation

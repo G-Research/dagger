@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/Microsoft/go-winio"
-	"github.com/dagger/dagger/internal/buildkit/client/connhelper"
+	"github.com/G-Research/dagger/internal/buildkit/client/connhelper"
 	"github.com/pkg/errors"
 )
 

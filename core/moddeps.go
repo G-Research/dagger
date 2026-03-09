@@ -6,8 +6,8 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/dagger/dagger/dagql"
-	dagintro "github.com/dagger/dagger/dagql/introspection"
+	"github.com/G-Research/dagger/dagql"
+	dagintro "github.com/G-Research/dagger/dagql/introspection"
 )
 
 const (

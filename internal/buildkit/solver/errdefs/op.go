@@ -1,6 +1,6 @@
 package errdefs
 
-import "github.com/dagger/dagger/internal/buildkit/solver/pb"
+import "github.com/G-Research/dagger/internal/buildkit/solver/pb"
 
 type OpError struct {
 	error

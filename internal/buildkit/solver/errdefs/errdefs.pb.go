@@ -5,7 +5,7 @@ package errdefs
 
 import (
 	fmt "fmt"
-	pb "github.com/dagger/dagger/internal/buildkit/solver/pb"
+	pb "github.com/G-Research/dagger/internal/buildkit/solver/pb"
 	proto "github.com/gogo/protobuf/proto"
 	math "math"
 )

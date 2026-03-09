@@ -15,25 +15,25 @@ import (
 	"github.com/containerd/containerd/v2/core/images"
 	"github.com/containerd/containerd/v2/pkg/labels"
 	"github.com/containerd/platforms"
-	"github.com/dagger/dagger/internal/buildkit/cache"
-	cacheconfig "github.com/dagger/dagger/internal/buildkit/cache/config"
-	"github.com/dagger/dagger/internal/buildkit/exporter"
-	"github.com/dagger/dagger/internal/buildkit/exporter/attestation"
-	"github.com/dagger/dagger/internal/buildkit/exporter/containerimage/exptypes"
-	"github.com/dagger/dagger/internal/buildkit/exporter/util/epoch"
-	"github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/snapshot"
-	"github.com/dagger/dagger/internal/buildkit/solver"
-	"github.com/dagger/dagger/internal/buildkit/solver/result"
-	attestationTypes "github.com/dagger/dagger/internal/buildkit/util/attestation"
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
-	"github.com/dagger/dagger/internal/buildkit/util/compression"
-	"github.com/dagger/dagger/internal/buildkit/util/contentutil"
-	"github.com/dagger/dagger/internal/buildkit/util/converter"
-	"github.com/dagger/dagger/internal/buildkit/util/progress"
-	"github.com/dagger/dagger/internal/buildkit/util/purl"
-	"github.com/dagger/dagger/internal/buildkit/util/system"
-	"github.com/dagger/dagger/internal/buildkit/util/tracing"
+	"github.com/G-Research/dagger/internal/buildkit/cache"
+	cacheconfig "github.com/G-Research/dagger/internal/buildkit/cache/config"
+	"github.com/G-Research/dagger/internal/buildkit/exporter"
+	"github.com/G-Research/dagger/internal/buildkit/exporter/attestation"
+	"github.com/G-Research/dagger/internal/buildkit/exporter/containerimage/exptypes"
+	"github.com/G-Research/dagger/internal/buildkit/exporter/util/epoch"
+	"github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/snapshot"
+	"github.com/G-Research/dagger/internal/buildkit/solver"
+	"github.com/G-Research/dagger/internal/buildkit/solver/result"
+	attestationTypes "github.com/G-Research/dagger/internal/buildkit/util/attestation"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/buildkit/util/compression"
+	"github.com/G-Research/dagger/internal/buildkit/util/contentutil"
+	"github.com/G-Research/dagger/internal/buildkit/util/converter"
+	"github.com/G-Research/dagger/internal/buildkit/util/progress"
+	"github.com/G-Research/dagger/internal/buildkit/util/purl"
+	"github.com/G-Research/dagger/internal/buildkit/util/system"
+	"github.com/G-Research/dagger/internal/buildkit/util/tracing"
 	intoto "github.com/in-toto/in-toto-golang/in_toto"
 	dockerspec "github.com/moby/docker-image-spec/specs-go/v1"
 	digest "github.com/opencontainers/go-digest"
@@ -742,7 +742,7 @@ func patchImageConfig(dt []byte, descs []ocispecs.Descriptor, history []ocispecs
 		for i, h := range history {
 			if !divergedFromBase && baseImg != nil && i < len(baseImg.History) && reflect.DeepEqual(h, baseImg.History[i]) {
 				// Retain the timestamp for the base image layers
-				// https://github.com/dagger/dagger/internal/buildkit/issues/4614
+				// https://github.com/G-Research/dagger/internal/buildkit/issues/4614
 				continue
 			}
 			divergedFromBase = true

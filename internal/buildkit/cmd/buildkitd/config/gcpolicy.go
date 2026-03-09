@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dagger/dagger/internal/buildkit/util/disk"
+	"github.com/G-Research/dagger/internal/buildkit/util/disk"
 	"github.com/docker/go-units"
 	"github.com/pkg/errors"
 )

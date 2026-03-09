@@ -3,16 +3,16 @@ package proc
 import (
 	"context"
 
-	"github.com/dagger/dagger/internal/buildkit/client/llb"
-	"github.com/dagger/dagger/internal/buildkit/client/llb/sourceresolver"
-	"github.com/dagger/dagger/internal/buildkit/executor/resources"
-	"github.com/dagger/dagger/internal/buildkit/exporter/containerimage/exptypes"
-	"github.com/dagger/dagger/internal/buildkit/frontend"
-	"github.com/dagger/dagger/internal/buildkit/frontend/attestations/sbom"
-	"github.com/dagger/dagger/internal/buildkit/solver"
-	"github.com/dagger/dagger/internal/buildkit/solver/llbsolver"
-	"github.com/dagger/dagger/internal/buildkit/solver/result"
-	"github.com/dagger/dagger/internal/buildkit/util/tracing"
+	"github.com/G-Research/dagger/internal/buildkit/client/llb"
+	"github.com/G-Research/dagger/internal/buildkit/client/llb/sourceresolver"
+	"github.com/G-Research/dagger/internal/buildkit/executor/resources"
+	"github.com/G-Research/dagger/internal/buildkit/exporter/containerimage/exptypes"
+	"github.com/G-Research/dagger/internal/buildkit/frontend"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/attestations/sbom"
+	"github.com/G-Research/dagger/internal/buildkit/solver"
+	"github.com/G-Research/dagger/internal/buildkit/solver/llbsolver"
+	"github.com/G-Research/dagger/internal/buildkit/solver/result"
+	"github.com/G-Research/dagger/internal/buildkit/util/tracing"
 	"github.com/pkg/errors"
 )
 

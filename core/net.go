@@ -7,8 +7,8 @@ import (
 
 	"github.com/vektah/gqlparser/v2/ast"
 
-	"github.com/dagger/dagger/dagql"
-	"github.com/dagger/dagger/dagql/call"
+	"github.com/G-Research/dagger/dagql"
+	"github.com/G-Research/dagger/dagql/call"
 )
 
 // Port configures a port to exposed from a container or service.

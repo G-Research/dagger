@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
 	"github.com/jackpal/gateway"
 	"github.com/sirupsen/logrus"
 )

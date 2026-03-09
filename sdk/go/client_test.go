@@ -37,7 +37,7 @@ func TestGit(t *testing.T) {
 	require.NoError(t, err)
 	defer c.Close()
 
-	tree := c.Git("github.com/dagger/dagger").
+	tree := c.Git("github.com/G-Research/dagger").
 		Branch("main").
 		Tree()
 

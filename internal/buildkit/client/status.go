@@ -1,7 +1,7 @@
 package client
 
 import (
-	controlapi "github.com/dagger/dagger/internal/buildkit/api/services/control"
+	controlapi "github.com/G-Research/dagger/internal/buildkit/api/services/control"
 )
 
 var emptyLogVertexSize int

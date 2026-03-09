@@ -3,8 +3,8 @@ package buildkit
 import (
 	"context"
 
-	"github.com/dagger/dagger/internal/buildkit/client/llb"
-	solverpb "github.com/dagger/dagger/internal/buildkit/solver/pb"
+	"github.com/G-Research/dagger/internal/buildkit/client/llb"
+	solverpb "github.com/G-Research/dagger/internal/buildkit/solver/pb"
 )
 
 type output struct {

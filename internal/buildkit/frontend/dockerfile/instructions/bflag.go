@@ -3,7 +3,7 @@ package instructions
 import (
 	"strings"
 
-	"github.com/dagger/dagger/internal/buildkit/util/suggest"
+	"github.com/G-Research/dagger/internal/buildkit/util/suggest"
 	"github.com/pkg/errors"
 )
 

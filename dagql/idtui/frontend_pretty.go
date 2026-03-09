@@ -32,12 +32,12 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"golang.org/x/term"
 
-	"dagger.io/dagger"
-	"dagger.io/dagger/telemetry"
-	"github.com/dagger/dagger/dagql/dagui"
-	"github.com/dagger/dagger/dagql/idtui/multiprefixw"
-	"github.com/dagger/dagger/engine/slog"
-	"github.com/dagger/dagger/util/cleanups"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/telemetry"
+	"github.com/G-Research/dagger/dagql/dagui"
+	"github.com/G-Research/dagger/dagql/idtui/multiprefixw"
+	"github.com/G-Research/dagger/engine/slog"
+	"github.com/G-Research/dagger/util/cleanups"
 )
 
 var historyFile = filepath.Join(xdg.DataHome, "dagger", "histfile")

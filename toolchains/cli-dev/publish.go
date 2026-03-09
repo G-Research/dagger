@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/dagger/dagger/util/parallel"
+	"github.com/G-Research/dagger/util/parallel"
 	"golang.org/x/mod/semver"
 
 	"dagger/cli-dev/internal/dagger"

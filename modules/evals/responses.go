@@ -28,7 +28,7 @@ func (e *Responses) Prompt(base *dagger.LLM) *dagger.LLM {
 				dag.File("foo.txt", "Hello, world!"),
 				"The file to inspect.").
 			WithModuleSourceInput("my_module",
-				dag.ModuleSource("github.com/dagger/dagger-test-modules/llm-dir-module-depender"),
+				dag.ModuleSource("github.com/G-Research/dagger-test-modules/llm-dir-module-depender"),
 				"The module source to inspect.").
 			WithDirectoryInput("some_dir",
 				dag.Directory().

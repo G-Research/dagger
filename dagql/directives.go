@@ -3,7 +3,7 @@ package dagql
 import (
 	"github.com/vektah/gqlparser/v2/ast"
 
-	"github.com/dagger/dagger/dagql/call"
+	"github.com/G-Research/dagger/dagql/call"
 )
 
 type DirectiveSpec struct {

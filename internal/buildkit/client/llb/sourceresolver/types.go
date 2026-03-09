@@ -3,8 +3,8 @@ package sourceresolver
 import (
 	"context"
 
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
-	spb "github.com/dagger/dagger/internal/buildkit/sourcepolicy/pb"
+	"github.com/G-Research/dagger/internal/buildkit/solver/pb"
+	spb "github.com/G-Research/dagger/internal/buildkit/sourcepolicy/pb"
 	digest "github.com/opencontainers/go-digest"
 	ocispecs "github.com/opencontainers/image-spec/specs-go/v1"
 )

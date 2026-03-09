@@ -5,8 +5,8 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/dagger/dagger/internal/buildkit/session/auth"
-	"github.com/dagger/dagger/util/grpcutil"
+	"github.com/G-Research/dagger/internal/buildkit/session/auth"
+	"github.com/G-Research/dagger/util/grpcutil"
 )
 
 type AuthProxy struct {

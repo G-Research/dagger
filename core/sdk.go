@@ -3,8 +3,8 @@ package core
 import (
 	"context"
 
-	"github.com/dagger/dagger/dagql"
-	"github.com/dagger/dagger/dagql/call"
+	"github.com/G-Research/dagger/dagql"
+	"github.com/G-Research/dagger/dagql/call"
 )
 
 /*
@@ -51,7 +51,7 @@ type ClientGenerator interface {
 		However, depending on the local configuration, a copy of the current SDK
 		library should be copied to test the generated client with latest changes.
 		NOTE: this should only be used for testing purposes.
-		For example (if go.mod has a replace directive on dagger.io/dagger for a local path)
+		For example (if go.mod has a replace directive on github.com/G-Research/dagger for a local path)
 
 		This function prototype is different from the one exposed by the SDK.
 		SDK must implement the `GenerateClient` function with the following signature:

@@ -1,4 +1,4 @@
-module github.com/dagger/dagger/engine/distconsts
+module github.com/G-Research/dagger/engine/distconsts
 
 go 1.22
 

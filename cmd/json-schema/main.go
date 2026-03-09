@@ -11,8 +11,8 @@ import (
 	"github.com/invopop/jsonschema"
 	"github.com/spf13/cobra"
 
-	"github.com/dagger/dagger/core/modules"
-	"github.com/dagger/dagger/engine/config"
+	"github.com/G-Research/dagger/core/modules"
+	"github.com/G-Research/dagger/engine/config"
 )
 
 var rootCmd = &cobra.Command{
@@ -28,7 +28,7 @@ func generateSchema(cmd *cobra.Command, args []string) error {
 		}
 
 		r := new(jsonschema.Reflector)
-		err := r.AddGoComments("github.com/dagger/dagger", target.path)
+		err := r.AddGoComments("github.com/G-Research/dagger", target.path)
 		if err != nil {
 			return err
 		}

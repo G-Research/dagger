@@ -13,8 +13,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/dagger/dagger/cmd/codegen/generator"
-	"github.com/dagger/dagger/cmd/codegen/introspection"
+	"github.com/G-Research/dagger/cmd/codegen/generator"
+	"github.com/G-Research/dagger/cmd/codegen/introspection"
 )
 
 var updateFixtures = flag.Bool("test.update-fixtures", false, "update the test fixtures")

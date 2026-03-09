@@ -3,7 +3,7 @@ package grpchijack
 import (
 	"net"
 
-	controlapi "github.com/dagger/dagger/internal/buildkit/api/services/control"
+	controlapi "github.com/G-Research/dagger/internal/buildkit/api/services/control"
 	"google.golang.org/grpc/metadata"
 )
 

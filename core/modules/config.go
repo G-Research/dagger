@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dagger/dagger/engine"
+	"github.com/G-Research/dagger/engine"
 	"github.com/vektah/gqlparser/v2/ast"
 )
 

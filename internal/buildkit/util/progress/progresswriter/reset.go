@@ -3,7 +3,7 @@ package progresswriter
 import (
 	"time"
 
-	"github.com/dagger/dagger/internal/buildkit/client"
+	"github.com/G-Research/dagger/internal/buildkit/client"
 )
 
 func ResetTime(in Writer) Writer {

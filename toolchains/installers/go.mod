@@ -2,11 +2,11 @@ module toolchains/installers
 
 go 1.25.3
 
-replace github.com/dagger/dagger => ../..
+replace github.com/G-Research/dagger => ../..
 
 require (
 	github.com/containerd/platforms v1.0.0-rc.1
-	github.com/dagger/dagger v0.0.0-00010101000000-000000000000
+	github.com/G-Research/dagger v0.0.0-00010101000000-000000000000
 	golang.org/x/mod v0.29.0
 )
 

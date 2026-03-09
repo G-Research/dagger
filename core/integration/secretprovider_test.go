@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"dagger.io/dagger"
-	"github.com/dagger/dagger/internal/buildkit/identity"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/internal/buildkit/identity"
 	"github.com/stretchr/testify/require"
 
 	"github.com/dagger/testctx"

@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 
 	"github.com/adrg/xdg"
-	"github.com/dagger/dagger/engine/slog"
-	"github.com/dagger/dagger/internal/buildkit/identity"
+	"github.com/G-Research/dagger/engine/slog"
+	"github.com/G-Research/dagger/internal/buildkit/identity"
 )
 
 const StableIDFileName = "stable_client_id"

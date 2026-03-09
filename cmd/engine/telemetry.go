@@ -5,13 +5,13 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/dagger/dagger/internal/buildkit/identity"
+	"github.com/G-Research/dagger/internal/buildkit/identity"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 
-	"dagger.io/dagger/telemetry"
-	"github.com/dagger/dagger/engine"
+	"github.com/G-Research/dagger/telemetry"
+	"github.com/G-Research/dagger/engine"
 )
 
 const (

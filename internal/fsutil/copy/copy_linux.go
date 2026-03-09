@@ -7,7 +7,7 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/dagger/dagger/engine/slog"
+	"github.com/G-Research/dagger/engine/slog"
 	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
 )

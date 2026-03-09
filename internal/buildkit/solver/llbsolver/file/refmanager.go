@@ -3,11 +3,11 @@ package file
 import (
 	"context"
 
-	"github.com/dagger/dagger/internal/buildkit/cache"
-	"github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/snapshot"
-	"github.com/dagger/dagger/internal/buildkit/solver/llbsolver/ops/fileoptypes"
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/buildkit/cache"
+	"github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/snapshot"
+	"github.com/G-Research/dagger/internal/buildkit/solver/llbsolver/ops/fileoptypes"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
 	"github.com/pkg/errors"
 )
 

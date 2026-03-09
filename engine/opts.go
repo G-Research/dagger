@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"unicode"
 
-	controlapi "github.com/dagger/dagger/internal/buildkit/api/services/control"
-	"github.com/dagger/dagger/internal/cloud/auth"
+	controlapi "github.com/G-Research/dagger/internal/buildkit/api/services/control"
+	"github.com/G-Research/dagger/internal/cloud/auth"
 	"google.golang.org/grpc/metadata"
 )
 

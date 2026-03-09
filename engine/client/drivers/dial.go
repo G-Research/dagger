@@ -7,10 +7,10 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/dagger/dagger/engine/client/imageload"
-	connh "github.com/dagger/dagger/internal/buildkit/client/connhelper"
-	connhKube "github.com/dagger/dagger/internal/buildkit/client/connhelper/kubepod"
-	connhSSH "github.com/dagger/dagger/internal/buildkit/client/connhelper/ssh"
+	"github.com/G-Research/dagger/engine/client/imageload"
+	connh "github.com/G-Research/dagger/internal/buildkit/client/connhelper"
+	connhKube "github.com/G-Research/dagger/internal/buildkit/client/connhelper/kubepod"
+	connhSSH "github.com/G-Research/dagger/internal/buildkit/client/connhelper/ssh"
 )
 
 func init() {

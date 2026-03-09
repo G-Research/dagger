@@ -3,8 +3,8 @@ package solver
 import (
 	"context"
 
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
-	"github.com/dagger/dagger/internal/buildkit/util/progress"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/buildkit/util/progress"
 
 	digest "github.com/opencontainers/go-digest"
 )

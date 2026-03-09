@@ -3,7 +3,7 @@ package solver
 import (
 	"sync"
 
-	"github.com/dagger/dagger/internal/buildkit/identity"
+	"github.com/G-Research/dagger/internal/buildkit/identity"
 )
 
 // edgeIndex is a synchronous map for detecting edge collisions.

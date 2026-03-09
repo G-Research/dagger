@@ -8,10 +8,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/dagger/dagger/engine/buildkit"
-	"github.com/dagger/dagger/engine/filesync"
+	"github.com/G-Research/dagger/engine/buildkit"
+	"github.com/G-Research/dagger/engine/filesync"
 
-	"github.com/dagger/dagger/engine"
+	"github.com/G-Research/dagger/engine"
 	"github.com/vektah/gqlparser/v2/ast"
 )
 

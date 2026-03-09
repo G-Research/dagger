@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dagger/dagger/internal/buildkit/solver/internal/pipe"
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/buildkit/solver/internal/pipe"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
 	digest "github.com/opencontainers/go-digest"
 	"github.com/pkg/errors"
 )

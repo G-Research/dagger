@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dagger/dagger/dagql"
+	"github.com/G-Research/dagger/dagql"
 )
 
 // Samples contains a valid type definition for each kind. If you add a new

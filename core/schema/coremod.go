@@ -6,13 +6,13 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dagger/dagger/cmd/codegen/introspection"
-	"github.com/dagger/dagger/core"
-	"github.com/dagger/dagger/dagql"
-	"github.com/dagger/dagger/dagql/call"
-	dagqlintrospection "github.com/dagger/dagger/dagql/introspection"
-	"github.com/dagger/dagger/engine/server/resource"
-	"github.com/dagger/dagger/engine/slog"
+	"github.com/G-Research/dagger/cmd/codegen/introspection"
+	"github.com/G-Research/dagger/core"
+	"github.com/G-Research/dagger/dagql"
+	"github.com/G-Research/dagger/dagql/call"
+	dagqlintrospection "github.com/G-Research/dagger/dagql/introspection"
+	"github.com/G-Research/dagger/engine/server/resource"
+	"github.com/G-Research/dagger/engine/slog"
 	"github.com/opencontainers/go-digest"
 )
 

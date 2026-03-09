@@ -15,10 +15,10 @@ func TestDefaultTsConfigForModule(t *testing.T) {
   	"experimentalDecorators": true,
 		"moduleResolution": "Node",
     "paths": {
-      "@dagger.io/dagger": [
+      "@github.com/G-Research/dagger": [
         "./sdk/index.ts"
       ],
-      "@dagger.io/dagger/telemetry": [
+      "@github.com/G-Research/dagger/telemetry": [
         "./sdk/telemetry.ts"
       ]
     }
@@ -38,10 +38,10 @@ func TestDefaultTSConfigForClient(t *testing.T) {
   	"experimentalDecorators": true,
 		"moduleResolution": "Node",
     "paths": {
-      "@dagger.io/dagger": [
+      "@github.com/G-Research/dagger": [
         "./sdk/index.ts"
       ],
-      "@dagger.io/dagger/telemetry": [
+      "@github.com/G-Research/dagger/telemetry": [
         "./sdk/telemetry.ts"
       ]
     }
@@ -68,10 +68,10 @@ func TestUpdateTSConfigForModule(t *testing.T) {
   "compilerOptions": {
 		"experimentalDecorators": true,
     "paths": {
-      "@dagger.io/dagger": [
+      "@github.com/G-Research/dagger": [
         "./sdk/index.ts"
       ],
-      "@dagger.io/dagger/telemetry": [
+      "@github.com/G-Research/dagger/telemetry": [
         "./sdk/telemetry.ts"
       ]
     }
@@ -83,10 +83,10 @@ func TestUpdateTSConfigForModule(t *testing.T) {
 			tsConfig: `{
   "compilerOptions": {
     "paths": {
-      "@dagger.io/dagger": [
+      "@github.com/G-Research/dagger": [
         "./sdk/index.ts"
       ],
-      "@dagger.io/dagger/telemetry": [
+      "@github.com/G-Research/dagger/telemetry": [
         "./sdk/telemetry.ts"
       ]
     }
@@ -96,10 +96,10 @@ func TestUpdateTSConfigForModule(t *testing.T) {
   "compilerOptions": {
 		"experimentalDecorators": true,
     "paths": {
-      "@dagger.io/dagger": [
+      "@github.com/G-Research/dagger": [
         "./sdk/index.ts"
       ],
-      "@dagger.io/dagger/telemetry": [
+      "@github.com/G-Research/dagger/telemetry": [
         "./sdk/telemetry.ts"
       ]
     }
@@ -158,10 +158,10 @@ func TestUpdateTSConfigForModule(t *testing.T) {
     "noPropertyAccessFromIndexSignature": false,
 		"experimentalDecorators": true,
     "paths": {
-      "@dagger.io/dagger": [
+      "@github.com/G-Research/dagger": [
         "./sdk/index.ts"
       ],
-      "@dagger.io/dagger/telemetry": [
+      "@github.com/G-Research/dagger/telemetry": [
         "./sdk/telemetry.ts"
       ]
     }
@@ -174,7 +174,7 @@ func TestUpdateTSConfigForModule(t *testing.T) {
   "compilerOptions": {
     "paths": {
 		  "custom-path": ["./foo.ts"],
-      "@dagger.io/dagger/telemetry": [
+      "@github.com/G-Research/dagger/telemetry": [
         "./sdk/telemetry.ts"
       ]
     }
@@ -184,11 +184,11 @@ func TestUpdateTSConfigForModule(t *testing.T) {
   "compilerOptions": {
 		"experimentalDecorators": true,
     "paths": {
-      "@dagger.io/dagger": [
+      "@github.com/G-Research/dagger": [
         "./sdk/index.ts"
       ],
 			"custom-path": ["./foo.ts"],
-      "@dagger.io/dagger/telemetry": [
+      "@github.com/G-Research/dagger/telemetry": [
         "./sdk/telemetry.ts"
       ]
     }
@@ -224,10 +224,10 @@ func TestUpdateTSConfigForClient(t *testing.T) {
 			expected: `{
   "compilerOptions": {
     "paths": {
-      "@dagger.io/dagger": [
+      "@github.com/G-Research/dagger": [
         "./sdk/index.ts"
       ],
-      "@dagger.io/dagger/telemetry": [
+      "@github.com/G-Research/dagger/telemetry": [
         "./sdk/telemetry.ts"
       ]
     }
@@ -246,10 +246,10 @@ func TestUpdateTSConfigForClient(t *testing.T) {
 			tsConfig: `{
   "compilerOptions": {
     "paths": {
-      "@dagger.io/dagger": [
+      "@github.com/G-Research/dagger": [
         "./sdk/index.ts"
       ],
-      "@dagger.io/dagger/telemetry": [
+      "@github.com/G-Research/dagger/telemetry": [
         "./sdk/telemetry.ts"
       ],
       "@dagger.io/client": [
@@ -261,10 +261,10 @@ func TestUpdateTSConfigForClient(t *testing.T) {
 			expected: `{
   "compilerOptions": {
     "paths": {
-      "@dagger.io/dagger": [
+      "@github.com/G-Research/dagger": [
         "./sdk/index.ts"
       ],
-      "@dagger.io/dagger/telemetry": [
+      "@github.com/G-Research/dagger/telemetry": [
         "./sdk/telemetry.ts"
       ],
       "@dagger.io/client": [
@@ -326,10 +326,10 @@ func TestUpdateTSConfigForClient(t *testing.T) {
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
     "paths": {
-      "@dagger.io/dagger": [
+      "@github.com/G-Research/dagger": [
         "./sdk/index.ts"
       ],
-      "@dagger.io/dagger/telemetry": [
+      "@github.com/G-Research/dagger/telemetry": [
         "./sdk/telemetry.ts"
       ]
     }

@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"dagger.io/dagger/telemetry"
-	"github.com/dagger/dagger/core"
-	"github.com/dagger/dagger/dagql"
+	"github.com/G-Research/dagger/telemetry"
+	"github.com/G-Research/dagger/core"
+	"github.com/G-Research/dagger/dagql"
 )
 
 // A SDK module that implements the `CodeGenerator` interface

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/dagger/dagger/engine/client/pathutil"
+	"github.com/G-Research/dagger/engine/client/pathutil"
 )
 
 func fileProvider(_ context.Context, path string) ([]byte, error) {

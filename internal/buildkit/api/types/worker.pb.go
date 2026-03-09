@@ -5,7 +5,7 @@ package moby_buildkit_v1_types
 
 import (
 	fmt "fmt"
-	pb "github.com/dagger/dagger/internal/buildkit/solver/pb"
+	pb "github.com/G-Research/dagger/internal/buildkit/solver/pb"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	io "io"

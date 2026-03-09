@@ -17,9 +17,9 @@ import (
 
 	authutil "github.com/containerd/containerd/v2/core/remotes/docker/auth"
 	remoteserrors "github.com/containerd/containerd/v2/core/remotes/errors"
-	"github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/session/auth"
-	"github.com/dagger/dagger/internal/buildkit/util/progress/progresswriter"
+	"github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/session/auth"
+	"github.com/G-Research/dagger/internal/buildkit/util/progress/progresswriter"
 	"github.com/docker/cli/cli/config"
 	"github.com/docker/cli/cli/config/configfile"
 	"github.com/docker/cli/cli/config/types"

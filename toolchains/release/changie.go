@@ -31,7 +31,7 @@ func (r *Release) GetMaintainers(
 	if err != nil {
 		return nil, err
 	}
-	// HACK: just workaround the lack of https://github.com/dagger/dagger/pull/10836
+	// HACK: just workaround the lack of https://github.com/G-Research/dagger/pull/10836
 	token = strings.TrimSpace(token)
 	if token == "" {
 		return nil, errors.New("github token is required")

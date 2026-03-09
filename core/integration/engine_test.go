@@ -15,16 +15,16 @@ import (
 	"testing"
 	"time"
 
-	bkconfig "github.com/dagger/dagger/internal/buildkit/cmd/buildkitd/config"
-	"github.com/dagger/dagger/internal/buildkit/identity"
+	bkconfig "github.com/G-Research/dagger/internal/buildkit/cmd/buildkitd/config"
+	"github.com/G-Research/dagger/internal/buildkit/identity"
 	"github.com/pelletier/go-toml"
 	"golang.org/x/sync/errgroup"
 
-	"dagger.io/dagger"
-	"github.com/dagger/dagger/engine"
-	"github.com/dagger/dagger/engine/config"
-	"github.com/dagger/dagger/engine/distconsts"
-	"github.com/dagger/dagger/internal/testutil"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/engine"
+	"github.com/G-Research/dagger/engine/config"
+	"github.com/G-Research/dagger/engine/distconsts"
+	"github.com/G-Research/dagger/internal/testutil"
 	"github.com/dagger/testctx"
 	"github.com/stretchr/testify/require"
 )

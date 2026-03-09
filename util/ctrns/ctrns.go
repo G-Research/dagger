@@ -4,7 +4,7 @@ package ctrns
 
 import (
 	"github.com/containerd/containerd/v2/core/content"
-	containerdsnapshotter "github.com/dagger/dagger/internal/buildkit/snapshot/containerd"
+	containerdsnapshotter "github.com/G-Research/dagger/internal/buildkit/snapshot/containerd"
 )
 
 type ContentStoreNamespaced = containerdsnapshotter.Store

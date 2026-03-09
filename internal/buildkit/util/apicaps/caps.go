@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	pb "github.com/dagger/dagger/internal/buildkit/util/apicaps/pb"
+	pb "github.com/G-Research/dagger/internal/buildkit/util/apicaps/pb"
 	"github.com/pkg/errors"
 )
 

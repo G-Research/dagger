@@ -1,11 +1,11 @@
 package local
 
 import (
-	"github.com/dagger/dagger/internal/buildkit/solver/llbsolver/provenance"
-	provenancetypes "github.com/dagger/dagger/internal/buildkit/solver/llbsolver/provenance/types"
-	"github.com/dagger/dagger/internal/buildkit/source"
-	srctypes "github.com/dagger/dagger/internal/buildkit/source/types"
-	"github.com/dagger/dagger/internal/fsutil"
+	"github.com/G-Research/dagger/internal/buildkit/solver/llbsolver/provenance"
+	provenancetypes "github.com/G-Research/dagger/internal/buildkit/solver/llbsolver/provenance/types"
+	"github.com/G-Research/dagger/internal/buildkit/source"
+	srctypes "github.com/G-Research/dagger/internal/buildkit/source/types"
+	"github.com/G-Research/dagger/internal/fsutil"
 )
 
 type LocalIdentifier struct {

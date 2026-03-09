@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dagger/dagger/internal/buildkit/session/secrets"
-	"github.com/dagger/dagger/util/grpcutil"
+	"github.com/G-Research/dagger/internal/buildkit/session/secrets"
+	"github.com/G-Research/dagger/util/grpcutil"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

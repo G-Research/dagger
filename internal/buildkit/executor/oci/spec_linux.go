@@ -13,9 +13,9 @@ import (
 	"github.com/containerd/containerd/v2/pkg/oci"
 	cdseccomp "github.com/containerd/containerd/v2/pkg/seccomp"
 	"github.com/containerd/continuity/fs"
-	"github.com/dagger/dagger/internal/buildkit/snapshot"
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
-	"github.com/dagger/dagger/internal/buildkit/util/entitlements/security"
+	"github.com/G-Research/dagger/internal/buildkit/snapshot"
+	"github.com/G-Research/dagger/internal/buildkit/solver/pb"
+	"github.com/G-Research/dagger/internal/buildkit/util/entitlements/security"
 	"github.com/docker/docker/pkg/idtools"
 	"github.com/docker/docker/profiles/seccomp"
 	specs "github.com/opencontainers/runtime-spec/specs-go"
@@ -40,7 +40,7 @@ func withProcessArgs(args ...string) oci.SpecOpts {
 
 func generateMountOpts(resolvConf, hostsFile string) []oci.SpecOpts {
 	return []oci.SpecOpts{
-		// https://github.com/dagger/dagger/internal/buildkit/issues/429
+		// https://github.com/G-Research/dagger/internal/buildkit/issues/429
 		withRemovedMount("/run"),
 		withROBind(resolvConf, "/etc/resolv.conf"),
 		withROBind(hostsFile, "/etc/hosts"),
@@ -236,7 +236,7 @@ func cgroupV2NamespaceSupported() bool {
 	// Check if cgroups v2 namespaces are supported.  Trying to do cgroup
 	// namespaces with cgroups v1 results in EINVAL when we encounter a
 	// non-standard hierarchy.
-	// See https://github.com/dagger/dagger/internal/buildkit/issues/4108
+	// See https://github.com/G-Research/dagger/internal/buildkit/issues/4108
 	cgroupNSOnce.Do(func() {
 		if _, err := os.Stat("/proc/self/ns/cgroup"); os.IsNotExist(err) {
 			return

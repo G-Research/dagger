@@ -6,9 +6,9 @@ import (
 
 	"github.com/containerd/containerd/v2/core/leases"
 	"github.com/containerd/containerd/v2/core/snapshots"
-	"github.com/dagger/dagger/internal/buildkit/identity"
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
-	"github.com/dagger/dagger/internal/buildkit/util/leaseutil"
+	"github.com/G-Research/dagger/internal/buildkit/identity"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/buildkit/util/leaseutil"
 	"github.com/moby/sys/userns"
 	"github.com/pkg/errors"
 )

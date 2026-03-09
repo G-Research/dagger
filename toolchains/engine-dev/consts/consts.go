@@ -1,6 +1,6 @@
 package consts
 
-import "github.com/dagger/dagger/engine/distconsts"
+import "github.com/G-Research/dagger/engine/distconsts"
 
 const (
 	EngineServerPath = "/usr/local/bin/dagger-engine"

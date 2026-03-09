@@ -16,9 +16,9 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 
-	"dagger.io/dagger/telemetry"
-	"github.com/dagger/dagger/dagql/call/callpbv1"
-	"github.com/dagger/dagger/engine/slog"
+	"github.com/G-Research/dagger/telemetry"
+	"github.com/G-Research/dagger/dagql/call/callpbv1"
+	"github.com/G-Research/dagger/engine/slog"
 )
 
 type DB struct {

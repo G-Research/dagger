@@ -5,7 +5,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/dagger/dagger/internal/buildkit/util/grpcerrors"
+	"github.com/G-Research/dagger/internal/buildkit/util/grpcerrors"
 	"google.golang.org/grpc/codes"
 )
 

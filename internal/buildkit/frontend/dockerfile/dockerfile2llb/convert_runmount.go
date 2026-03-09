@@ -6,9 +6,9 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/dagger/dagger/internal/buildkit/client/llb"
-	"github.com/dagger/dagger/internal/buildkit/frontend/dockerfile/instructions"
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
+	"github.com/G-Research/dagger/internal/buildkit/client/llb"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/dockerfile/instructions"
+	"github.com/G-Research/dagger/internal/buildkit/solver/pb"
 	"github.com/pkg/errors"
 )
 

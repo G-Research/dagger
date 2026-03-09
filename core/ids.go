@@ -1,7 +1,7 @@
 package core
 
 import (
-	"github.com/dagger/dagger/dagql"
+	"github.com/G-Research/dagger/dagql"
 )
 
 type JSONValueID = dagql.ID[*JSONValue]

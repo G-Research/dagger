@@ -5,7 +5,7 @@ import (
 	"io"
 
 	"github.com/Microsoft/go-winio"
-	"github.com/dagger/dagger/internal/fsutil"
+	"github.com/G-Research/dagger/internal/fsutil"
 )
 
 func writeTar(ctx context.Context, fs fsutil.FS, w io.WriteCloser) error {

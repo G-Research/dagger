@@ -10,7 +10,7 @@ import (
 	"runtime"
 	"syscall"
 
-	"github.com/dagger/dagger/engine/slog"
+	"github.com/G-Research/dagger/engine/slog"
 )
 
 func InstallDnsmasq(ctx context.Context, name string) error {

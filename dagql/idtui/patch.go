@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"dagger.io/dagger"
-	"github.com/dagger/dagger/util/patchpreview"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/util/patchpreview"
 )
 
 func PreviewPatch(ctx context.Context, changeset *dagger.Changeset) (*patchpreview.PatchPreview, error) {

@@ -15,16 +15,16 @@ import (
 	"github.com/containerd/containerd/v2/pkg/gc"
 	"github.com/containerd/containerd/v2/pkg/labels"
 	cerrdefs "github.com/containerd/errdefs"
-	"github.com/dagger/dagger/engine/slog"
-	"github.com/dagger/dagger/internal/buildkit/cache/metadata"
-	"github.com/dagger/dagger/internal/buildkit/client"
-	"github.com/dagger/dagger/internal/buildkit/identity"
-	"github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/snapshot"
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
-	"github.com/dagger/dagger/internal/buildkit/util/disk"
-	"github.com/dagger/dagger/internal/buildkit/util/flightcontrol"
-	"github.com/dagger/dagger/internal/buildkit/util/progress"
+	"github.com/G-Research/dagger/engine/slog"
+	"github.com/G-Research/dagger/internal/buildkit/cache/metadata"
+	"github.com/G-Research/dagger/internal/buildkit/client"
+	"github.com/G-Research/dagger/internal/buildkit/identity"
+	"github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/snapshot"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/buildkit/util/disk"
+	"github.com/G-Research/dagger/internal/buildkit/util/flightcontrol"
+	"github.com/G-Research/dagger/internal/buildkit/util/progress"
 	"github.com/docker/docker/pkg/idtools"
 	digest "github.com/opencontainers/go-digest"
 	imagespecidentity "github.com/opencontainers/image-spec/identity"
@@ -476,7 +476,7 @@ func (cm *cacheManager) getRecord(ctx context.Context, id string, opts ...RefOpt
 
 	// TODO:(sipsma) this is kludge to deal with a bug in v0.10.{0,1} where
 	// merge and diff refs didn't have committed set to true:
-	// https://github.com/dagger/dagger/internal/buildkit/issues/2740
+	// https://github.com/G-Research/dagger/internal/buildkit/issues/2740
 	if kind := rec.kind(); kind == Merge || kind == Diff {
 		rec.mutable = false
 	}

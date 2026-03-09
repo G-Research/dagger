@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/dagger/dagger/internal/cloud/auth"
+	"github.com/G-Research/dagger/internal/cloud/auth"
 	"go.opentelemetry.io/otel/trace"
 )
 

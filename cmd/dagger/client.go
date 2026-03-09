@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"dagger.io/dagger"
-	"github.com/dagger/dagger/engine/client"
-	"github.com/dagger/dagger/engine/client/pathutil"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/engine/client"
+	"github.com/G-Research/dagger/engine/client/pathutil"
 	"github.com/juju/ansiterm/tabwriter"
 	"github.com/spf13/cobra"
 )

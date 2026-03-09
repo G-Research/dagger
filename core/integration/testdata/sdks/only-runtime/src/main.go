@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	"dagger.io/dagger"
-	"dagger.io/dagger/dag"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/dag"
 )
 
 func main() {

@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/dagger/dagger/engine/client"
+	"github.com/G-Research/dagger/engine/client"
 	"github.com/juju/ansiterm/tabwriter"
 	"github.com/muesli/termenv"
 	"github.com/spf13/cobra"

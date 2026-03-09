@@ -10,19 +10,19 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/dagger/dagger/internal/buildkit/session/filesync"
-	"github.com/dagger/dagger/internal/fsutil"
-	fstypes "github.com/dagger/dagger/internal/fsutil/types"
+	"github.com/G-Research/dagger/internal/buildkit/session/filesync"
+	"github.com/G-Research/dagger/internal/fsutil"
+	fstypes "github.com/G-Research/dagger/internal/fsutil/types"
 	"github.com/moby/sys/user"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	"github.com/dagger/dagger/engine"
-	"github.com/dagger/dagger/engine/client/pathutil"
-	"github.com/dagger/dagger/util/fsxutil"
-	"github.com/dagger/dagger/util/grpcutil"
+	"github.com/G-Research/dagger/engine"
+	"github.com/G-Research/dagger/engine/client/pathutil"
+	"github.com/G-Research/dagger/util/fsxutil"
+	"github.com/G-Research/dagger/util/grpcutil"
 )
 
 type Filesyncer struct {

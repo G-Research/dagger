@@ -3,11 +3,11 @@ package git
 import (
 	"path"
 
-	"github.com/dagger/dagger/internal/buildkit/solver/llbsolver/provenance"
-	provenancetypes "github.com/dagger/dagger/internal/buildkit/solver/llbsolver/provenance/types"
-	"github.com/dagger/dagger/internal/buildkit/source"
-	srctypes "github.com/dagger/dagger/internal/buildkit/source/types"
-	"github.com/dagger/dagger/internal/buildkit/util/gitutil"
+	"github.com/G-Research/dagger/internal/buildkit/solver/llbsolver/provenance"
+	provenancetypes "github.com/G-Research/dagger/internal/buildkit/solver/llbsolver/provenance/types"
+	"github.com/G-Research/dagger/internal/buildkit/source"
+	srctypes "github.com/G-Research/dagger/internal/buildkit/source/types"
+	"github.com/G-Research/dagger/internal/buildkit/util/gitutil"
 )
 
 type GitIdentifier struct {

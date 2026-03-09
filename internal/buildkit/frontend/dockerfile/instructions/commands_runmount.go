@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dagger/dagger/internal/buildkit/util/suggest"
+	"github.com/G-Research/dagger/internal/buildkit/util/suggest"
 	"github.com/docker/go-units"
 	"github.com/pkg/errors"
 	"github.com/tonistiigi/go-csvvalue"

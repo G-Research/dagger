@@ -10,12 +10,12 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/dagger/dagger/internal/buildkit/session/filesync"
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
-	"github.com/dagger/dagger/internal/fsutil"
-	fsutiltypes "github.com/dagger/dagger/internal/fsutil/types"
+	"github.com/G-Research/dagger/internal/buildkit/session/filesync"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/fsutil"
+	fsutiltypes "github.com/G-Research/dagger/internal/fsutil/types"
 
-	"github.com/dagger/dagger/engine"
+	"github.com/G-Research/dagger/engine"
 )
 
 func (c *Client) diffcopy(ctx context.Context, opts engine.LocalImportOpts, msg any) error {

@@ -12,9 +12,9 @@ import (
 	"strings"
 	"sync"
 
-	"dagger.io/dagger"
-	"dagger.io/dagger/querybuilder"
-	"github.com/dagger/dagger/engine/slog"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/querybuilder"
+	"github.com/G-Research/dagger/engine/slog"
 	"golang.org/x/sync/errgroup"
 	"mvdan.cc/sh/v3/expand"
 	"mvdan.cc/sh/v3/interp"

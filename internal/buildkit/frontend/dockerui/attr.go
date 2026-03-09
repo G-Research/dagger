@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/containerd/platforms"
-	"github.com/dagger/dagger/internal/buildkit/client/llb"
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
+	"github.com/G-Research/dagger/internal/buildkit/client/llb"
+	"github.com/G-Research/dagger/internal/buildkit/solver/pb"
 	"github.com/docker/go-units"
 	ocispecs "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/pkg/errors"

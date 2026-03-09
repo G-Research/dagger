@@ -19,13 +19,13 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"mvdan.cc/sh/v3/syntax"
 
-	"dagger.io/dagger"
-	"dagger.io/dagger/telemetry"
-	"github.com/dagger/dagger/core/openrouter"
-	"github.com/dagger/dagger/dagql/dagui"
-	"github.com/dagger/dagger/dagql/idtui"
-	"github.com/dagger/dagger/engine/slog"
-	"github.com/dagger/dagger/util/hashutil"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/telemetry"
+	"github.com/G-Research/dagger/core/openrouter"
+	"github.com/G-Research/dagger/dagql/dagui"
+	"github.com/G-Research/dagger/dagql/idtui"
+	"github.com/G-Research/dagger/engine/slog"
+	"github.com/G-Research/dagger/util/hashutil"
 )
 
 type interpreterMode int
@@ -179,7 +179,7 @@ func (s *LLMSession) Fork() *LLMSession {
 	// FIXME: this was a half-baked feature, currently does more harm than good
 	// because we lose partial progress on interrupt
 	//
-	// see https://github.com/dagger/dagger/pull/10765
+	// see https://github.com/G-Research/dagger/pull/10765
 	return s
 	// cp := *s
 	// cp.undo = s

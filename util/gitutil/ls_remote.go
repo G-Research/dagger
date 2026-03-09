@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dagger/dagger/util/hashutil"
+	"github.com/G-Research/dagger/util/hashutil"
 	"github.com/opencontainers/go-digest"
 )
 

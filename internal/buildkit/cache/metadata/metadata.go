@@ -7,9 +7,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
-	"github.com/dagger/dagger/internal/buildkit/util/db"
-	"github.com/dagger/dagger/internal/buildkit/util/db/boltutil"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/buildkit/util/db"
+	"github.com/G-Research/dagger/internal/buildkit/util/db/boltutil"
 	"github.com/pkg/errors"
 	"go.etcd.io/bbolt"
 	bolt "go.etcd.io/bbolt"

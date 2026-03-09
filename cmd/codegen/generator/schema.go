@@ -1,7 +1,7 @@
 package generator
 
 import (
-	"github.com/dagger/dagger/cmd/codegen/introspection"
+	"github.com/G-Research/dagger/cmd/codegen/introspection"
 )
 
 var _schema *introspection.Schema

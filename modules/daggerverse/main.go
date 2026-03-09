@@ -38,7 +38,7 @@ func New(
 	if err != nil {
 		return nil, err
 	}
-	repo := "github.com/dagger/dagger.io"
+	repo := "github.com/G-Research/dagger.io"
 	dgvs := &Daggerverse{
 		GitHubUser: *user.Name,
 		Repo:       repo,
@@ -77,7 +77,7 @@ daggerverse-checks in GitHub Actions ensures that module crawling works as expec
 
 Triggered by %s.
 
-		`, h.date(), fmt.Sprintf("https://github.com/dagger/dagger/pull/%s", target))
+		`, h.date(), fmt.Sprintf("https://github.com/G-Research/dagger/pull/%s", target))
 
 	// push the preview environment trigger branch
 	gh := h.Gh.WithSource(daggerio).

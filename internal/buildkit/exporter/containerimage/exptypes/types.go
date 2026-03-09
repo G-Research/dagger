@@ -3,7 +3,7 @@ package exptypes
 import (
 	"context"
 
-	"github.com/dagger/dagger/internal/buildkit/solver/result"
+	"github.com/G-Research/dagger/internal/buildkit/solver/result"
 	ocispecs "github.com/opencontainers/image-spec/specs-go/v1"
 )
 

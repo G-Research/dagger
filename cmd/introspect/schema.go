@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/dagger/dagger/cmd/codegen/introspection"
+	"github.com/G-Research/dagger/cmd/codegen/introspection"
 	"github.com/spf13/cobra"
 )
 

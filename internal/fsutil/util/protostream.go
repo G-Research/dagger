@@ -6,7 +6,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/dagger/dagger/internal/fsutil"
+	"github.com/G-Research/dagger/internal/fsutil"
 )
 
 var bufPool = sync.Pool{

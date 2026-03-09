@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 
-	resourcestypes "github.com/dagger/dagger/internal/buildkit/executor/resources/types"
+	resourcestypes "github.com/G-Research/dagger/internal/buildkit/executor/resources/types"
 	specs "github.com/opencontainers/runtime-spec/specs-go"
 )
 

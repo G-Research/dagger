@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 
 	"github.com/containerd/continuity/fs"
-	"github.com/dagger/dagger/internal/buildkit/snapshot"
-	"github.com/dagger/dagger/internal/fsutil"
-	fstypes "github.com/dagger/dagger/internal/fsutil/types"
+	"github.com/G-Research/dagger/internal/buildkit/snapshot"
+	"github.com/G-Research/dagger/internal/fsutil"
+	fstypes "github.com/G-Research/dagger/internal/fsutil/types"
 	"github.com/pkg/errors"
 )
 

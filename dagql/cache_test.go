@@ -10,14 +10,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dagger/dagger/engine"
+	"github.com/G-Research/dagger/engine"
 	"github.com/opencontainers/go-digest"
 	"github.com/vektah/gqlparser/v2/ast"
 	"golang.org/x/sync/errgroup"
 	"gotest.tools/v3/assert"
 	is "gotest.tools/v3/assert/cmp"
 
-	"github.com/dagger/dagger/dagql/call"
+	"github.com/G-Research/dagger/dagql/call"
 )
 
 func cacheTestID(key string) *call.ID {

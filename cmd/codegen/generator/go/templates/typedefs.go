@@ -10,8 +10,8 @@ import (
 	"os"
 	"runtime/debug"
 
-	"github.com/dagger/dagger/cmd/codegen/generator"
-	"github.com/dagger/dagger/cmd/codegen/introspection"
+	"github.com/G-Research/dagger/cmd/codegen/generator"
+	"github.com/G-Research/dagger/cmd/codegen/introspection"
 	"golang.org/x/tools/go/packages"
 )
 

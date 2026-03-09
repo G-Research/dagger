@@ -35,14 +35,14 @@ import (
 	"golang.org/x/term"
 	"mvdan.cc/sh/v3/interp"
 
-	"github.com/dagger/dagger/analytics"
-	"github.com/dagger/dagger/dagql/dagui"
-	"github.com/dagger/dagger/dagql/idtui"
-	"github.com/dagger/dagger/engine"
-	"github.com/dagger/dagger/engine/client/pathutil"
-	"github.com/dagger/dagger/engine/slog"
-	enginetel "github.com/dagger/dagger/engine/telemetry"
-	"github.com/dagger/dagger/internal/cloud/auth"
+	"github.com/G-Research/dagger/analytics"
+	"github.com/G-Research/dagger/dagql/dagui"
+	"github.com/G-Research/dagger/dagql/idtui"
+	"github.com/G-Research/dagger/engine"
+	"github.com/G-Research/dagger/engine/client/pathutil"
+	"github.com/G-Research/dagger/engine/slog"
+	enginetel "github.com/G-Research/dagger/engine/telemetry"
+	"github.com/G-Research/dagger/internal/cloud/auth"
 )
 
 var (

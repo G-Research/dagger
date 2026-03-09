@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dagger/dagger/version/internal/dagger"
+	"github.com/G-Research/dagger/version/internal/dagger"
 	"golang.org/x/mod/semver"
 )
 

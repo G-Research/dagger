@@ -4,10 +4,10 @@ import (
 	"context"
 	"os"
 
-	"github.com/dagger/dagger/engine/distconsts"
-	"github.com/dagger/dagger/internal/buildkit/solver"
-	"github.com/dagger/dagger/internal/buildkit/solver/llbsolver/mounts"
-	"github.com/dagger/dagger/internal/buildkit/worker"
+	"github.com/G-Research/dagger/engine/distconsts"
+	"github.com/G-Research/dagger/internal/buildkit/solver"
+	"github.com/G-Research/dagger/internal/buildkit/solver/llbsolver/mounts"
+	"github.com/G-Research/dagger/internal/buildkit/worker"
 )
 
 type ManagerConfig struct {

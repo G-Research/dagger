@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"dagger.io/dagger"
-	"dagger.io/dagger/dag"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/dag"
 	"github.com/dagger/testctx"
 	"github.com/stretchr/testify/require"
 )
@@ -24,7 +24,7 @@ func (UserDefaultsSuite) TestRemoteFile(ctx context.Context, t *testctx.T) {
 	c := connect(ctx, t)
 	output, err := nestedDaggerContainer(t, c, "go", "defaults").
 		WithWorkdir("defaults").
-		WithNewFile(".env", `DEFAULTS_FILE=https://github.com/dagger/dagger#main:cmd/dagger/main.go`).
+		WithNewFile(".env", `DEFAULTS_FILE=https://github.com/G-Research/dagger#main:cmd/dagger/main.go`).
 		WithExec([]string{"dagger", "call", "file", "contents"}, nestedExec).
 		Stdout(ctx)
 	require.NoError(t, err)
@@ -59,7 +59,7 @@ func (UserDefaultsSuite) TestRemoteDirectory(ctx context.Context, t *testctx.T) 
 	c := connect(ctx, t)
 	output, err := nestedDaggerContainer(t, c, "go", "defaults").
 		WithWorkdir("defaults").
-		WithNewFile(".env", `DIR=https://github.com/dagger/dagger#main:cmd/dagger`).
+		WithNewFile(".env", `DIR=https://github.com/G-Research/dagger#main:cmd/dagger`).
 		WithExec([]string{"dagger", "call", "dir", "file", "--path=main.go", "contents"}, nestedExec).
 		Stdout(ctx)
 	require.NoError(t, err)

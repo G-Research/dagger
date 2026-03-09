@@ -9,7 +9,7 @@ import (
 	"github.com/containerd/containerd/v2/core/remotes"
 	"github.com/containerd/containerd/v2/core/remotes/docker"
 	cerrdefs "github.com/containerd/errdefs"
-	"github.com/dagger/dagger/internal/buildkit/version"
+	"github.com/G-Research/dagger/internal/buildkit/version"
 	"github.com/moby/locker"
 	digest "github.com/opencontainers/go-digest"
 	ocispecs "github.com/opencontainers/image-spec/specs-go/v1"

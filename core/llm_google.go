@@ -8,8 +8,8 @@ import (
 	"iter"
 	"net/http"
 
-	"dagger.io/dagger/telemetry"
-	"github.com/dagger/dagger/engine/slog"
+	"github.com/G-Research/dagger/telemetry"
+	"github.com/G-Research/dagger/engine/slog"
 	"github.com/googleapis/gax-go/v2/apierror"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/log"

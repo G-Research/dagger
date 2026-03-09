@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dagger/dagger/internal/buildkit/frontend/dockerfile/parser"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/dockerfile/parser"
 	"github.com/pkg/errors"
 )
 

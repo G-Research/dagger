@@ -23,7 +23,7 @@ func (m *Tests) All(ctx context.Context) error {
 }
 
 func (m *Tests) Basic(ctx context.Context) error {
-	dir := dag.Git("https://github.com/dagger/dagger").Head().Tree()
+	dir := dag.Git("https://github.com/G-Research/dagger").Head().Tree()
 
 	site := dag.
 		Docusaurus(

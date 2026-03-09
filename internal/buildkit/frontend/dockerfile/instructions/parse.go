@@ -12,10 +12,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dagger/dagger/internal/buildkit/frontend/dockerfile/command"
-	"github.com/dagger/dagger/internal/buildkit/frontend/dockerfile/linter"
-	"github.com/dagger/dagger/internal/buildkit/frontend/dockerfile/parser"
-	"github.com/dagger/dagger/internal/buildkit/util/suggest"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/dockerfile/command"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/dockerfile/linter"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/dockerfile/parser"
+	"github.com/G-Research/dagger/internal/buildkit/util/suggest"
 	dockerspec "github.com/moby/docker-image-spec/specs-go/v1"
 	"github.com/pkg/errors"
 )

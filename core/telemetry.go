@@ -11,10 +11,10 @@ import (
 	"go.opentelemetry.io/otel/log"
 	"go.opentelemetry.io/otel/trace"
 
-	"dagger.io/dagger/telemetry"
-	"github.com/dagger/dagger/dagql"
-	"github.com/dagger/dagger/dagql/call"
-	"github.com/dagger/dagger/engine/slog"
+	"github.com/G-Research/dagger/telemetry"
+	"github.com/G-Research/dagger/dagql"
+	"github.com/G-Research/dagger/dagql/call"
+	"github.com/G-Research/dagger/engine/slog"
 )
 
 const (

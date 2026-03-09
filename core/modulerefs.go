@@ -10,10 +10,10 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"golang.org/x/mod/semver"
 
-	"dagger.io/dagger/telemetry"
-	"github.com/dagger/dagger/dagql"
-	"github.com/dagger/dagger/engine/slog"
-	"github.com/dagger/dagger/engine/vcs"
+	"github.com/G-Research/dagger/telemetry"
+	"github.com/G-Research/dagger/dagql"
+	"github.com/G-Research/dagger/engine/slog"
+	"github.com/G-Research/dagger/engine/vcs"
 )
 
 func fastModuleSourceKindCheck(

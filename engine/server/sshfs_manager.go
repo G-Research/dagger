@@ -16,7 +16,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/dagger/dagger/core"
+	"github.com/G-Research/dagger/core"
 	"github.com/opencontainers/go-digest"
 	"github.com/sirupsen/logrus"
 )

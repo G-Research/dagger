@@ -60,7 +60,7 @@ var TemplateIndexTS = func(name string) string {
  * rest is a long description with more detail on the module's purpose or usage,
  * if appropriate. All modules should have a short description.
  */
-import { dag, Container, Directory, object, func } from "@dagger.io/dagger"
+import { dag, Container, Directory, object, func } from "@github.com/G-Research/dagger"
 
 @object()
 export class %s {

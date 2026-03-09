@@ -6,7 +6,7 @@ import (
 	"go/types"
 	"path/filepath"
 
-	"dagger.io/dagger"
+	"github.com/G-Research/dagger"
 	"github.com/iancoleman/strcase"
 )
 

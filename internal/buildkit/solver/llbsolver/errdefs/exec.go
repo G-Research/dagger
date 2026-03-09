@@ -3,7 +3,7 @@ package errdefs
 import (
 	"context"
 
-	"github.com/dagger/dagger/internal/buildkit/solver"
+	"github.com/G-Research/dagger/internal/buildkit/solver"
 )
 
 // ExecError will be returned when an error is encountered when evaluating an op.

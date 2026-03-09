@@ -14,11 +14,11 @@ import (
 
 	_ "modernc.org/sqlite"
 
-	"github.com/dagger/dagger/dagql/call"
-	cachedb "github.com/dagger/dagger/dagql/db"
-	"github.com/dagger/dagger/engine"
-	"github.com/dagger/dagger/engine/slog"
-	"github.com/dagger/dagger/util/hashutil"
+	"github.com/G-Research/dagger/dagql/call"
+	cachedb "github.com/G-Research/dagger/dagql/db"
+	"github.com/G-Research/dagger/engine"
+	"github.com/G-Research/dagger/engine/slog"
+	"github.com/G-Research/dagger/util/hashutil"
 	"github.com/opencontainers/go-digest"
 	"github.com/vektah/gqlparser/v2/ast"
 )

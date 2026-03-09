@@ -13,15 +13,15 @@ func (ModuleSuite) TestRefIntegration(ctx context.Context, t *testctx.T) {
 
 	// This test handles a very edgy case:
 	// goGitBase inits a /work directory with a git context
-	// we then create a local dir with the same structure as a git remote: `/work/github.com/dagger/dagger`
+	// we then create a local dir with the same structure as a git remote: `/work/github.com/G-Research/dagger`
 	// It should be resolved as a local ref, not a remote one
-	t.Run("local module with same format as remote: github.com/dagger/dagger", func(ctx context.Context, t *testctx.T) {
+	t.Run("local module with same format as remote: github.com/G-Research/dagger", func(ctx context.Context, t *testctx.T) {
 		out, err := goGitBase(t, c).
 			WithMountedFile(testCLIBinPath, daggerCliFile(t, c)).
-			WithWorkdir("/work/github.com/dagger/dagger").
+			WithWorkdir("/work/github.com/G-Research/dagger").
 			WithExec([]string{"pwd"}).
 			With(daggerExec("init", "--source=.", "--name=dep", "--sdk=go")).
-			WithNewFile("/work/github.com/dagger/dagger/main.go", `package main
+			WithNewFile("/work/github.com/G-Research/dagger/main.go", `package main
 
 				import "context"
 
@@ -33,7 +33,7 @@ func (ModuleSuite) TestRefIntegration(ctx context.Context, t *testctx.T) {
 				`,
 			).
 			WithWorkdir("/work").
-			With(daggerCallAt("github.com/dagger/dagger", "get-source")).
+			With(daggerCallAt("github.com/G-Research/dagger", "get-source")).
 			Stdout(ctx)
 		require.NoError(t, err)
 		require.Equal(t, "hello", strings.TrimSpace(out))

@@ -10,15 +10,15 @@ import (
 	"strings"
 
 	"github.com/containerd/platforms"
-	bkcache "github.com/dagger/dagger/internal/buildkit/cache"
-	bkclient "github.com/dagger/dagger/internal/buildkit/client"
-	"github.com/dagger/dagger/internal/buildkit/exporter/containerimage/exptypes"
-	solverresult "github.com/dagger/dagger/internal/buildkit/solver/result"
-	"github.com/dagger/dagger/util/containerutil"
+	bkcache "github.com/G-Research/dagger/internal/buildkit/cache"
+	bkclient "github.com/G-Research/dagger/internal/buildkit/client"
+	"github.com/G-Research/dagger/internal/buildkit/exporter/containerimage/exptypes"
+	solverresult "github.com/G-Research/dagger/internal/buildkit/solver/result"
+	"github.com/G-Research/dagger/util/containerutil"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 
-	"github.com/dagger/dagger/engine"
-	ociexporter "github.com/dagger/dagger/engine/buildkit/exporter/oci"
+	"github.com/G-Research/dagger/engine"
+	ociexporter "github.com/G-Research/dagger/engine/buildkit/exporter/oci"
 )
 
 func (c *Client) PublishContainerImage(

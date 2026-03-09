@@ -10,22 +10,22 @@ import (
 
 	"github.com/containerd/containerd/v2/core/leases"
 	"github.com/containerd/continuity/fs"
-	bkcache "github.com/dagger/dagger/internal/buildkit/cache"
-	"github.com/dagger/dagger/internal/buildkit/cache/contenthash"
-	cacheutil "github.com/dagger/dagger/internal/buildkit/cache/util"
-	"github.com/dagger/dagger/internal/buildkit/client/llb"
-	bkgw "github.com/dagger/dagger/internal/buildkit/frontend/gateway/client"
-	bksession "github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/snapshot"
-	bksolver "github.com/dagger/dagger/internal/buildkit/solver"
-	solvererror "github.com/dagger/dagger/internal/buildkit/solver/errdefs"
-	llberror "github.com/dagger/dagger/internal/buildkit/solver/llbsolver/errdefs"
-	"github.com/dagger/dagger/internal/buildkit/solver/llbsolver/provenance"
-	solverresult "github.com/dagger/dagger/internal/buildkit/solver/result"
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
-	bkworker "github.com/dagger/dagger/internal/buildkit/worker"
-	"github.com/dagger/dagger/internal/fsutil"
-	fstypes "github.com/dagger/dagger/internal/fsutil/types"
+	bkcache "github.com/G-Research/dagger/internal/buildkit/cache"
+	"github.com/G-Research/dagger/internal/buildkit/cache/contenthash"
+	cacheutil "github.com/G-Research/dagger/internal/buildkit/cache/util"
+	"github.com/G-Research/dagger/internal/buildkit/client/llb"
+	bkgw "github.com/G-Research/dagger/internal/buildkit/frontend/gateway/client"
+	bksession "github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/snapshot"
+	bksolver "github.com/G-Research/dagger/internal/buildkit/solver"
+	solvererror "github.com/G-Research/dagger/internal/buildkit/solver/errdefs"
+	llberror "github.com/G-Research/dagger/internal/buildkit/solver/llbsolver/errdefs"
+	"github.com/G-Research/dagger/internal/buildkit/solver/llbsolver/provenance"
+	solverresult "github.com/G-Research/dagger/internal/buildkit/solver/result"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
+	bkworker "github.com/G-Research/dagger/internal/buildkit/worker"
+	"github.com/G-Research/dagger/internal/fsutil"
+	fstypes "github.com/G-Research/dagger/internal/fsutil/types"
 	"github.com/opencontainers/go-digest"
 	ocispecs "github.com/opencontainers/image-spec/specs-go/v1"
 )
@@ -189,7 +189,7 @@ func (r *ref) AddDependencyBlobs(ctx context.Context, blobs map[digest.Digest]*o
 
 	// This relies on the lease ID being the ref ID which, while unlikely to change, is worth
 	// keeping in mind:
-	// https://github.com/dagger/dagger/internal/buildkit/blob/c3c65787b5e2c2c9fcab1d0b9bd1884a37384c90/cache/manager.go#L231
+	// https://github.com/G-Research/dagger/internal/buildkit/blob/c3c65787b5e2c2c9fcab1d0b9bd1884a37384c90/cache/manager.go#L231
 	leaseID := cacheRef.ID()
 
 	lm := r.c.Worker.LeaseManager()
@@ -431,7 +431,7 @@ func withMount(mount snapshot.Mountable, cb func(string) error) error {
 // number that caused the error, including that in the error message so when users
 // hit this we can have a chance of debugging without needing to request their
 // full engine logs.
-// Related to https://github.com/dagger/dagger/issues/7699
+// Related to https://github.com/G-Research/dagger/issues/7699
 func includeBuildkitContextCancelledLine(err error) error {
 	errStrWithStack := fmt.Sprintf("%+v", err)
 	errStrSplit := strings.Split(errStrWithStack, "\n")

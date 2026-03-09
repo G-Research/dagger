@@ -15,8 +15,8 @@ import (
 	"github.com/iancoleman/strcase"
 	"golang.org/x/tools/go/packages"
 
-	"github.com/dagger/dagger/cmd/codegen/generator"
-	"github.com/dagger/dagger/cmd/codegen/introspection"
+	"github.com/G-Research/dagger/cmd/codegen/generator"
+	"github.com/G-Research/dagger/cmd/codegen/introspection"
 )
 
 func GoTemplateFuncs(

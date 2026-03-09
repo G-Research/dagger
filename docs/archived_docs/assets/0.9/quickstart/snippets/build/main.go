@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"dagger.io/dagger"
+	"github.com/G-Research/dagger"
 )
 
 func main() {

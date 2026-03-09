@@ -77,7 +77,7 @@ func (report *ReleaseReport) notify(
 			continue
 		}
 
-		message := fmt.Sprintf("%s: https://github.com/dagger/dagger/releases/tag/%s", artifact.Name, artifact.Tag)
+		message := fmt.Sprintf("%s: https://github.com/G-Research/dagger/releases/tag/%s", artifact.Name, artifact.Tag)
 		_, err := dag.Notify().Discord(ctx, discordWebhook, message)
 		if err != nil {
 			return err
@@ -233,7 +233,7 @@ func (r *Release) Publish( //nolint:gocyclo
 			name: "🐹 Go SDK",
 			path: "sdk/go/",
 			tag:  "sdk/go/",
-			link: "https://pkg.go.dev/dagger.io/dagger@" + cmp.Or(version, "main"),
+			link: "https://pkg.go.dev/github.com/G-Research/dagger@" + cmp.Or(version, "main"),
 			dev:  true,
 			release: func(ctx context.Context) error {
 				return dag.GoSDKDev().Release(ctx, tag, dagger.GoSDKDevReleaseOpts{
@@ -263,7 +263,7 @@ func (r *Release) Publish( //nolint:gocyclo
 			name: "⬢ TypeScript SDK",
 			path: "sdk/typescript/",
 			tag:  "sdk/typescript/",
-			link: "https://www.npmjs.com/package/@dagger.io/dagger/v/" + strings.TrimPrefix(version, "v"),
+			link: "https://www.npmjs.com/package/@github.com/G-Research/dagger/v/" + strings.TrimPrefix(version, "v"),
 			release: func(ctx context.Context) error {
 				return dag.TypescriptSDKDev().Release(ctx, tag, npmToken)
 			},
@@ -314,7 +314,7 @@ func (r *Release) Publish( //nolint:gocyclo
 			name: "☸️ Helm Chart",
 			path: "helm/dagger/",
 			tag:  "helm/chart/",
-			link: "https://github.com/dagger/dagger/pkgs/container/dagger-helm",
+			link: "https://github.com/G-Research/dagger/pkgs/container/dagger-helm",
 			release: func(ctx context.Context) error {
 				return dag.HelmDev().Publish(ctx, tag, dagger.HelmDevPublishOpts{
 					GithubToken: githubToken,
@@ -370,7 +370,7 @@ func (r *Release) Publish( //nolint:gocyclo
 
 				if semver.IsValid(version) {
 					notes := dag.Changelog().LookupEntry(component.path, version)
-					if err := r.githubRelease(ctx, "https://github.com/dagger/dagger", commit, target, notes, githubToken, dryRun); err != nil {
+					if err := r.githubRelease(ctx, "https://github.com/G-Research/dagger", commit, target, notes, githubToken, dryRun); err != nil {
 						artifact.Errors = append(artifact.Errors, dag.Error(err.Error()))
 						return nil
 					}
@@ -411,7 +411,7 @@ func (r *Release) Publish( //nolint:gocyclo
 
 		report.FollowUps = append(report.FollowUps, &ReleaseReportFollowUp{
 			Name: "🌌 Daggerverse",
-			Link: "https://github.com/dagger/dagger.io/pulls?q=author%3Adagger-ci+is%3Apr+in%3Atitle+dgvs+" + strings.TrimPrefix(version, "v"),
+			Link: "https://github.com/G-Research/dagger.io/pulls?q=author%3Adagger-ci+is%3Apr+in%3Atitle+dgvs+" + strings.TrimPrefix(version, "v"),
 		})
 	}
 

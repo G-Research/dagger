@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"dagger.io/dagger"
+	"github.com/G-Research/dagger"
 	"github.com/creack/pty"
-	"github.com/dagger/dagger/internal/testutil"
+	"github.com/G-Research/dagger/internal/testutil"
 	"github.com/dagger/testctx"
 	"github.com/stretchr/testify/require"
 )
@@ -413,7 +413,7 @@ class Test:
 				WithWorkdir("/work").
 				With(daggerExec("init", "--name=test", "--sdk=typescript")).
 				With(sdkSource("typescript", `
-import { object, func } from "@dagger.io/dagger";
+import { object, func } from "@github.com/G-Research/dagger";
 import * as https from "https";
 
 @object()

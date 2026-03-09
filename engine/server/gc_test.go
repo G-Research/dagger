@@ -3,10 +3,10 @@ package server
 import (
 	"testing"
 
-	"github.com/dagger/dagger/core"
-	bkclient "github.com/dagger/dagger/internal/buildkit/client"
-	bkconfig "github.com/dagger/dagger/internal/buildkit/cmd/buildkitd/config"
-	"github.com/dagger/dagger/internal/buildkit/util/disk"
+	"github.com/G-Research/dagger/core"
+	bkclient "github.com/G-Research/dagger/internal/buildkit/client"
+	bkconfig "github.com/G-Research/dagger/internal/buildkit/cmd/buildkitd/config"
+	"github.com/G-Research/dagger/internal/buildkit/util/disk"
 	"github.com/stretchr/testify/require"
 )
 

@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
 	"github.com/mackerelio/go-osstat/cpu"
 	"github.com/mackerelio/go-osstat/loadavg"
 	"github.com/mackerelio/go-osstat/memory"
@@ -23,7 +23,7 @@ import (
 	"golang.org/x/net/trace"
 	"golang.org/x/sys/unix"
 
-	"github.com/dagger/dagger/engine/server"
+	"github.com/G-Research/dagger/engine/server"
 )
 
 func setupDebugHandlers(addr string) error {

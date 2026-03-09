@@ -17,8 +17,8 @@ import (
 	"github.com/containerd/containerd/v2/core/remotes/docker"
 	"github.com/pkg/errors"
 
-	"github.com/dagger/dagger/internal/buildkit/util/resolver/config"
-	"github.com/dagger/dagger/internal/buildkit/util/tracing"
+	"github.com/G-Research/dagger/internal/buildkit/util/resolver/config"
+	"github.com/G-Research/dagger/internal/buildkit/util/tracing"
 )
 
 const (

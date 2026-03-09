@@ -10,7 +10,7 @@ import (
 	strings "strings"
 	"syscall"
 
-	"github.com/dagger/dagger/internal/fsutil/types"
+	"github.com/G-Research/dagger/internal/fsutil/types"
 	"github.com/pkg/errors"
 )
 

@@ -12,9 +12,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"dagger.io/dagger"
-	"github.com/dagger/dagger/cmd/codegen/generator"
-	"github.com/dagger/dagger/cmd/codegen/introspection"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/cmd/codegen/generator"
+	"github.com/G-Research/dagger/cmd/codegen/introspection"
 	"github.com/dschmidt/go-layerfs"
 	"github.com/iancoleman/strcase"
 	"github.com/psanford/memfs"
@@ -203,7 +203,7 @@ func (g *GoGenerator) bootstrapMod(mfs *memfs.FS, genSt *generator.GeneratedStat
 
 		// Assume the utility package are from the remote library but this
 		// will be overridden to packageImport is it's a dev engine.
-		UtilityPkgImport: "dagger.io/dagger",
+		UtilityPkgImport: "github.com/G-Research/dagger",
 	}, needsRegen, nil
 }
 
@@ -253,7 +253,7 @@ func (g *GoGenerator) syncModReplaceAndTidy(mod *modfile.File, genSt *generator.
 
 	// If the module uses a released version of the engine, we add it to the list of dependencies.
 	if g.Config.ModuleConfig.LibVersion != "" {
-		mod.AddRequire("dagger.io/dagger", g.Config.ModuleConfig.LibVersion)
+		mod.AddRequire("github.com/G-Research/dagger", g.Config.ModuleConfig.LibVersion)
 	}
 
 	genSt.PostCommands = append(genSt.PostCommands,

@@ -13,7 +13,7 @@ import (
 	"github.com/containerd/platforms"
 	"github.com/spf13/pflag"
 
-	"dagger.io/dagger"
+	"github.com/G-Research/dagger"
 )
 
 type UnsupportedFlagError struct {

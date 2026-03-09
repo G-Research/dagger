@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dagger/dagger/engine/slog"
+	"github.com/G-Research/dagger/engine/slog"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 )

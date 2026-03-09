@@ -52,8 +52,8 @@ func New(
 	}
 	values := []string{
 		// FIXME: how to avoid duplication with engine module?
-		"github.com/dagger/dagger/engine.Version=" + version,
-		"github.com/dagger/dagger/engine.Tag=" + imageTag,
+		"github.com/G-Research/dagger/engine.Version=" + version,
+		"github.com/G-Research/dagger/engine.Tag=" + imageTag,
 	}
 	if runnerHost != "" {
 		values = append(values, "main.RunnerHost="+runnerHost)

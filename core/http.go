@@ -13,10 +13,10 @@ import (
 	"time"
 
 	"github.com/containerd/containerd/v2/core/mount"
-	"github.com/dagger/dagger/engine/sources/netconfhttp"
-	bkcache "github.com/dagger/dagger/internal/buildkit/cache"
-	bkclient "github.com/dagger/dagger/internal/buildkit/client"
-	"github.com/dagger/dagger/util/hashutil"
+	"github.com/G-Research/dagger/engine/sources/netconfhttp"
+	bkcache "github.com/G-Research/dagger/internal/buildkit/cache"
+	bkclient "github.com/G-Research/dagger/internal/buildkit/client"
+	"github.com/G-Research/dagger/util/hashutil"
 	"github.com/opencontainers/go-digest"
 )
 
@@ -46,7 +46,7 @@ func DoHTTPRequest(
 
 	// If we request a single ETag in 'If-None-Match', some servers omit the
 	// unambiguous ETag in their response.
-	// See: https://github.com/dagger/dagger/internal/buildkit/issues/905
+	// See: https://github.com/G-Research/dagger/internal/buildkit/issues/905
 	var onlyETag string
 
 	if len(mds) > 0 {

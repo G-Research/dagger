@@ -6,9 +6,9 @@ import (
 	"errors"
 
 	"github.com/containerd/typeurl/v2"
-	"github.com/dagger/dagger/internal/buildkit/errdefs"
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
-	"github.com/dagger/dagger/internal/buildkit/util/stack"
+	"github.com/G-Research/dagger/internal/buildkit/errdefs"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/buildkit/util/stack"
 	rpc "github.com/gogo/googleapis/google/rpc"
 	gogotypes "github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/proto" //nolint:staticcheck

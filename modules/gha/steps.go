@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/dagger/dagger/modules/gha/api"
+	"github.com/G-Research/dagger/modules/gha/api"
 )
 
 func (j *Job) checkoutStep() api.JobStep {

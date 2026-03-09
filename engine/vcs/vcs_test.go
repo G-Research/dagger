@@ -43,19 +43,19 @@ func TestRepoRootForImportPath(t *testing.T) {
 			},
 		},
 		{
-			"github.com/dagger/dagger-test-modules/../..",
+			"github.com/G-Research/dagger-test-modules/../..",
 			&RepoRoot{
 				VCS:  vcsGit,
-				Repo: "https://github.com/dagger/dagger-test-modules",
-				Root: "github.com/dagger/dagger-test-modules",
+				Repo: "https://github.com/G-Research/dagger-test-modules",
+				Root: "github.com/G-Research/dagger-test-modules",
 			},
 		},
 		{
-			"github.com/dagger/dagger-test-modules/../../",
+			"github.com/G-Research/dagger-test-modules/../../",
 			&RepoRoot{
 				VCS:  vcsGit,
-				Repo: "https://github.com/dagger/dagger-test-modules",
-				Root: "github.com/dagger/dagger-test-modules",
+				Repo: "https://github.com/G-Research/dagger-test-modules",
+				Root: "github.com/G-Research/dagger-test-modules",
 			},
 		},
 		// Unicode letters are allowed in import paths.
@@ -214,11 +214,11 @@ func TestRepoRootForImportPath(t *testing.T) {
 		// 	},
 		// },
 		{ // vanity URL, TODO: improve test by changing dagger's redirection
-			"dagger.io/dagger",
+			"github.com/G-Research/dagger",
 			&RepoRoot{
 				VCS:  vcsGit,
-				Repo: "https://github.com/dagger/dagger-go-sdk",
-				Root: "dagger.io/dagger",
+				Repo: "https://github.com/G-Research/dagger-go-sdk",
+				Root: "github.com/G-Research/dagger",
 			},
 		},
 		{

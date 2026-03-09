@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"dagger.io/dagger"
-	"github.com/dagger/dagger/core/dotenv"
-	"github.com/dagger/dagger/internal/testutil"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/core/dotenv"
+	"github.com/G-Research/dagger/internal/testutil"
 	"github.com/dagger/testctx"
 	"github.com/stretchr/testify/require"
 )

@@ -1,6 +1,6 @@
 package pb
 
-import "github.com/dagger/dagger/internal/buildkit/util/apicaps"
+import "github.com/G-Research/dagger/internal/buildkit/util/apicaps"
 
 var Caps apicaps.CapList
 

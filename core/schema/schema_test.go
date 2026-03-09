@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/dagger/dagger/core"
-	"github.com/dagger/dagger/dagql"
+	"github.com/G-Research/dagger/core"
+	"github.com/G-Research/dagger/dagql"
 )
 
 func TestCoreModTypeDefs(t *testing.T) {

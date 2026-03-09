@@ -2,7 +2,7 @@ package ctrns
 
 import (
 	"github.com/containerd/containerd/v2/core/leases"
-	"github.com/dagger/dagger/internal/buildkit/util/leaseutil"
+	"github.com/G-Research/dagger/internal/buildkit/util/leaseutil"
 )
 
 type LeasesManagerNamespace = leaseutil.Manager

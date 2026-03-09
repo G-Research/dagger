@@ -8,10 +8,10 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/dagger/dagger/internal/buildkit/client/llb"
-	"github.com/dagger/dagger/internal/buildkit/frontend/gateway/client"
-	gwpb "github.com/dagger/dagger/internal/buildkit/frontend/gateway/pb"
-	"github.com/dagger/dagger/internal/buildkit/util/gitutil"
+	"github.com/G-Research/dagger/internal/buildkit/client/llb"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/gateway/client"
+	gwpb "github.com/G-Research/dagger/internal/buildkit/frontend/gateway/pb"
+	"github.com/G-Research/dagger/internal/buildkit/util/gitutil"
 	"github.com/pkg/errors"
 )
 

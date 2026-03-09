@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"dagger.io/dagger"
-	"github.com/dagger/dagger/core/modules"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/core/modules"
 	"github.com/dagger/testctx"
 	"github.com/stretchr/testify/require"
 )
@@ -449,7 +449,7 @@ func main() {
 				setup: func(ctr *dagger.Container) *dagger.Container {
 					return ctr.
 						With(daggerExec("init", "--name=test", "--sdk=typescript", "--source=.dagger")).
-						WithNewFile(".dagger/src/index.ts", `import { dag, object, func } from '@dagger.io/dagger'
+						WithNewFile(".dagger/src/index.ts", `import { dag, object, func } from '@github.com/G-Research/dagger'
 
 @object()
 export class Test {
@@ -708,7 +708,7 @@ main()
 				setup: func(ctr *dagger.Container) *dagger.Container {
 					return ctr.
 						With(daggerNonNestedExec("init", "--name=test", "--sdk=typescript", "--source=.dagger")).
-						WithNewFile(".dagger/src/index.ts", `import { object, func } from '@dagger.io/dagger'
+						WithNewFile(".dagger/src/index.ts", `import { object, func } from '@github.com/G-Research/dagger'
 
 @object()
 export class Test {
@@ -1155,7 +1155,7 @@ func (g *GeneratorModule) GenerateClient(
 		{
 			generatorSDK: "typescript",
 			// Omit `dev` from signature to verify that it works if it's not defined.
-			generatorSource: `import { dag, Directory, object, func, ModuleSource, File } from "@dagger.io/dagger"
+			generatorSource: `import { dag, Directory, object, func, ModuleSource, File } from "@github.com/G-Research/dagger"
 
 @object()
 export class GeneratorModule {
@@ -1925,7 +1925,7 @@ func (ClientGeneratorTest) TestEngineVersionPinning(ctx context.Context, t *test
 		require.NoError(t, err)
 
 		// Verify it contains the pinned version
-		require.Contains(t, goModContents, "dagger.io/dagger v0.19.9")
+		require.Contains(t, goModContents, "github.com/G-Research/dagger v0.19.9")
 		t.Logf("Generated go.mod correctly pins engine version:\n%s", goModContents)
 	})
 
@@ -1954,9 +1954,9 @@ func (ClientGeneratorTest) TestEngineVersionPinning(ctx context.Context, t *test
 			Contents(ctx)
 		require.NoError(t, err)
 
-		// Verify it does NOT contain a dagger.io/dagger dependency
+		// Verify it does NOT contain a github.com/G-Research/dagger dependency
 		// (dev versions shouldn't be pinned since they don't exist in the registry)
-		require.NotContains(t, goModContents, "dagger.io/dagger v0.19.11")
+		require.NotContains(t, goModContents, "github.com/G-Research/dagger v0.19.11")
 		t.Logf("Generated go.mod correctly omits dev version:\n%s", goModContents)
 	})
 }
@@ -1966,7 +1966,7 @@ func (ClientGeneratorTest) TestEngineVersionPinning(ctx context.Context, t *test
 func addSDKReplaceToClient(clientDir string) func(*dagger.Container) *dagger.Container {
 	return func(ctr *dagger.Container) *dagger.Container {
 		return ctr.
-			WithExec([]string{"sh", "-c", fmt.Sprintf("cd %s && go mod edit -replace dagger.io/dagger=./sdk", clientDir)}).
+			WithExec([]string{"sh", "-c", fmt.Sprintf("cd %s && go mod edit -replace github.com/G-Research/dagger=./sdk", clientDir)}).
 			WithExec([]string{"sh", "-c", fmt.Sprintf("cd %s && go mod tidy", clientDir)}).
 			WithExec([]string{"go", "mod", "tidy"})
 	}
@@ -2016,7 +2016,7 @@ func (ClientGeneratorTest) TestSeparateGoMod(ctx context.Context, t *testctx.T) 
 	require.Contains(t, clientGoMod, "module example.com/myapp/dagger", "client go.mod should have module name parent+subpath")
 	require.Contains(t, clientGoMod, "go 1.", "client go.mod should have go version")
 	require.Contains(t, clientGoMod, "require", "client go.mod should have dependencies")
-	require.Contains(t, clientGoMod, "dagger.io/dagger", "client go.mod should require dagger.io/dagger")
+	require.Contains(t, clientGoMod, "github.com/G-Research/dagger", "client go.mod should require github.com/G-Research/dagger")
 
 	// Verify parent go.mod has require + replace for client
 	parentGoMod, err := modCtr.File("go.mod").Contents(ctx)

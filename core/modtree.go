@@ -8,13 +8,13 @@ import (
 	"slices"
 	"strings"
 
-	"dagger.io/dagger/querybuilder"
-	"dagger.io/dagger/telemetry"
+	"github.com/G-Research/dagger/querybuilder"
+	"github.com/G-Research/dagger/telemetry"
 	doublestar "github.com/bmatcuk/doublestar/v4"
-	"github.com/dagger/dagger/dagql"
-	"github.com/dagger/dagger/engine"
+	"github.com/G-Research/dagger/dagql"
+	"github.com/G-Research/dagger/engine"
 
-	"github.com/dagger/dagger/util/parallel"
+	"github.com/G-Research/dagger/util/parallel"
 	"github.com/iancoleman/strcase"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"

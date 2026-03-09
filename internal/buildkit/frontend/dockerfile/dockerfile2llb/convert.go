@@ -20,23 +20,23 @@ import (
 	"time"
 
 	"github.com/containerd/platforms"
-	"github.com/dagger/dagger/internal/buildkit/client/llb"
-	"github.com/dagger/dagger/internal/buildkit/client/llb/imagemetaresolver"
-	"github.com/dagger/dagger/internal/buildkit/client/llb/sourceresolver"
-	"github.com/dagger/dagger/internal/buildkit/frontend/dockerfile/instructions"
-	"github.com/dagger/dagger/internal/buildkit/frontend/dockerfile/linter"
-	"github.com/dagger/dagger/internal/buildkit/frontend/dockerfile/parser"
-	"github.com/dagger/dagger/internal/buildkit/frontend/dockerfile/shell"
-	"github.com/dagger/dagger/internal/buildkit/frontend/dockerui"
-	"github.com/dagger/dagger/internal/buildkit/frontend/subrequests/lint"
-	"github.com/dagger/dagger/internal/buildkit/frontend/subrequests/outline"
-	"github.com/dagger/dagger/internal/buildkit/frontend/subrequests/targets"
-	"github.com/dagger/dagger/internal/buildkit/identity"
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
-	"github.com/dagger/dagger/internal/buildkit/util/apicaps"
-	"github.com/dagger/dagger/internal/buildkit/util/gitutil"
-	"github.com/dagger/dagger/internal/buildkit/util/suggest"
-	"github.com/dagger/dagger/internal/buildkit/util/system"
+	"github.com/G-Research/dagger/internal/buildkit/client/llb"
+	"github.com/G-Research/dagger/internal/buildkit/client/llb/imagemetaresolver"
+	"github.com/G-Research/dagger/internal/buildkit/client/llb/sourceresolver"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/dockerfile/instructions"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/dockerfile/linter"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/dockerfile/parser"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/dockerfile/shell"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/dockerui"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/subrequests/lint"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/subrequests/outline"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/subrequests/targets"
+	"github.com/G-Research/dagger/internal/buildkit/identity"
+	"github.com/G-Research/dagger/internal/buildkit/solver/pb"
+	"github.com/G-Research/dagger/internal/buildkit/util/apicaps"
+	"github.com/G-Research/dagger/internal/buildkit/util/gitutil"
+	"github.com/G-Research/dagger/internal/buildkit/util/suggest"
+	"github.com/G-Research/dagger/internal/buildkit/util/system"
 	"github.com/distribution/reference"
 	"github.com/docker/go-connections/nat"
 	dockerspec "github.com/moby/docker-image-spec/specs-go/v1"
@@ -359,7 +359,7 @@ func toDispatchState(ctx context.Context, dt []byte, opt ConvertOpt) (*dispatchS
 				ds.state = *s
 				if img != nil {
 					// timestamps are inherited as-is, regardless to SOURCE_DATE_EPOCH
-					// https://github.com/dagger/dagger/internal/buildkit/issues/4614
+					// https://github.com/G-Research/dagger/internal/buildkit/issues/4614
 					ds.image = *img
 					if img.Architecture != "" && img.OS != "" {
 						ds.platform = &ocispecs.Platform{
@@ -1444,7 +1444,7 @@ func dispatchCopy(d *dispatchState, cfg copyConfig) error {
 			// https://docs.docker.com/engine/reference/builder/#add
 			//
 			// Note: mixing up remote archives and local archives in a single ADD instruction
-			// would result in undefined behavior: https://github.com/dagger/dagger/internal/buildkit/pull/387#discussion_r189494717
+			// would result in undefined behavior: https://github.com/G-Research/dagger/internal/buildkit/pull/387#discussion_r189494717
 			u, err := url.Parse(src)
 			f := "__unnamed__"
 			if err == nil {

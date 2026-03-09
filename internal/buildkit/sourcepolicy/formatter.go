@@ -3,8 +3,8 @@ package sourcepolicy
 import (
 	"regexp"
 
-	spb "github.com/dagger/dagger/internal/buildkit/sourcepolicy/pb"
-	"github.com/dagger/dagger/internal/buildkit/util/wildcard"
+	spb "github.com/G-Research/dagger/internal/buildkit/sourcepolicy/pb"
+	"github.com/G-Research/dagger/internal/buildkit/util/wildcard"
 	"github.com/pkg/errors"
 )
 

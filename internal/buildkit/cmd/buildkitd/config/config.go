@@ -1,7 +1,7 @@
 package config
 
 import (
-	resolverconfig "github.com/dagger/dagger/internal/buildkit/util/resolver/config"
+	resolverconfig "github.com/G-Research/dagger/internal/buildkit/util/resolver/config"
 )
 
 // Config provides containerd configuration data for the server

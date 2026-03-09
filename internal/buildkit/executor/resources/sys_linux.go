@@ -4,7 +4,7 @@ import (
 	"os"
 	"time"
 
-	resourcestypes "github.com/dagger/dagger/internal/buildkit/executor/resources/types"
+	resourcestypes "github.com/G-Research/dagger/internal/buildkit/executor/resources/types"
 	"github.com/prometheus/procfs"
 )
 

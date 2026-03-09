@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/dagger/dagger/util/gitutil"
+	"github.com/G-Research/dagger/util/gitutil"
 	"github.com/stretchr/testify/require"
 )
 

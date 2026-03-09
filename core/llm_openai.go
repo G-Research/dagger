@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"dagger.io/dagger/telemetry"
-	"github.com/dagger/dagger/engine/slog"
+	"github.com/G-Research/dagger/telemetry"
+	"github.com/G-Research/dagger/engine/slog"
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/azure"
 	"github.com/openai/openai-go/option"

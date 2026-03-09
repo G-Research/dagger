@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"slices"
 
-	"github.com/dagger/dagger/dagql"
+	"github.com/G-Research/dagger/dagql"
 	"github.com/vektah/gqlparser/v2/ast"
 )
 

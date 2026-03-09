@@ -13,9 +13,9 @@ import (
 	"strings"
 	"testing"
 
-	"dagger.io/dagger"
-	"github.com/dagger/dagger/engine"
-	"github.com/dagger/dagger/internal/buildkit/identity"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/engine"
+	"github.com/G-Research/dagger/internal/buildkit/identity"
 	"github.com/dagger/testctx"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"

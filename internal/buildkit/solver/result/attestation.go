@@ -1,7 +1,7 @@
 package result
 
 import (
-	pb "github.com/dagger/dagger/internal/buildkit/frontend/gateway/pb"
+	pb "github.com/G-Research/dagger/internal/buildkit/frontend/gateway/pb"
 	digest "github.com/opencontainers/go-digest"
 )
 

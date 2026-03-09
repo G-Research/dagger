@@ -30,7 +30,7 @@ func TestUpdatePackageJSONForModule(t *testing.T) {
   "type": "module",
   "dependencies": {
     "typescript": "5.9.3",
-		"@dagger.io/dagger": "./sdk/index.ts"
+		"@github.com/G-Research/dagger": "./sdk/index.ts"
   }
 }`,
 			expected: `{
@@ -48,7 +48,7 @@ func TestUpdatePackageJSONForModule(t *testing.T) {
     "typescript": "5.9.3"
   },
 	"devDependencies": {
-		"@dagger.io/dagger": "./sdk"
+		"@github.com/G-Research/dagger": "./sdk"
 	}
 }`,
 			expected: `{
@@ -98,7 +98,7 @@ func TestUpdatePackageJSONForModule(t *testing.T) {
   "type": "module",
   "dependencies": {
     "typescript": "5.9.0",
-		"@dagger.io/dagger": "./sdk/index.ts"
+		"@github.com/G-Research/dagger": "./sdk/index.ts"
   }
 }`,
 			expected: `{

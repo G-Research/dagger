@@ -4,7 +4,7 @@
 package file
 
 import (
-	copy "github.com/dagger/dagger/internal/fsutil/copy"
+	copy "github.com/G-Research/dagger/internal/fsutil/copy"
 	"github.com/docker/docker/pkg/idtools"
 	"github.com/pkg/errors"
 )

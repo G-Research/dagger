@@ -10,11 +10,11 @@ import (
 	"time"
 
 	"github.com/containerd/continuity/fs"
-	"github.com/dagger/dagger/internal/buildkit/snapshot"
-	"github.com/dagger/dagger/internal/buildkit/solver/llbsolver/ops/fileoptypes"
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
-	"github.com/dagger/dagger/internal/buildkit/util/system"
-	copy "github.com/dagger/dagger/internal/fsutil/copy"
+	"github.com/G-Research/dagger/internal/buildkit/snapshot"
+	"github.com/G-Research/dagger/internal/buildkit/solver/llbsolver/ops/fileoptypes"
+	"github.com/G-Research/dagger/internal/buildkit/solver/pb"
+	"github.com/G-Research/dagger/internal/buildkit/util/system"
+	copy "github.com/G-Research/dagger/internal/fsutil/copy"
 	"github.com/docker/docker/pkg/idtools"
 	"github.com/pkg/errors"
 )

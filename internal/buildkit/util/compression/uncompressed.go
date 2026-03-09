@@ -6,7 +6,7 @@ import (
 
 	"github.com/containerd/containerd/v2/core/content"
 	"github.com/containerd/containerd/v2/core/images"
-	"github.com/dagger/dagger/internal/buildkit/util/iohelper"
+	"github.com/G-Research/dagger/internal/buildkit/util/iohelper"
 	ocispecs "github.com/opencontainers/image-spec/specs-go/v1"
 )
 

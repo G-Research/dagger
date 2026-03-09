@@ -11,9 +11,9 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 
-	"dagger.io/dagger"
-	"github.com/dagger/dagger/dagql/idtui"
-	"github.com/dagger/dagger/engine/client"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/dagql/idtui"
+	"github.com/G-Research/dagger/engine/client"
 )
 
 var (

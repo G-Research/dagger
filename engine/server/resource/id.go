@@ -1,6 +1,6 @@
 package resource
 
-import "github.com/dagger/dagger/dagql/call"
+import "github.com/G-Research/dagger/dagql/call"
 
 type ID struct {
 	call.ID

@@ -1,10 +1,10 @@
 package http
 
 import (
-	"github.com/dagger/dagger/internal/buildkit/solver/llbsolver/provenance"
-	provenancetypes "github.com/dagger/dagger/internal/buildkit/solver/llbsolver/provenance/types"
-	"github.com/dagger/dagger/internal/buildkit/source"
-	srctypes "github.com/dagger/dagger/internal/buildkit/source/types"
+	"github.com/G-Research/dagger/internal/buildkit/solver/llbsolver/provenance"
+	provenancetypes "github.com/G-Research/dagger/internal/buildkit/solver/llbsolver/provenance/types"
+	"github.com/G-Research/dagger/internal/buildkit/source"
+	srctypes "github.com/G-Research/dagger/internal/buildkit/source/types"
 	digest "github.com/opencontainers/go-digest"
 	"github.com/pkg/errors"
 )

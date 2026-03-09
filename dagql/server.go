@@ -23,9 +23,9 @@ import (
 	"github.com/zeebo/xxh3"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/dagger/dagger/dagql/call"
-	"github.com/dagger/dagger/util/hashutil"
-	"github.com/dagger/dagger/util/sortutil"
+	"github.com/G-Research/dagger/dagql/call"
+	"github.com/G-Research/dagger/util/hashutil"
+	"github.com/G-Research/dagger/util/sortutil"
 )
 
 // Server represents a GraphQL server whose schema is dynamically modified at

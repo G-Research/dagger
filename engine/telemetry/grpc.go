@@ -6,7 +6,7 @@ import (
 	grpc "google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/dagger/dagger/engine/slog"
+	"github.com/G-Research/dagger/engine/slog"
 )
 
 func MeasuringUnaryClientInterceptor() grpc.UnaryClientInterceptor {

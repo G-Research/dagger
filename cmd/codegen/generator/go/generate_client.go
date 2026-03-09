@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dagger/dagger/cmd/codegen/generator"
-	"github.com/dagger/dagger/cmd/codegen/introspection"
+	"github.com/G-Research/dagger/cmd/codegen/generator"
+	"github.com/G-Research/dagger/cmd/codegen/introspection"
 	"github.com/dschmidt/go-layerfs"
 	"github.com/psanford/memfs"
 	"golang.org/x/mod/modfile"
@@ -120,12 +120,12 @@ func (g *GoGenerator) GenerateClient(ctx context.Context, schema *introspection.
 	clientGoMod := new(modfile.File)
 	clientGoMod.AddModuleStmt(clientModuleName)
 	clientGoMod.AddGoStmt(goVersion)
-	// Set dagger.io/dagger version to match the engineVersion from dagger.json
+	// Set github.com/G-Research/dagger version to match the engineVersion from dagger.json
 	// Only for released versions (not dev, not empty) - go mod tidy will fail for unreleased versions
 	// (replace directives added by tests/users will override this)
 	engineVersion := g.Config.ClientConfig.EngineVersion
 	if engineVersion != "" && !strings.Contains(engineVersion, "-dev") {
-		clientGoMod.AddRequire("dagger.io/dagger", engineVersion)
+		clientGoMod.AddRequire("github.com/G-Research/dagger", engineVersion)
 	}
 
 	clientModBody, err := clientGoMod.Format()

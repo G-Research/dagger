@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	bkauth "github.com/dagger/dagger/internal/buildkit/session/auth"
+	bkauth "github.com/G-Research/dagger/internal/buildkit/session/auth"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -19,9 +19,9 @@ const defaultDockerDomain = "docker.io"
 
 // RegistryAuthProvider is a custom auth provider for image's registry
 // authentication from dynamic user provided secrets.
-// Adapted from: https://github.com/dagger/dagger/blob/v0.2.36/solver/registryauth.go
+// Adapted from: https://github.com/G-Research/dagger/blob/v0.2.36/solver/registryauth.go
 // and merge with Buildkit DockerAuthProvider from
-// https://github.com/dagger/dagger/internal/buildkit/blob/master/session/auth/authprovider/authprovider.go#L42
+// https://github.com/G-Research/dagger/internal/buildkit/blob/master/session/auth/authprovider/authprovider.go#L42
 //
 // RegistryAuthProvider implements session.Attachable to be used by Buildkit as
 // credential provider.

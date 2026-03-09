@@ -12,8 +12,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/dagger/dagger/internal/buildkit/frontend/dockerfile/command"
-	"github.com/dagger/dagger/internal/buildkit/frontend/dockerfile/shell"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/dockerfile/command"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/dockerfile/shell"
 	"github.com/pkg/errors"
 )
 

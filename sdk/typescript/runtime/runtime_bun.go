@@ -88,8 +88,8 @@ func (b *BunRuntime) SetupContainer(ctx context.Context) (*dagger.Container, err
 	// Merge all the generated files together and setup an entrypoint command.
 	ctr := runtimeWithDep.ctr.
 		WithMountedDirectory(GenDir, sdkLibrary).
-		// Make @dagger.io/dagger resolvable for ts-introspector (it doesn't read tsconfig paths).
-		WithMountedDirectory("node_modules/@dagger.io/dagger", sdkLibrary).
+		// Make @github.com/G-Research/dagger resolvable for ts-introspector (it doesn't read tsconfig paths).
+		WithMountedDirectory("node_modules/@github.com/G-Research/dagger", sdkLibrary).
 		WithMountedFile("tsconfig.json", tsConfig).
 		// Merge source code directory with current directory
 		WithDirectory(".", b.cfg.wrappedSourceCodeDirectory()).

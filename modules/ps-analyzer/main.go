@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dagger/dagger/modules/ps-analyzer/internal/dagger"
+	"github.com/G-Research/dagger/modules/ps-analyzer/internal/dagger"
 )
 
 const psScriptAnalyzerVersion = "1.22.0"

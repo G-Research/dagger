@@ -8,7 +8,7 @@ import (
 	"strings"
 	"syscall"
 
-	resourcestypes "github.com/dagger/dagger/internal/buildkit/executor/resources/types"
+	resourcestypes "github.com/G-Research/dagger/internal/buildkit/executor/resources/types"
 	"github.com/pkg/errors"
 )
 

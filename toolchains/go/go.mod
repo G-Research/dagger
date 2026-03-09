@@ -1,10 +1,10 @@
-module github.com/dagger/dagger/modules/go
+module github.com/G-Research/dagger/modules/go
 
 go 1.24.4
 
-require github.com/dagger/dagger v0.0.0-00010101000000-000000000000
+require github.com/G-Research/dagger v0.0.0-00010101000000-000000000000
 
-replace github.com/dagger/dagger => ../..
+replace github.com/G-Research/dagger => ../..
 
 require (
 	github.com/Khan/genqlient v0.8.1

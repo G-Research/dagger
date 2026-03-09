@@ -9,7 +9,7 @@ import (
 
 	"github.com/adrg/xdg"
 	"github.com/charmbracelet/huh"
-	"github.com/dagger/dagger/util/grpcutil"
+	"github.com/G-Research/dagger/util/grpcutil"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"

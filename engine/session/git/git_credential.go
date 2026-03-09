@@ -11,7 +11,7 @@ import (
 	strings "strings"
 	"time"
 
-	"github.com/dagger/dagger/util/netrc"
+	"github.com/G-Research/dagger/util/netrc"
 )
 
 // GetCredential retrieves Git credentials for the given request using the local Git credential system.

@@ -23,7 +23,7 @@ func NewReader(srcContent io.Reader, headerConverter HeaderConverter) io.ReadClo
 				// Signals end of archive.
 				rebasedTar.Close()
 				// drain the reader into io.Discard, until hitting EOF
-				// https://github.com/dagger/dagger/internal/buildkit/pull/4807#discussion_r1544621787
+				// https://github.com/G-Research/dagger/internal/buildkit/pull/4807#discussion_r1544621787
 				_, err = io.Copy(io.Discard, srcContent)
 				if err != nil {
 					w.CloseWithError(err)

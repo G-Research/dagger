@@ -15,7 +15,7 @@ func (m *MyModule) Build(ctx context.Context) (string, error) {
 		From("alpine:latest").
 		WithExec([]string{"apk", "add", "git"}).
 		WithWorkdir("/src").
-		WithExec([]string{"git", "clone", "https://github.com/dagger/dagger", "."}).
+		WithExec([]string{"git", "clone", "https://github.com/G-Research/dagger", "."}).
 		WithAnnotation("org.opencontainers.image.authors", "John Doe").
 		WithAnnotation("org.opencontainers.image.title", "Dagger source image viewer").
 		Publish(ctx, fmt.Sprintf("ttl.sh/custom-image-%.0f", math.Floor(rand.Float64()*10000000))) //#nosec

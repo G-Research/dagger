@@ -125,7 +125,7 @@ type SecretMount struct {
 	Mode int
 
 	// DO NOT USE
-	// Made public until https://github.com/dagger/dagger/pull/8149 is fixed.
+	// Made public until https://github.com/G-Research/dagger/pull/8149 is fixed.
 	// private
 	RegistryConfig *RegistryConfig
 }

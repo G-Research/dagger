@@ -6,7 +6,7 @@ import (
 	"errors"
 	"net/url"
 
-	"github.com/dagger/dagger/internal/buildkit/client/connhelper"
+	"github.com/G-Research/dagger/internal/buildkit/client/connhelper"
 )
 
 func Helper(u *url.URL) (*connhelper.ConnectionHelper, error) {

@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"github.com/dagger/dagger/internal/buildkit/util/stack"
+	"github.com/G-Research/dagger/internal/buildkit/util/stack"
 	"github.com/pkg/errors"
 )
 

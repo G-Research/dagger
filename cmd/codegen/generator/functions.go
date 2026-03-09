@@ -5,7 +5,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/dagger/dagger/cmd/codegen/introspection"
+	"github.com/G-Research/dagger/cmd/codegen/introspection"
 	"golang.org/x/mod/semver"
 )
 

@@ -6,8 +6,8 @@ import (
 	"net"
 	"net/url"
 
-	"github.com/dagger/dagger/engine/client/imageload"
-	"github.com/dagger/dagger/internal/cloud/auth"
+	"github.com/G-Research/dagger/engine/client/imageload"
+	"github.com/G-Research/dagger/internal/cloud/auth"
 )
 
 type Driver interface {

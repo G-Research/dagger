@@ -6,10 +6,10 @@ package moby_buildkit_v1
 import (
 	context "context"
 	fmt "fmt"
-	types "github.com/dagger/dagger/internal/buildkit/api/types"
-	pb "github.com/dagger/dagger/internal/buildkit/solver/pb"
-	pb1 "github.com/dagger/dagger/internal/buildkit/sourcepolicy/pb"
-	github_com_dagger_dagger_internal_buildkit_util_entitlements "github.com/dagger/dagger/internal/buildkit/util/entitlements"
+	types "github.com/G-Research/dagger/internal/buildkit/api/types"
+	pb "github.com/G-Research/dagger/internal/buildkit/solver/pb"
+	pb1 "github.com/G-Research/dagger/internal/buildkit/sourcepolicy/pb"
+	github_com_dagger_dagger_internal_buildkit_util_entitlements "github.com/G-Research/dagger/internal/buildkit/util/entitlements"
 	rpc "github.com/gogo/googleapis/google/rpc"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
@@ -402,7 +402,7 @@ type SolveRequest struct {
 	Frontend                string                                                                     `protobuf:"bytes,6,opt,name=Frontend,proto3" json:"Frontend,omitempty"`
 	FrontendAttrs           map[string]string                                                          `protobuf:"bytes,7,rep,name=FrontendAttrs,proto3" json:"FrontendAttrs,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	Cache                   CacheOptions                                                               `protobuf:"bytes,8,opt,name=Cache,proto3" json:"Cache"`
-	Entitlements            []github_com_dagger_dagger_internal_buildkit_util_entitlements.Entitlement `protobuf:"bytes,9,rep,name=Entitlements,proto3,customtype=github.com/dagger/dagger/internal/buildkit/util/entitlements.Entitlement" json:"Entitlements,omitempty"`
+	Entitlements            []github_com_dagger_dagger_internal_buildkit_util_entitlements.Entitlement `protobuf:"bytes,9,rep,name=Entitlements,proto3,customtype=github.com/G-Research/dagger/internal/buildkit/util/entitlements.Entitlement" json:"Entitlements,omitempty"`
 	FrontendInputs          map[string]*pb.Definition                                                  `protobuf:"bytes,10,rep,name=FrontendInputs,proto3" json:"FrontendInputs,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	Internal                bool                                                                       `protobuf:"varint,11,opt,name=Internal,proto3" json:"Internal,omitempty"`
 	SourcePolicy            *pb1.Policy                                                                `protobuf:"bytes,12,opt,name=SourcePolicy,proto3" json:"SourcePolicy,omitempty"`

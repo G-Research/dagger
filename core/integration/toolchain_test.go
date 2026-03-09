@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"dagger.io/dagger"
+	"github.com/G-Research/dagger"
 	"github.com/stretchr/testify/require"
 
 	"github.com/dagger/testctx"
@@ -549,7 +549,7 @@ func (ToolchainSuite) TestToolchainMultipleVersions(ctx context.Context, t *test
   "toolchains": [
     {
       "name": "dev",
-      "source": "github.com/dagger/dagger/core/integration/testdata/test-blueprint/hello-with-constructor@v0.19.9",
+      "source": "github.com/G-Research/dagger/core/integration/testdata/test-blueprint/hello-with-constructor@v0.19.9",
       "customizations": [
         {
           "argument": "config",
@@ -603,15 +603,15 @@ func (ToolchainSuite) TestToolchainLocalModuleHints(ctx context.Context, t *test
 			With(daggerExec("init"))
 
 		_, err := modGen.
-			WithEnvVariable("DAGGER_MODULE", "github.com/dagger/dagger@main").
+			WithEnvVariable("DAGGER_MODULE", "github.com/G-Research/dagger@main").
 			With(daggerExec("toolchain", "list")).
 			Sync(ctx)
-		requireErrOut(t, err, `module source "github.com/dagger/dagger@main" kind must be "local", got "git"`)
-		requireErrOut(t, err, `hint: module source came from DAGGER_MODULE="github.com/dagger/dagger@main"`)
+		requireErrOut(t, err, `module source "github.com/G-Research/dagger@main" kind must be "local", got "git"`)
+		requireErrOut(t, err, `hint: module source came from DAGGER_MODULE="github.com/G-Research/dagger@main"`)
 		requireErrOut(t, err, "pass `--mod .`")
 
 		out, err := modGen.
-			WithEnvVariable("DAGGER_MODULE", "github.com/dagger/dagger@main").
+			WithEnvVariable("DAGGER_MODULE", "github.com/G-Research/dagger@main").
 			With(daggerExec("toolchain", "list", "--mod", ".")).
 			Stdout(ctx)
 		require.NoError(t, err)
@@ -624,10 +624,10 @@ func (ToolchainSuite) TestToolchainLocalModuleHints(ctx context.Context, t *test
 			With(daggerExec("init"))
 
 		_, err := modGen.
-			With(daggerExec("toolchain", "list", "--mod", "github.com/dagger/dagger@main")).
+			With(daggerExec("toolchain", "list", "--mod", "github.com/G-Research/dagger@main")).
 			Sync(ctx)
-		requireErrOut(t, err, `module source "github.com/dagger/dagger@main" kind must be "local", got "git"`)
-		requireErrOut(t, err, `hint: module source came from --mod="github.com/dagger/dagger@main"`)
+		requireErrOut(t, err, `module source "github.com/G-Research/dagger@main" kind must be "local", got "git"`)
+		requireErrOut(t, err, `hint: module source came from --mod="github.com/G-Research/dagger@main"`)
 		requireErrOut(t, err, "pass `--mod .`")
 	})
 }

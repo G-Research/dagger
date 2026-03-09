@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/dagger/dagger/internal/fsutil"
-	"github.com/dagger/dagger/internal/fsutil/types"
+	"github.com/G-Research/dagger/internal/fsutil"
+	"github.com/G-Research/dagger/internal/fsutil/types"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

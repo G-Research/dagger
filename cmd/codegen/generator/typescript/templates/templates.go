@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"text/template"
 
-	"github.com/dagger/dagger/cmd/codegen/generator"
+	"github.com/G-Research/dagger/cmd/codegen/generator"
 )
 
 //go:embed src

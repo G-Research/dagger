@@ -1,6 +1,6 @@
 package generator
 
-import "dagger.io/dagger"
+import "github.com/G-Research/dagger"
 
 type Config struct {
 	// Lang is the language to generate the module for.
@@ -60,7 +60,7 @@ type ModuleGeneratorConfig struct {
 	// name is the expected value.
 	IsInit bool
 
-	// If set, use `@dagger.io/dagger` with the given version and use it in the generated client.
+	// If set, use `@github.com/G-Research/dagger` with the given version and use it in the generated client.
 	LibVersion string
 }
 
@@ -84,7 +84,7 @@ type ClientGeneratorConfig struct {
 	// The directory where the client will be generated.
 	ClientDir string
 
-	// The engine version from dagger.json, used to pin the dagger.io/dagger dependency.
+	// The engine version from dagger.json, used to pin the github.com/G-Research/dagger dependency.
 	// This is only populated when generating from a module source (not in tests).
 	EngineVersion string
 }

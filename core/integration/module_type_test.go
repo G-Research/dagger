@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/dagger/dagger/dagql/call"
+	"github.com/G-Research/dagger/dagql/call"
 	"github.com/dagger/testctx"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 
-	"dagger.io/dagger"
+	"github.com/G-Research/dagger"
 )
 
 type TypeSuite struct{}
@@ -75,7 +75,7 @@ class Test:
 		{
 			sdk: "typescript",
 			source: `
-import { object, func } from "@dagger.io/dagger"
+import { object, func } from "@github.com/G-Research/dagger"
 
 @object()
 export class Repeater {
@@ -159,7 +159,7 @@ class Test:
 		{
 			sdk: "typescript",
 			source: `
-import { object, func } from "@dagger.io/dagger"
+import { object, func } from "@github.com/G-Research/dagger"
 
 @object()
 export class X {
@@ -240,7 +240,7 @@ class Test:
 		{
 			sdk: "typescript",
 			source: `
-import { object, func } from "@dagger.io/dagger"
+import { object, func } from "@github.com/G-Research/dagger"
 
 @object()
 export class X {
@@ -335,7 +335,7 @@ class Test:
 		{
 			sdk: "typescript",
 			source: `
-import { object, func } from "@dagger.io/dagger"
+import { object, func } from "@github.com/G-Research/dagger"
 
 @object()
 export class Bar {
@@ -436,7 +436,7 @@ class Test:
 		{
 			sdk: "typescript",
 			source: `
-import { dag, Container, File, object, func } from "@dagger.io/dagger"
+import { dag, Container, File, object, func } from "@github.com/G-Research/dagger"
 
 @object()
 export class Foo {
@@ -560,7 +560,7 @@ class Test:
 		{
 			sdk: "typescript",
 			source: `
-import { dag, Container, object, func } from "@dagger.io/dagger"
+import { dag, Container, object, func } from "@github.com/G-Research/dagger"
 
 @object()
 export class ScanReport {
@@ -666,7 +666,7 @@ class Test:
 		{
 			sdk: "typescript",
 			source: `
-import { object, func } from "@dagger.io/dagger"
+import { object, func } from "@github.com/G-Research/dagger"
 
 @object()
 export class Test {
@@ -779,7 +779,7 @@ class Test:
 		{
 			sdk: "typescript",
 			source: `
-import { object, func } from "@dagger.io/dagger"
+import { object, func } from "@github.com/G-Research/dagger"
 
 @object()
 export class Message {
@@ -942,7 +942,7 @@ class Test:
 		},
 		{
 			sdk: "typescript",
-			source: `import { object, func, Platform } from "@dagger.io/dagger"
+			source: `import { object, func, Platform } from "@github.com/G-Research/dagger"
 
 @object()
 export class Test {
@@ -1063,7 +1063,7 @@ class Test:
 			},
 			{
 				sdk: "typescript",
-				source: `import { object, func, NetworkProtocol } from "@dagger.io/dagger";
+				source: `import { object, func, NetworkProtocol } from "@github.com/G-Research/dagger";
 
 @object()
 export class Test {
@@ -1138,7 +1138,7 @@ func (m *Test) ToImageLayerCompression(imageLayerCompression string) dagger.Imag
 			},
 			{
 				sdk: "typescript",
-				source: `import { ImageLayerCompression, object, func } from "@dagger.io/dagger";
+				source: `import { ImageLayerCompression, object, func } from "@github.com/G-Research/dagger";
 
 @object()
 export class Test {
@@ -1296,7 +1296,7 @@ class Test:
 			{
 				sdk:             "typescript",
 				supportsMembers: true,
-				source: `import { func, object } from "@dagger.io/dagger"
+				source: `import { func, object } from "@github.com/G-Research/dagger"
 
 /**
  * Enum for Status
@@ -1537,7 +1537,7 @@ class Test:
 			{
 				sdk:             "typescript",
 				supportsMembers: true,
-				source: `import { dag, func, object, DepStatus } from "@dagger.io/dagger"
+				source: `import { dag, func, object, DepStatus } from "@github.com/G-Research/dagger"
 
 @object()
 export class Test {

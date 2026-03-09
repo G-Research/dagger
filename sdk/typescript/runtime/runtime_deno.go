@@ -76,8 +76,8 @@ func (d *DenoRuntime) SetupContainer(ctx context.Context) (*dagger.Container, er
 
 	ctr := denoRuntimeWithDep.ctr.
 		WithMountedDirectory(GenDir, sdkLibrary).
-		// Make @dagger.io/dagger resolvable for ts-introspector (it doesn't read tsconfig paths).
-		WithMountedDirectory("node_modules/@dagger.io/dagger", sdkLibrary).
+		// Make @github.com/G-Research/dagger resolvable for ts-introspector (it doesn't read tsconfig paths).
+		WithMountedDirectory("node_modules/@github.com/G-Research/dagger", sdkLibrary).
 		// Merge source code directory with current directory
 		WithDirectory(".", d.cfg.wrappedSourceCodeDirectory()).
 		WithMountedFile(entrypointPath, entrypointFile()).

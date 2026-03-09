@@ -7,11 +7,11 @@ import (
 	"io"
 	"strings"
 
-	"github.com/dagger/dagger/.dagger/internal/dagger"
+	"github.com/G-Research/dagger/.dagger/internal/dagger"
 )
 
 // Merge Changesets together
-// FIXME: move this to core dagger: https://github.com/dagger/dagger/issues/11189
+// FIXME: move this to core dagger: https://github.com/G-Research/dagger/issues/11189
 func changesetMerge(changesets ...*dagger.Changeset) *dagger.Changeset {
 	before := dag.Directory()
 	for _, changeset := range changesets {

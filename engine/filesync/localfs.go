@@ -13,15 +13,15 @@ import (
 	"time"
 
 	"github.com/containerd/continuity/sysx"
-	bkcache "github.com/dagger/dagger/internal/buildkit/cache"
-	bkcontenthash "github.com/dagger/dagger/internal/buildkit/cache/contenthash"
-	"github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/snapshot"
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
-	"github.com/dagger/dagger/internal/fsutil"
-	fscopy "github.com/dagger/dagger/internal/fsutil/copy"
-	"github.com/dagger/dagger/internal/fsutil/types"
-	"github.com/dagger/dagger/util/hashutil"
+	bkcache "github.com/G-Research/dagger/internal/buildkit/cache"
+	bkcontenthash "github.com/G-Research/dagger/internal/buildkit/cache/contenthash"
+	"github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/snapshot"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/fsutil"
+	fscopy "github.com/G-Research/dagger/internal/fsutil/copy"
+	"github.com/G-Research/dagger/internal/fsutil/types"
+	"github.com/G-Research/dagger/util/hashutil"
 	digest "github.com/opencontainers/go-digest"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -30,8 +30,8 @@ import (
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sys/unix"
 
-	"dagger.io/dagger/telemetry"
-	"github.com/dagger/dagger/engine/contenthash"
+	"github.com/G-Research/dagger/telemetry"
+	"github.com/G-Research/dagger/engine/contenthash"
 )
 
 const (
@@ -190,7 +190,7 @@ func (local *localFS) Sync( //nolint:gocyclo
 
 	// We assert if we find a file/dir in the given relative path to correctly return
 	// an error if nothing exist in there.
-	// See explanations here: https://github.com/dagger/dagger/pull/10995#issuecomment-3347636652
+	// See explanations here: https://github.com/G-Research/dagger/pull/10995#issuecomment-3347636652
 	relPathFound := false
 
 	// Hardlinks are a bit hard; we can't create them until their source file exists but we sync in files asynchronously.

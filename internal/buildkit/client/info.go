@@ -3,8 +3,8 @@ package client
 import (
 	"context"
 
-	controlapi "github.com/dagger/dagger/internal/buildkit/api/services/control"
-	apitypes "github.com/dagger/dagger/internal/buildkit/api/types"
+	controlapi "github.com/G-Research/dagger/internal/buildkit/api/services/control"
+	apitypes "github.com/G-Research/dagger/internal/buildkit/api/types"
 	"github.com/pkg/errors"
 )
 

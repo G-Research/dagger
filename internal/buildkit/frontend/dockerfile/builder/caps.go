@@ -3,9 +3,9 @@ package builder
 import (
 	"strings"
 
-	"github.com/dagger/dagger/internal/buildkit/solver/errdefs"
-	"github.com/dagger/dagger/internal/buildkit/util/grpcerrors"
-	"github.com/dagger/dagger/internal/buildkit/util/stack"
+	"github.com/G-Research/dagger/internal/buildkit/solver/errdefs"
+	"github.com/G-Research/dagger/internal/buildkit/util/grpcerrors"
+	"github.com/G-Research/dagger/internal/buildkit/util/stack"
 	"google.golang.org/grpc/codes"
 )
 

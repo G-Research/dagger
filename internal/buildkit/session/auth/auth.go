@@ -6,8 +6,8 @@ import (
 	"crypto/subtle"
 	"sync"
 
-	"github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/util/grpcerrors"
+	"github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/util/grpcerrors"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/nacl/sign"
 	"google.golang.org/grpc/codes"

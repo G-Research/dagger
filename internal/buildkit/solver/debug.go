@@ -6,8 +6,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dagger/dagger/internal/buildkit/solver/internal/pipe"
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/buildkit/solver/internal/pipe"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
 	"github.com/tonistiigi/go-csvvalue"
 )
 

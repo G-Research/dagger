@@ -5,12 +5,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/solver"
-	"github.com/dagger/dagger/internal/buildkit/solver/llbsolver/ops/opsutils"
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
-	"github.com/dagger/dagger/internal/buildkit/source"
-	"github.com/dagger/dagger/internal/buildkit/worker"
+	"github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/solver"
+	"github.com/G-Research/dagger/internal/buildkit/solver/llbsolver/ops/opsutils"
+	"github.com/G-Research/dagger/internal/buildkit/solver/pb"
+	"github.com/G-Research/dagger/internal/buildkit/source"
+	"github.com/G-Research/dagger/internal/buildkit/worker"
 	digest "github.com/opencontainers/go-digest"
 	"golang.org/x/sync/semaphore"
 )

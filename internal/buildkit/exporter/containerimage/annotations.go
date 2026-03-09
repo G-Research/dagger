@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/containerd/platforms"
-	"github.com/dagger/dagger/internal/buildkit/exporter/containerimage/exptypes"
+	"github.com/G-Research/dagger/internal/buildkit/exporter/containerimage/exptypes"
 )
 
 type Annotations struct {

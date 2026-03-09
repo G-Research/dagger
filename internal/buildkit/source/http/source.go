@@ -16,15 +16,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dagger/dagger/internal/buildkit/cache"
-	"github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/snapshot"
-	"github.com/dagger/dagger/internal/buildkit/solver"
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
-	"github.com/dagger/dagger/internal/buildkit/source"
-	srctypes "github.com/dagger/dagger/internal/buildkit/source/types"
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
-	"github.com/dagger/dagger/internal/buildkit/util/tracing"
+	"github.com/G-Research/dagger/internal/buildkit/cache"
+	"github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/snapshot"
+	"github.com/G-Research/dagger/internal/buildkit/solver"
+	"github.com/G-Research/dagger/internal/buildkit/solver/pb"
+	"github.com/G-Research/dagger/internal/buildkit/source"
+	srctypes "github.com/G-Research/dagger/internal/buildkit/source/types"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/buildkit/util/tracing"
 	"github.com/docker/docker/pkg/idtools"
 	digest "github.com/opencontainers/go-digest"
 	"github.com/pkg/errors"
@@ -185,7 +185,7 @@ func (hs *httpSourceHandler) CacheKey(ctx context.Context, g session.Group, inde
 
 	// If we request a single ETag in 'If-None-Match', some servers omit the
 	// unambiguous ETag in their response.
-	// See: https://github.com/dagger/dagger/internal/buildkit/issues/905
+	// See: https://github.com/G-Research/dagger/internal/buildkit/issues/905
 	var onlyETag string
 
 	if len(mds) > 0 {

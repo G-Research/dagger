@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"dagger.io/dagger"
+	"github.com/G-Research/dagger"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/dagger/dagger/dagql/idtui"
-	"github.com/dagger/dagger/util/gitutil"
+	"github.com/G-Research/dagger/dagql/idtui"
+	"github.com/G-Research/dagger/util/gitutil"
 	"github.com/dagger/testctx"
 	"github.com/stretchr/testify/require"
 	"github.com/vito/bubbline/editline"

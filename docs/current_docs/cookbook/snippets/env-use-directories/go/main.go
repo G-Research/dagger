@@ -7,7 +7,7 @@ import (
 type MyModule struct{}
 
 func (m *MyModule) Agent() *dagger.Directory {
-	dir := dag.Git("github.com/dagger/dagger").Branch("main").Tree()
+	dir := dag.Git("github.com/G-Research/dagger").Branch("main").Tree()
 	environment := dag.Env().
 		WithDirectoryInput("source", dir, "the source directory to use").
 		WithDirectoryOutput("result", "the updated directory")

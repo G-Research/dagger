@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	bkconfig "github.com/dagger/dagger/internal/buildkit/cmd/buildkitd/config"
-	"github.com/dagger/dagger/internal/buildkit/util/disk"
+	bkconfig "github.com/G-Research/dagger/internal/buildkit/cmd/buildkitd/config"
+	"github.com/G-Research/dagger/internal/buildkit/util/disk"
 	"github.com/invopop/jsonschema"
 	"github.com/sirupsen/logrus"
 
-	"github.com/dagger/dagger/engine/slog"
+	"github.com/G-Research/dagger/engine/slog"
 )
 
 // NOTE: when modifying the config struct:

@@ -21,21 +21,21 @@ import (
 	"time"
 
 	"github.com/containerd/platforms"
-	bkconfig "github.com/dagger/dagger/internal/buildkit/cmd/buildkitd/config"
-	"github.com/dagger/dagger/internal/buildkit/identity"
-	resolverconfig "github.com/dagger/dagger/internal/buildkit/util/resolver/config"
+	bkconfig "github.com/G-Research/dagger/internal/buildkit/cmd/buildkitd/config"
+	"github.com/G-Research/dagger/internal/buildkit/identity"
+	resolverconfig "github.com/G-Research/dagger/internal/buildkit/util/resolver/config"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	ocispecs "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
-	"dagger.io/dagger"
-	"github.com/dagger/dagger/core"
-	"github.com/dagger/dagger/core/schema"
-	"github.com/dagger/dagger/engine/buildkit"
-	"github.com/dagger/dagger/engine/distconsts"
-	"github.com/dagger/dagger/internal/testutil"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/core"
+	"github.com/G-Research/dagger/core/schema"
+	"github.com/G-Research/dagger/engine/buildkit"
+	"github.com/G-Research/dagger/engine/distconsts"
+	"github.com/G-Research/dagger/internal/testutil"
 	"github.com/dagger/testctx"
 )
 
@@ -1006,7 +1006,7 @@ func (ContainerSuite) TestLabel(ctx context.Context, t *testctx.T) {
 	})
 
 	// implementing this test as GraphQL query until
-	// https://github.com/dagger/dagger/issues/4398 gets resolved
+	// https://github.com/G-Research/dagger/issues/4398 gets resolved
 	t.Run("container labels", func(ctx context.Context, t *testctx.T) {
 		res, err := testutil.QueryWithClient[struct {
 			Container struct {
@@ -1067,7 +1067,7 @@ func (ContainerSuite) TestLabel(ctx context.Context, t *testctx.T) {
 	})
 
 	// implementing this test as GraphQL query until
-	// https://github.com/dagger/dagger/issues/4398 gets resolved
+	// https://github.com/G-Research/dagger/issues/4398 gets resolved
 	t.Run("container labels - nil panics", func(ctx context.Context, t *testctx.T) {
 		res, err := testutil.QueryWithClient[struct {
 			Container struct {
@@ -3286,7 +3286,7 @@ func (ContainerSuite) TestExecError(ctx context.Context, t *testctx.T) {
 
 		// fill a byte buffer with a string that is slightly over the size of the max output
 		// size, then base64 encode it
-		// include some newlines to avoid https://github.com/dagger/dagger/issues/7786
+		// include some newlines to avoid https://github.com/G-Research/dagger/issues/7786
 		var stdoutBuf bytes.Buffer
 		for i := range buildkit.MaxExecErrorOutputBytes + extraByteCount {
 			if i > 0 && i%100 == 0 {

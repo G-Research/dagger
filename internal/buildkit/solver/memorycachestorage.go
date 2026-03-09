@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/util/compression"
+	"github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/util/compression"
 	"github.com/pkg/errors"
 )
 

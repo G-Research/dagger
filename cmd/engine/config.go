@@ -4,16 +4,16 @@ import (
 	"os"
 	"path/filepath"
 
-	bkconfig "github.com/dagger/dagger/internal/buildkit/cmd/buildkitd/config"
-	"github.com/dagger/dagger/internal/buildkit/util/appdefaults"
-	"github.com/dagger/dagger/internal/buildkit/util/archutil"
+	bkconfig "github.com/G-Research/dagger/internal/buildkit/cmd/buildkitd/config"
+	"github.com/G-Research/dagger/internal/buildkit/util/appdefaults"
+	"github.com/G-Research/dagger/internal/buildkit/util/archutil"
 	"github.com/moby/sys/userns"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/dagger/dagger/engine"
-	"github.com/dagger/dagger/engine/distconsts"
-	"github.com/dagger/dagger/engine/server"
+	"github.com/G-Research/dagger/engine"
+	"github.com/G-Research/dagger/engine/distconsts"
+	"github.com/G-Research/dagger/engine/server"
 )
 
 func defaultBuildkitConfigPath() string {

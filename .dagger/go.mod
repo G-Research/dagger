@@ -1,13 +1,13 @@
-module github.com/dagger/dagger/.dagger
+module github.com/G-Research/dagger/.dagger
 
 go 1.24.4
 
-require github.com/dagger/dagger v0.0.0-00010101000000-000000000000
+require github.com/G-Research/dagger v0.0.0-00010101000000-000000000000
 
 replace (
-	github.com/dagger/dagger => ..
-	github.com/dagger/dagger/engine/distconsts => ../engine/distconsts
-	github.com/dagger/dagger/sdk/typescript/runtime => ../sdk/typescript/runtime
+	github.com/G-Research/dagger => ..
+	github.com/G-Research/dagger/engine/distconsts => ../engine/distconsts
+	github.com/G-Research/dagger/sdk/typescript/runtime => ../sdk/typescript/runtime
 )
 
 require (
@@ -31,10 +31,6 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/sync v0.17.0 // indirect
 	google.golang.org/grpc v1.76.0 // indirect
-)
-
-require (
-	github.com/G-Research/dagger v0.19.11
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect

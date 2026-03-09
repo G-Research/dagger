@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/dagger/dagger/core"
-	"github.com/dagger/dagger/dagql"
-	"github.com/dagger/dagger/internal/buildkit/identity"
+	"github.com/G-Research/dagger/core"
+	"github.com/G-Research/dagger/dagql"
+	"github.com/G-Research/dagger/internal/buildkit/identity"
 )
 
 type engineSchema struct{}

@@ -5,15 +5,15 @@ import (
 	"errors"
 	"fmt"
 
-	bkgwpb "github.com/dagger/dagger/internal/buildkit/frontend/gateway/pb"
+	bkgwpb "github.com/G-Research/dagger/internal/buildkit/frontend/gateway/pb"
 	"github.com/muesli/termenv"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/dagger/dagger/dagql"
-	"github.com/dagger/dagger/dagql/call"
-	"github.com/dagger/dagger/dagql/idtui"
-	"github.com/dagger/dagger/engine/buildkit"
-	"github.com/dagger/dagger/engine/distconsts"
+	"github.com/G-Research/dagger/dagql"
+	"github.com/G-Research/dagger/dagql/call"
+	"github.com/G-Research/dagger/dagql/idtui"
+	"github.com/G-Research/dagger/engine/buildkit"
+	"github.com/G-Research/dagger/engine/distconsts"
 )
 
 const (

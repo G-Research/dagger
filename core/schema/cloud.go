@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/dagger/dagger/core"
-	"github.com/dagger/dagger/dagql"
+	"github.com/G-Research/dagger/core"
+	"github.com/G-Research/dagger/dagql"
 	"go.opentelemetry.io/otel/trace"
 )
 

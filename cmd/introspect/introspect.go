@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dagger/dagger/cmd/codegen/introspection"
-	"github.com/dagger/dagger/core"
-	"github.com/dagger/dagger/core/schema"
-	"github.com/dagger/dagger/dagql"
-	"github.com/dagger/dagger/dagql/call"
+	"github.com/G-Research/dagger/cmd/codegen/introspection"
+	"github.com/G-Research/dagger/core"
+	"github.com/G-Research/dagger/core/schema"
+	"github.com/G-Research/dagger/dagql"
+	"github.com/G-Research/dagger/dagql/call"
 	"github.com/spf13/cobra"
 )
 

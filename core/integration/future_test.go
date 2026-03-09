@@ -5,7 +5,7 @@ import (
 	_ "embed"
 	"testing"
 
-	"dagger.io/dagger"
+	"github.com/G-Research/dagger"
 	"github.com/dagger/testctx"
 )
 

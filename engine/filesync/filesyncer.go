@@ -10,19 +10,19 @@ import (
 	"sync"
 	"time"
 
-	bkcache "github.com/dagger/dagger/internal/buildkit/cache"
-	bkclient "github.com/dagger/dagger/internal/buildkit/client"
-	"github.com/dagger/dagger/internal/buildkit/identity"
-	"github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/session/filesync"
-	"github.com/dagger/dagger/internal/buildkit/snapshot"
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
-	fstypes "github.com/dagger/dagger/internal/fsutil/types"
+	bkcache "github.com/G-Research/dagger/internal/buildkit/cache"
+	bkclient "github.com/G-Research/dagger/internal/buildkit/client"
+	"github.com/G-Research/dagger/internal/buildkit/identity"
+	"github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/session/filesync"
+	"github.com/G-Research/dagger/internal/buildkit/snapshot"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
+	fstypes "github.com/G-Research/dagger/internal/fsutil/types"
 	"github.com/moby/locker"
 
-	"dagger.io/dagger/telemetry"
-	"github.com/dagger/dagger/engine"
-	"github.com/dagger/dagger/engine/client/pathutil"
+	"github.com/G-Research/dagger/telemetry"
+	"github.com/G-Research/dagger/engine"
+	"github.com/G-Research/dagger/engine/client/pathutil"
 )
 
 type FileSyncer struct {
@@ -76,7 +76,7 @@ func (ls *FileSyncer) Snapshot(ctx context.Context, session session.Group, sm *s
 	}
 
 	// If relPath is ".", we want to use the root path so we can unset it
-	// See explanations: https://github.com/dagger/dagger/pull/10995#discussion_r2394255732
+	// See explanations: https://github.com/G-Research/dagger/pull/10995#discussion_r2394255732
 	if opts.RelativePath == "." {
 		opts.RelativePath = ""
 	}

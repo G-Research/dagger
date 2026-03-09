@@ -3,7 +3,7 @@ package sourcepolicy
 import (
 	"regexp"
 
-	spb "github.com/dagger/dagger/internal/buildkit/sourcepolicy/pb"
+	spb "github.com/G-Research/dagger/internal/buildkit/sourcepolicy/pb"
 	"github.com/pkg/errors"
 )
 

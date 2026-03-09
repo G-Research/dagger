@@ -12,7 +12,7 @@ import (
 	"github.com/dagger/testctx"
 	"github.com/stretchr/testify/require"
 
-	"dagger.io/dagger"
+	"github.com/G-Research/dagger"
 )
 
 type GPUSuite struct{}

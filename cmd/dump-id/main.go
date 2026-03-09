@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dagger/dagger/dagql/call"
-	"github.com/dagger/dagger/dagql/idtui"
+	"github.com/G-Research/dagger/dagql/call"
+	"github.com/G-Research/dagger/dagql/idtui"
 )
 
 func main() {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/dagger/dagger/util/scrub"
+	"github.com/G-Research/dagger/util/scrub"
 	"github.com/google/go-cmp/cmp"
 )
 

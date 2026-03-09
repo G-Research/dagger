@@ -14,21 +14,21 @@ import (
 	"sync"
 	"time"
 
-	"dagger.io/dagger/telemetry"
+	"github.com/G-Research/dagger/telemetry"
 	"github.com/Khan/genqlient/graphql"
 	"github.com/containerd/containerd/v2/core/content"
-	"github.com/dagger/dagger/internal/buildkit/cache/remotecache"
-	bkclient "github.com/dagger/dagger/internal/buildkit/client"
-	"github.com/dagger/dagger/internal/buildkit/executor/oci"
-	bkfrontend "github.com/dagger/dagger/internal/buildkit/frontend"
-	bkgw "github.com/dagger/dagger/internal/buildkit/frontend/gateway/client"
-	bksession "github.com/dagger/dagger/internal/buildkit/session"
-	bksolver "github.com/dagger/dagger/internal/buildkit/solver"
-	"github.com/dagger/dagger/internal/buildkit/solver/llbsolver"
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
-	"github.com/dagger/dagger/internal/buildkit/util/flightcontrol"
-	"github.com/dagger/dagger/internal/buildkit/util/leaseutil"
-	"github.com/dagger/dagger/internal/buildkit/util/progress/progressui"
+	"github.com/G-Research/dagger/internal/buildkit/cache/remotecache"
+	bkclient "github.com/G-Research/dagger/internal/buildkit/client"
+	"github.com/G-Research/dagger/internal/buildkit/executor/oci"
+	bkfrontend "github.com/G-Research/dagger/internal/buildkit/frontend"
+	bkgw "github.com/G-Research/dagger/internal/buildkit/frontend/gateway/client"
+	bksession "github.com/G-Research/dagger/internal/buildkit/session"
+	bksolver "github.com/G-Research/dagger/internal/buildkit/solver"
+	"github.com/G-Research/dagger/internal/buildkit/solver/llbsolver"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/buildkit/util/flightcontrol"
+	"github.com/G-Research/dagger/internal/buildkit/util/leaseutil"
+	"github.com/G-Research/dagger/internal/buildkit/util/progress/progressui"
 	"github.com/koron-go/prefixw"
 	"github.com/opencontainers/go-digest"
 	"github.com/sirupsen/logrus"
@@ -43,21 +43,21 @@ import (
 	"golang.org/x/sync/errgroup"
 	"resenje.org/singleflight"
 
-	"github.com/dagger/dagger/analytics"
-	"github.com/dagger/dagger/auth"
-	"github.com/dagger/dagger/core"
-	"github.com/dagger/dagger/core/schema"
-	"github.com/dagger/dagger/dagql"
-	"github.com/dagger/dagger/dagql/call"
-	"github.com/dagger/dagger/engine"
-	"github.com/dagger/dagger/engine/buildkit"
-	"github.com/dagger/dagger/engine/cache/cachemanager"
-	engineclient "github.com/dagger/dagger/engine/client"
-	"github.com/dagger/dagger/engine/clientdb"
-	"github.com/dagger/dagger/engine/server/resource"
-	"github.com/dagger/dagger/engine/slog"
-	enginetel "github.com/dagger/dagger/engine/telemetry"
-	"github.com/dagger/dagger/util/cleanups"
+	"github.com/G-Research/dagger/analytics"
+	"github.com/G-Research/dagger/auth"
+	"github.com/G-Research/dagger/core"
+	"github.com/G-Research/dagger/core/schema"
+	"github.com/G-Research/dagger/dagql"
+	"github.com/G-Research/dagger/dagql/call"
+	"github.com/G-Research/dagger/engine"
+	"github.com/G-Research/dagger/engine/buildkit"
+	"github.com/G-Research/dagger/engine/cache/cachemanager"
+	engineclient "github.com/G-Research/dagger/engine/client"
+	"github.com/G-Research/dagger/engine/clientdb"
+	"github.com/G-Research/dagger/engine/server/resource"
+	"github.com/G-Research/dagger/engine/slog"
+	enginetel "github.com/G-Research/dagger/engine/telemetry"
+	"github.com/G-Research/dagger/util/cleanups"
 )
 
 type daggerSession struct {
@@ -1014,7 +1014,7 @@ func (srv *Server) serveHTTPToClient(w http.ResponseWriter, r *http.Request, opt
 		"span", trace.SpanContextFromContext(ctx).SpanID().String(),
 	))
 
-	// Debug https://github.com/dagger/dagger/issues/7592 by logging method and some headers, which
+	// Debug https://github.com/G-Research/dagger/issues/7592 by logging method and some headers, which
 	// are checked by gqlgen's handler
 	bklog.G(ctx).WithFields(logrus.Fields{
 		"path":          r.URL.Path,

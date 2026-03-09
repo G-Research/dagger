@@ -11,13 +11,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dagger/dagger/internal/buildkit/identity"
+	"github.com/G-Research/dagger/internal/buildkit/identity"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/errgroup"
 
-	"dagger.io/dagger"
-	"github.com/dagger/dagger/engine/buildkit"
-	"github.com/dagger/dagger/engine/distconsts"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/engine/buildkit"
+	"github.com/G-Research/dagger/engine/distconsts"
 	"github.com/dagger/testctx"
 )
 
@@ -218,7 +218,7 @@ func (FileSuite) TestWithName(ctx context.Context, t *testctx.T) {
 		require.Equal(t, "content", mountedFileNameContent)
 	})
 
-	// regression test for https://github.com/dagger/dagger/issues/11660
+	// regression test for https://github.com/G-Research/dagger/issues/11660
 	t.Run("contents", func(ctx context.Context, t *testctx.T) {
 		f := c.File("test", "hello").WithName("tset")
 		s, err := f.Contents(ctx)
@@ -1151,7 +1151,7 @@ func (FileSuite) TestFileRespectsSymlinks(ctx context.Context, t *testctx.T) {
 	})
 }
 
-// regression test for https://github.com/dagger/dagger/issues/11552
+// regression test for https://github.com/G-Research/dagger/issues/11552
 func (FileSuite) TestFileCachingContents(ctx context.Context, t *testctx.T) {
 	wd := t.TempDir()
 	c := connect(ctx, t, dagger.WithWorkdir(wd))

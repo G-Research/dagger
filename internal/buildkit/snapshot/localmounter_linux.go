@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 
 	"github.com/containerd/containerd/v2/core/mount"
-	"github.com/dagger/dagger/internal/buildkit/util/overlay"
-	rootlessmountopts "github.com/dagger/dagger/internal/buildkit/util/rootless/mountopts"
+	"github.com/G-Research/dagger/internal/buildkit/util/overlay"
+	rootlessmountopts "github.com/G-Research/dagger/internal/buildkit/util/rootless/mountopts"
 	"github.com/moby/sys/userns"
 	"github.com/pkg/errors"
 )

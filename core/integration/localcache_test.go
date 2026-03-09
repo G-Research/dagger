@@ -7,13 +7,13 @@ import (
 	"strings"
 	"time"
 
-	bkconfig "github.com/dagger/dagger/internal/buildkit/cmd/buildkitd/config"
+	bkconfig "github.com/G-Research/dagger/internal/buildkit/cmd/buildkitd/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"dagger.io/dagger"
-	"github.com/dagger/dagger/engine/config"
-	"github.com/dagger/dagger/internal/testutil"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/engine/config"
+	"github.com/G-Research/dagger/internal/testutil"
 	"github.com/dagger/testctx"
 )
 

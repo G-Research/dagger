@@ -12,15 +12,15 @@ import (
 	"strconv"
 	"strings"
 
-	"dagger.io/dagger/telemetry"
+	"github.com/G-Research/dagger/telemetry"
 	"github.com/adrg/xdg"
 	"github.com/google/go-containerregistry/pkg/name"
 	"go.opentelemetry.io/otel"
 
-	"github.com/dagger/dagger/engine/client/imageload"
-	"github.com/dagger/dagger/engine/config"
-	"github.com/dagger/dagger/engine/distconsts"
-	"github.com/dagger/dagger/engine/slog"
+	"github.com/G-Research/dagger/engine/client/imageload"
+	"github.com/G-Research/dagger/engine/config"
+	"github.com/G-Research/dagger/engine/distconsts"
+	"github.com/G-Research/dagger/engine/slog"
 )
 
 func init() {

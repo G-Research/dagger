@@ -5,10 +5,10 @@ import (
 	"strings"
 	"time"
 
-	cacheconfig "github.com/dagger/dagger/internal/buildkit/cache/config"
-	"github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/solver"
-	"github.com/dagger/dagger/internal/buildkit/util/compression"
+	cacheconfig "github.com/G-Research/dagger/internal/buildkit/cache/config"
+	"github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/solver"
+	"github.com/G-Research/dagger/internal/buildkit/util/compression"
 	"github.com/pkg/errors"
 )
 

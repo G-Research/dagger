@@ -80,7 +80,7 @@ func (dev *EngineDev) notifyOnFailure(ctx context.Context, repo *dagger.GitRepos
 	}
 
 	message := fmt.Sprintf(
-		"[failed](%s) on SHA [%s](https://github.com/dagger/dagger/commit/%s)",
+		"[failed](%s) on SHA [%s](https://github.com/G-Research/dagger/commit/%s)",
 		daggerCloudURL,
 		commit,
 		commit,

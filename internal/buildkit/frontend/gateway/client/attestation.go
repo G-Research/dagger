@@ -1,8 +1,8 @@
 package client
 
 import (
-	pb "github.com/dagger/dagger/internal/buildkit/frontend/gateway/pb"
-	"github.com/dagger/dagger/internal/buildkit/solver/result"
+	pb "github.com/G-Research/dagger/internal/buildkit/frontend/gateway/pb"
+	"github.com/G-Research/dagger/internal/buildkit/solver/result"
 	"github.com/pkg/errors"
 )
 

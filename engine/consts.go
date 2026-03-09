@@ -1,10 +1,10 @@
 package engine
 
-import "github.com/dagger/dagger/engine/distconsts"
+import "github.com/G-Research/dagger/engine/distconsts"
 
 const (
 	EngineImageRepo = "registry.dagger.io/engine"
-	Package         = "github.com/dagger/dagger"
+	Package         = "github.com/G-Research/dagger"
 
 	DefaultEngineSockAddr = distconsts.DefaultEngineSockAddr
 

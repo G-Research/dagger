@@ -5,7 +5,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dagger/dagger/internal/buildkit/client"
+	"github.com/G-Research/dagger/internal/buildkit/client"
 	"golang.org/x/sync/errgroup"
 )
 

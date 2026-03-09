@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"dagger.io/dagger/telemetry"
-	resourcestypes "github.com/dagger/dagger/internal/buildkit/executor/resources/types"
+	"github.com/G-Research/dagger/telemetry"
+	resourcestypes "github.com/G-Research/dagger/internal/buildkit/executor/resources/types"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 )

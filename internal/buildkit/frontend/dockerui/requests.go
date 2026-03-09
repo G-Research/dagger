@@ -5,12 +5,12 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/dagger/dagger/internal/buildkit/frontend/gateway/client"
-	"github.com/dagger/dagger/internal/buildkit/frontend/subrequests"
-	"github.com/dagger/dagger/internal/buildkit/frontend/subrequests/lint"
-	"github.com/dagger/dagger/internal/buildkit/frontend/subrequests/outline"
-	"github.com/dagger/dagger/internal/buildkit/frontend/subrequests/targets"
-	"github.com/dagger/dagger/internal/buildkit/solver/errdefs"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/gateway/client"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/subrequests"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/subrequests/lint"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/subrequests/outline"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/subrequests/targets"
+	"github.com/G-Research/dagger/internal/buildkit/solver/errdefs"
 )
 
 const (

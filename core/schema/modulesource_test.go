@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/dagger/dagger/core"
+	"github.com/G-Research/dagger/core"
 	"github.com/stretchr/testify/require"
 )
 

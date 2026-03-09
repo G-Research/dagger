@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/99designs/gqlgen/client"
-	"github.com/dagger/dagger/internal/buildkit/identity"
+	"github.com/G-Research/dagger/internal/buildkit/identity"
 	"github.com/opencontainers/go-digest"
 	"github.com/stretchr/testify/require"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -26,12 +26,12 @@ import (
 	"gotest.tools/v3/assert/cmp"
 	"gotest.tools/v3/golden"
 
-	"github.com/dagger/dagger/dagql"
-	"github.com/dagger/dagger/dagql/call"
-	"github.com/dagger/dagger/dagql/internal/pipes"
-	"github.com/dagger/dagger/dagql/internal/points"
-	"github.com/dagger/dagger/dagql/introspection"
-	"github.com/dagger/dagger/engine/slog"
+	"github.com/G-Research/dagger/dagql"
+	"github.com/G-Research/dagger/dagql/call"
+	"github.com/G-Research/dagger/dagql/internal/pipes"
+	"github.com/G-Research/dagger/dagql/internal/points"
+	"github.com/G-Research/dagger/dagql/introspection"
+	"github.com/G-Research/dagger/engine/slog"
 )
 
 var logs = new(bytes.Buffer)

@@ -9,8 +9,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/dagger/dagger/internal/fsutil"
-	"github.com/dagger/dagger/internal/fsutil/types"
+	"github.com/G-Research/dagger/internal/fsutil"
+	"github.com/G-Research/dagger/internal/fsutil/types"
 )
 
 type File struct {

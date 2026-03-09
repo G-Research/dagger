@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/dagger/dagger/core"
-	"github.com/dagger/dagger/dagql"
-	"github.com/dagger/dagger/engine"
-	"github.com/dagger/dagger/engine/server/resource"
-	"github.com/dagger/dagger/engine/slog"
+	"github.com/G-Research/dagger/core"
+	"github.com/G-Research/dagger/dagql"
+	"github.com/G-Research/dagger/engine"
+	"github.com/G-Research/dagger/engine/server/resource"
+	"github.com/G-Research/dagger/engine/slog"
 )
 
 func (srv *Server) AddClientResourcesFromID(ctx context.Context, id *resource.ID, sourceClientID string, skipTopLevel bool) error {

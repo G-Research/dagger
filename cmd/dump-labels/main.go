@@ -6,9 +6,9 @@ import (
 	"os"
 	"slices"
 
-	"github.com/dagger/dagger/engine"
-	"github.com/dagger/dagger/engine/client/pathutil"
-	enginetel "github.com/dagger/dagger/engine/telemetry"
+	"github.com/G-Research/dagger/engine"
+	"github.com/G-Research/dagger/engine/client/pathutil"
+	enginetel "github.com/G-Research/dagger/engine/telemetry"
 )
 
 func main() {

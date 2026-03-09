@@ -5,13 +5,13 @@ import (
 	"errors"
 
 	"github.com/containerd/typeurl/v2"
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
-	"github.com/dagger/dagger/internal/buildkit/util/grpcerrors"
+	"github.com/G-Research/dagger/internal/buildkit/solver/pb"
+	"github.com/G-Research/dagger/internal/buildkit/util/grpcerrors"
 	"github.com/golang/protobuf/jsonpb" //nolint:staticcheck
 )
 
 func init() {
-	typeurl.Register((*Solve)(nil), "github.com/dagger/dagger/internal/buildkit", "errdefs.Solve+json")
+	typeurl.Register((*Solve)(nil), "github.com/G-Research/dagger/internal/buildkit", "errdefs.Solve+json")
 }
 
 //nolint:revive

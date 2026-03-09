@@ -8,7 +8,7 @@ import (
 
 	"dagger/engine-dev/internal/dagger"
 
-	"github.com/dagger/dagger/engine/distconsts"
+	"github.com/G-Research/dagger/engine/distconsts"
 )
 
 // Load the engine container into a Docker engine

@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"dagger.io/dagger"
-	"dagger.io/dagger/telemetry"
-	"github.com/dagger/dagger/engine/client/pathutil"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/telemetry"
+	"github.com/G-Research/dagger/engine/client/pathutil"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -207,10 +207,10 @@ func (src gitSourceContext) ArgRef(subpath string) string {
 	}
 	refPath := src.Root
 	// Won't work without a scheme, except if there's a user.
-	// For example: git@github.com/dagger/dagger
+	// For example: git@github.com/G-Research/dagger
 	if !strings.Contains(refPath, "://") && !strings.Contains(refPath, "@") {
 		// Default to https, but need to convert this kind of URL:
-		// `github.com:dagger/dagger` into `github.com/dagger/dagger`
+		// `github.com:dagger/dagger` into `github.com/G-Research/dagger`
 		refPath = "https://" + strings.Replace(refPath, ":", "/", 1)
 	}
 	frag := src.Version

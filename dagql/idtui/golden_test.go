@@ -27,12 +27,12 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gotest.tools/v3/golden"
 
-	"dagger.io/dagger/telemetry"
+	"github.com/G-Research/dagger/telemetry"
 
-	"github.com/dagger/dagger/dagql/dagui"
-	"github.com/dagger/dagger/engine/slog"
-	"github.com/dagger/dagger/internal/testutil"
-	"github.com/dagger/dagger/util/scrub"
+	"github.com/G-Research/dagger/dagql/dagui"
+	"github.com/G-Research/dagger/engine/slog"
+	"github.com/G-Research/dagger/internal/testutil"
+	"github.com/G-Research/dagger/util/scrub"
 	"github.com/dagger/testctx"
 	"github.com/dagger/testctx/oteltest"
 )
@@ -117,11 +117,11 @@ func (s TelemetrySuite) TestGolden(ctx context.Context, t *testctx.T) {
 		{Function: "revealed-spans"},
 
 		{Function: "git-readme", Args: []string{
-			"--remote", "https://github.com/dagger/dagger",
+			"--remote", "https://github.com/G-Research/dagger",
 			"--version", "v0.18.6",
 		}},
 		{Function: "httpreadme", Args: []string{
-			"--remote", "https://github.com/dagger/dagger",
+			"--remote", "https://github.com/G-Research/dagger",
 			"--version", "v0.18.6",
 		}},
 
@@ -186,15 +186,15 @@ func (s TelemetrySuite) TestGolden(ctx context.Context, t *testctx.T) {
 					switch s.Name {
 					case "Dep.getFiles":
 						require.Equal(t, "Viztest.TraceFunctionCalls", strAttr(t, s, telemetry.ModuleCallerFunctionCallNameAttr))
-						require.Equal(t, "github.com/dagger/dagger/viztest", strings.Split(strAttr(t, s, telemetry.ModuleCallerRefAttr), "@")[0])
+						require.Equal(t, "github.com/G-Research/dagger/viztest", strings.Split(strAttr(t, s, telemetry.ModuleCallerRefAttr), "@")[0])
 						require.Equal(t, "Dep.getFiles", strAttr(t, s, telemetry.ModuleFunctionCallNameAttr))
-						require.Equal(t, "github.com/dagger/dagger/viztest/dep", strings.Split(strAttr(t, s, telemetry.ModuleRefAttr), "@")[0])
+						require.Equal(t, "github.com/G-Research/dagger/viztest/dep", strings.Split(strAttr(t, s, telemetry.ModuleRefAttr), "@")[0])
 						depCalled = true
 					case "Viztest.traceFunctionCalls":
 						require.Equal(t, "", strAttr(t, s, telemetry.ModuleCallerFunctionCallNameAttr))
 						require.Equal(t, "", strAttr(t, s, telemetry.ModuleCallerRefAttr))
 						require.Equal(t, "Viztest.traceFunctionCalls", strAttr(t, s, telemetry.ModuleFunctionCallNameAttr))
-						require.Equal(t, "github.com/dagger/dagger/viztest",
+						require.Equal(t, "github.com/G-Research/dagger/viztest",
 							strings.Split(strAttr(t, s, telemetry.ModuleRefAttr), "@")[0])
 						rootCalled = true
 					}
@@ -213,15 +213,15 @@ func (s TelemetrySuite) TestGolden(ctx context.Context, t *testctx.T) {
 					switch s.Name {
 					case "Versioned.hello":
 						require.Equal(t, "Viztest.TraceRemoteFunctionCalls", strAttr(t, s, telemetry.ModuleCallerFunctionCallNameAttr))
-						require.Equal(t, "github.com/dagger/dagger/viztest", strings.Split(strAttr(t, s, telemetry.ModuleCallerRefAttr), "@")[0])
+						require.Equal(t, "github.com/G-Research/dagger/viztest", strings.Split(strAttr(t, s, telemetry.ModuleCallerRefAttr), "@")[0])
 						require.Equal(t, "Versioned.hello", strAttr(t, s, telemetry.ModuleFunctionCallNameAttr))
-						require.Equal(t, "github.com/dagger/dagger-test-modules/versioned@73670b0338c02cdd190f56b34c6e25066c7c8875", strAttr(t, s, telemetry.ModuleRefAttr))
+						require.Equal(t, "github.com/G-Research/dagger-test-modules/versioned@73670b0338c02cdd190f56b34c6e25066c7c8875", strAttr(t, s, telemetry.ModuleRefAttr))
 						depCalled = true
 					case "Viztest.traceRemoteFunctionCalls":
 						require.Equal(t, "", strAttr(t, s, telemetry.ModuleCallerFunctionCallNameAttr))
 						require.Equal(t, "", strAttr(t, s, telemetry.ModuleCallerRefAttr))
 						require.Equal(t, "Viztest.traceRemoteFunctionCalls", strAttr(t, s, telemetry.ModuleFunctionCallNameAttr))
-						require.Equal(t, "github.com/dagger/dagger/viztest", strings.Split(strAttr(t, s, telemetry.ModuleRefAttr), "@")[0])
+						require.Equal(t, "github.com/G-Research/dagger/viztest", strings.Split(strAttr(t, s, telemetry.ModuleRefAttr), "@")[0])
 						rootCalled = true
 					}
 				}
@@ -231,7 +231,7 @@ func (s TelemetrySuite) TestGolden(ctx context.Context, t *testctx.T) {
 		},
 		// remote module calls local module fn
 		{
-			Module:   "github.com/dagger/dagger-test-modules@73670b0338c02cdd190f56b34c6e25066c7c8875",
+			Module:   "github.com/G-Research/dagger-test-modules@73670b0338c02cdd190f56b34c6e25066c7c8875",
 			Function: "fn",
 			DBTest: func(t *testctx.T, db *dagui.DB) {
 				require.NotEmpty(t, db.Spans.Order)
@@ -240,15 +240,15 @@ func (s TelemetrySuite) TestGolden(ctx context.Context, t *testctx.T) {
 					switch s.Name {
 					case "DepAlias.fn":
 						require.Equal(t, "RootMod.Fn", strAttr(t, s, telemetry.ModuleCallerFunctionCallNameAttr))
-						require.Equal(t, "github.com/dagger/dagger-test-modules@73670b0338c02cdd190f56b34c6e25066c7c8875", strAttr(t, s, telemetry.ModuleCallerRefAttr))
+						require.Equal(t, "github.com/G-Research/dagger-test-modules@73670b0338c02cdd190f56b34c6e25066c7c8875", strAttr(t, s, telemetry.ModuleCallerRefAttr))
 						require.Equal(t, "DepAlias.fn", strAttr(t, s, telemetry.ModuleFunctionCallNameAttr))
-						require.Equal(t, "github.com/dagger/dagger-test-modules/dep@73670b0338c02cdd190f56b34c6e25066c7c8875", strAttr(t, s, telemetry.ModuleRefAttr))
+						require.Equal(t, "github.com/G-Research/dagger-test-modules/dep@73670b0338c02cdd190f56b34c6e25066c7c8875", strAttr(t, s, telemetry.ModuleRefAttr))
 						depCalled = true
 					case "RootMod.fn":
 						require.Equal(t, "", strAttr(t, s, telemetry.ModuleCallerFunctionCallNameAttr))
 						require.Equal(t, "", strAttr(t, s, telemetry.ModuleCallerRefAttr))
 						require.Equal(t, "RootMod.fn", strAttr(t, s, telemetry.ModuleFunctionCallNameAttr))
-						require.Equal(t, "github.com/dagger/dagger-test-modules@73670b0338c02cdd190f56b34c6e25066c7c8875", strAttr(t, s, telemetry.ModuleRefAttr))
+						require.Equal(t, "github.com/G-Research/dagger-test-modules@73670b0338c02cdd190f56b34c6e25066c7c8875", strAttr(t, s, telemetry.ModuleRefAttr))
 						rootCalled = true
 					}
 				}

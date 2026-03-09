@@ -7,20 +7,20 @@ import (
 	"testing"
 
 	"github.com/containerd/containerd/v2/core/content"
-	"github.com/dagger/dagger/auth"
-	"github.com/dagger/dagger/dagql"
-	"github.com/dagger/dagger/dagql/call"
-	"github.com/dagger/dagger/engine"
-	"github.com/dagger/dagger/engine/buildkit"
-	engineclient "github.com/dagger/dagger/engine/client"
-	"github.com/dagger/dagger/engine/clientdb"
-	"github.com/dagger/dagger/engine/filesync"
-	"github.com/dagger/dagger/engine/server/resource"
-	bkcache "github.com/dagger/dagger/internal/buildkit/cache"
-	bkclient "github.com/dagger/dagger/internal/buildkit/client"
-	"github.com/dagger/dagger/internal/buildkit/executor/oci"
-	bksession "github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/util/leaseutil"
+	"github.com/G-Research/dagger/auth"
+	"github.com/G-Research/dagger/dagql"
+	"github.com/G-Research/dagger/dagql/call"
+	"github.com/G-Research/dagger/engine"
+	"github.com/G-Research/dagger/engine/buildkit"
+	engineclient "github.com/G-Research/dagger/engine/client"
+	"github.com/G-Research/dagger/engine/clientdb"
+	"github.com/G-Research/dagger/engine/filesync"
+	"github.com/G-Research/dagger/engine/server/resource"
+	bkcache "github.com/G-Research/dagger/internal/buildkit/cache"
+	bkclient "github.com/G-Research/dagger/internal/buildkit/client"
+	"github.com/G-Research/dagger/internal/buildkit/executor/oci"
+	bksession "github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/util/leaseutil"
 	"github.com/moby/locker"
 	"github.com/opencontainers/go-digest"
 	"github.com/stretchr/testify/require"
@@ -152,12 +152,12 @@ func TestParseCallerCalleeRefs(t *testing.T) {
 	callerRef, calleeRef := parseCallerCalleeRefs(t.Context(), &Query{Server: mockSrv}, pcID)
 
 	require.NotNil(t, callerRef)
-	require.Equal(t, "github.com/dagger/dagger-test-modules/caller", callerRef.ref)
+	require.Equal(t, "github.com/G-Research/dagger-test-modules/caller", callerRef.ref)
 	require.Equal(t, "v1.0.0", callerRef.version)
 	require.Equal(t, "callerFunction", callerRef.functionName)
 
 	require.NotNil(t, calleeRef)
-	require.Equal(t, "github.com/dagger/dagger-test-modules/versioned", calleeRef.ref)
+	require.Equal(t, "github.com/G-Research/dagger-test-modules/versioned", calleeRef.ref)
 	require.Equal(t, "0cabe03cc0a9079e738c92b2c589d81fd560011f", calleeRef.version)
 	require.Equal(t, "VersionedGitSSH.hello", calleeRef.functionName)
 }

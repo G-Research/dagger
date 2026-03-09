@@ -8,12 +8,12 @@ import (
 
 	ocispecs "github.com/opencontainers/image-spec/specs-go/v1"
 
-	"github.com/dagger/dagger/engine/distconsts"
+	"github.com/G-Research/dagger/engine/distconsts"
 
 	"dagger/engine-dev/consts"
 	"dagger/engine-dev/internal/dagger"
 
-	"github.com/dagger/dagger/sdk/typescript/runtime/tsdistconsts"
+	"github.com/G-Research/dagger/sdk/typescript/runtime/tsdistconsts"
 )
 
 type sdkContent struct {

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"dagger.io/dagger"
-	"github.com/dagger/dagger/engine/distconsts"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/engine/distconsts"
 	"github.com/dagger/testctx"
 	"github.com/stretchr/testify/require"
 )
@@ -28,7 +28,7 @@ func (AddressSuite) TestValue(ctx context.Context, t *testctx.T) {
 		"123",
 		"env://DEBUG",
 		"cmd://echo hello world",
-		"https://github.com/dagger/dagger",
+		"https://github.com/G-Research/dagger",
 		"tcp://localhost:4242",
 		"unix:///var/run/docker.sock",
 	} {
@@ -110,7 +110,7 @@ func (AddressSuite) TestGit(ctx context.Context, t *testctx.T) {
 	c := connect(ctx, t)
 
 	t.Run("remote repo", func(ctx context.Context, t *testctx.T) {
-		requireSampleGitRepo(ctx, t, c, c.Address("https://github.com/dagger/dagger").GitRepository())
+		requireSampleGitRepo(ctx, t, c, c.Address("https://github.com/G-Research/dagger").GitRepository())
 	})
 
 	t.Run("remote branch", func(ctx context.Context, t *testctx.T) {
@@ -120,7 +120,7 @@ func (AddressSuite) TestGit(ctx context.Context, t *testctx.T) {
 			"#main",
 			"#refs/heads/main",
 		} {
-			addr := "https://github.com/dagger/dagger" + fragment
+			addr := "https://github.com/G-Research/dagger" + fragment
 			refs = append(refs, c.Address(addr).GitRef())
 		}
 		requireGitRefCommitsEqual(ctx, t, refs...)
@@ -131,19 +131,19 @@ func (AddressSuite) TestGit(ctx context.Context, t *testctx.T) {
 
 	t.Run("remote tag", func(ctx context.Context, t *testctx.T) {
 		requireSampleGitTag(ctx, t, c,
-			c.Address("https://github.com/dagger/dagger#v0.9.5").GitRef(),
+			c.Address("https://github.com/G-Research/dagger#v0.9.5").GitRef(),
 		)
 		requireGitRefIsSampleAnnotatedTag(ctx, t, c,
-			c.Address("https://github.com/dagger/dagger#v0.6.1").GitRef(),
+			c.Address("https://github.com/G-Research/dagger#v0.6.1").GitRef(),
 		)
 	})
 
 	t.Run("remote commit", func(ctx context.Context, t *testctx.T) {
 		requireSampleGitCommit(ctx, t, c,
-			c.Address("https://github.com/dagger/dagger#c80ac2c13df7d573a069938e01ca13f7a81f0345").GitRef(),
+			c.Address("https://github.com/G-Research/dagger#c80ac2c13df7d573a069938e01ca13f7a81f0345").GitRef(),
 		)
 		requireSampleGitHiddenCommit(ctx, t, c,
-			c.Address("https://github.com/dagger/dagger#318970484f692d7a76cfa533c5d47458631c9654").GitRef(),
+			c.Address("https://github.com/G-Research/dagger#318970484f692d7a76cfa533c5d47458631c9654").GitRef(),
 		)
 	})
 
@@ -165,13 +165,13 @@ func (AddressSuite) TestGit(ctx context.Context, t *testctx.T) {
 				subdir = "cmd/cloak"
 			}
 			requireSampleGitRootDir(ctx, t, c,
-				c.Address(fmt.Sprintf("https://github.com/dagger/dagger#%s", ref)).Directory(),
+				c.Address(fmt.Sprintf("https://github.com/G-Research/dagger#%s", ref)).Directory(),
 			)
 			requireSampleGitSubDir(ctx, t, c,
-				c.Address(fmt.Sprintf("https://github.com/dagger/dagger#%s:%s", ref, subdir)).Directory(),
+				c.Address(fmt.Sprintf("https://github.com/G-Research/dagger#%s:%s", ref, subdir)).Directory(),
 			)
 			requireSampleGitFile(ctx, t, c,
-				c.Address(fmt.Sprintf("https://github.com/dagger/dagger#%s:%s/main.go", ref, subdir)).File(),
+				c.Address(fmt.Sprintf("https://github.com/G-Research/dagger#%s:%s/main.go", ref, subdir)).File(),
 			)
 		}
 	})

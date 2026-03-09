@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	"dagger.io/dagger"
+	"github.com/G-Research/dagger"
 	"github.com/dagger/testctx"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
@@ -1836,7 +1836,7 @@ func (GoSuite) TestReleaseLibraryInModule(ctx context.Context, t *testctx.T) {
 
 			goMod, err := modCtr.File("go.mod").Contents(ctx)
 			require.NoError(t, err)
-			require.Contains(t, goMod, fmt.Sprintf("dagger.io/dagger %s", version))
+			require.Contains(t, goMod, fmt.Sprintf("github.com/G-Research/dagger %s", version))
 
 			out, err := modCtr.With(daggerNonNestedExec("call", "container-echo", "--string-arg", "hello", "stdout")).Stdout(ctx)
 			require.NoError(t, err)

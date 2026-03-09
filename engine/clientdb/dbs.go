@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dagger/dagger/engine/slog"
+	"github.com/G-Research/dagger/engine/slog"
 	"github.com/moby/locker"
 	_ "modernc.org/sqlite"
 )

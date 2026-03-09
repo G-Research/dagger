@@ -10,15 +10,15 @@ import (
 	"github.com/containerd/containerd/v2/core/content"
 	"github.com/containerd/containerd/v2/pkg/reference"
 	cerrdefs "github.com/containerd/errdefs"
-	"github.com/dagger/dagger/internal/buildkit/cache/config"
-	"github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/solver"
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
-	"github.com/dagger/dagger/internal/buildkit/util/compression"
-	"github.com/dagger/dagger/internal/buildkit/util/contentutil"
-	"github.com/dagger/dagger/internal/buildkit/util/leaseutil"
-	"github.com/dagger/dagger/internal/buildkit/util/progress/logs"
-	"github.com/dagger/dagger/internal/buildkit/util/pull/pullprogress"
+	"github.com/G-Research/dagger/internal/buildkit/cache/config"
+	"github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/solver"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/buildkit/util/compression"
+	"github.com/G-Research/dagger/internal/buildkit/util/contentutil"
+	"github.com/G-Research/dagger/internal/buildkit/util/leaseutil"
+	"github.com/G-Research/dagger/internal/buildkit/util/progress/logs"
+	"github.com/G-Research/dagger/internal/buildkit/util/pull/pullprogress"
 	digest "github.com/opencontainers/go-digest"
 	ocispecs "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/pkg/errors"
@@ -161,7 +161,7 @@ func (sr *immutableRef) getRemote(ctx context.Context, createIfNeeded bool, refC
 		// from before lease based storage. If so, we should detect
 		// the media type from blob data.
 		//
-		// Discussion: https://github.com/dagger/dagger/internal/buildkit/pull/1277#discussion_r352795429
+		// Discussion: https://github.com/G-Research/dagger/internal/buildkit/pull/1277#discussion_r352795429
 		if desc.MediaType == "" {
 			desc.MediaType, err = compression.DetectLayerMediaType(ctx, sr.cm.ContentStore, desc.Digest, false)
 			if err != nil {

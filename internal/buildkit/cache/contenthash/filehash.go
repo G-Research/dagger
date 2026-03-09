@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	fstypes "github.com/dagger/dagger/internal/fsutil/types"
+	fstypes "github.com/G-Research/dagger/internal/fsutil/types"
 )
 
 // NewFileHash returns new hash that is used for the builder cache keys

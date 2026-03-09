@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/dagger/dagger/internal/buildkit/client/llb/sourceresolver"
-	"github.com/dagger/dagger/internal/buildkit/frontend/gateway/client"
-	"github.com/dagger/dagger/internal/buildkit/util/flightcontrol"
+	"github.com/G-Research/dagger/internal/buildkit/client/llb/sourceresolver"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/gateway/client"
+	"github.com/G-Research/dagger/internal/buildkit/util/flightcontrol"
 	"github.com/mitchellh/hashstructure/v2"
 	digest "github.com/opencontainers/go-digest"
 )

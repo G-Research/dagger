@@ -53,7 +53,7 @@ func UpdateDenoConfigForModule(denoConfig string) (string, error) {
 		return "", fmt.Errorf("failed to update deno config experimentalDecorators: %w", err)
 	}
 
-	// Add imports."@dagger.io/dagger"="./sdk/index.ts"
+	// Add imports."@github.com/G-Research/dagger"="./sdk/index.ts"
 	denoConfig, err = sjson.Set(denoConfig,
 		"imports."+gjson.Escape(daggerLibPathAlias),
 		daggerLibPath,
@@ -62,7 +62,7 @@ func UpdateDenoConfigForModule(denoConfig string) (string, error) {
 		return "", fmt.Errorf("failed to update deno config paths: %w", err)
 	}
 
-	// Add imports."@dagger.io/dagger/telemetry"="./sdk/telemetry.ts"
+	// Add imports."@github.com/G-Research/dagger/telemetry"="./sdk/telemetry.ts"
 	denoConfig, err = sjson.Set(denoConfig,
 		"imports."+gjson.Escape(daggerTelemetryPathAlias),
 		daggerTelemetryLibPath,
@@ -80,13 +80,13 @@ func UpdateDenoConfigForClient(denoConfig string, isRemote bool) (string, error)
 		return "", fmt.Errorf("failed to update deno config for dagger: %w", err)
 	}
 
-	// If the dagger library is remote, we don't need to override @dagger.io/dagger
-	// and @dagger.io/dagger/telemetry
+	// If the dagger library is remote, we don't need to override @github.com/G-Research/dagger
+	// and @github.com/G-Research/dagger/telemetry
 	if isRemote {
 		return denoConfig, nil
 	}
 
-	// Add imports."@dagger.io/dagger"="./sdk/index.ts"
+	// Add imports."@github.com/G-Research/dagger"="./sdk/index.ts"
 	denoConfig, err = sjson.Set(denoConfig,
 		"imports."+gjson.Escape(daggerLibPathAlias),
 		daggerLibPath,
@@ -95,7 +95,7 @@ func UpdateDenoConfigForClient(denoConfig string, isRemote bool) (string, error)
 		return "", fmt.Errorf("failed to update deno config paths: %w", err)
 	}
 
-	// Add imports."@dagger.io/dagger/telemetry"="./sdk/telemetry.ts"
+	// Add imports."@github.com/G-Research/dagger/telemetry"="./sdk/telemetry.ts"
 	denoConfig, err = sjson.Set(denoConfig,
 		"imports."+gjson.Escape(daggerTelemetryPathAlias),
 		daggerTelemetryLibPath,

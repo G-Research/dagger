@@ -3,7 +3,7 @@ package boltutil
 import (
 	"io/fs"
 
-	"github.com/dagger/dagger/internal/buildkit/util/db"
+	"github.com/G-Research/dagger/internal/buildkit/util/db"
 	bolt "go.etcd.io/bbolt"
 )
 

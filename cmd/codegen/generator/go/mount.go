@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dagger/dagger/internal/fsutil"
-	fstypes "github.com/dagger/dagger/internal/fsutil/types"
+	"github.com/G-Research/dagger/internal/fsutil"
+	fstypes "github.com/G-Research/dagger/internal/fsutil/types"
 )
 
 // MountedFS takes a target FS and mounts it at Name

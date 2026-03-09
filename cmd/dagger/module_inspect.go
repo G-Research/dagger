@@ -11,9 +11,9 @@ import (
 	"strings"
 	"sync"
 
-	"dagger.io/dagger"
-	"dagger.io/dagger/telemetry"
-	"github.com/dagger/dagger/dagql/dagui"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/telemetry"
+	"github.com/G-Research/dagger/dagql/dagui"
 	"github.com/iancoleman/strcase"
 	"github.com/spf13/pflag"
 	"go.opentelemetry.io/otel/attribute"

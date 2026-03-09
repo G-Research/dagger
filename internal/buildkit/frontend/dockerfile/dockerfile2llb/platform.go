@@ -2,7 +2,7 @@ package dockerfile2llb
 
 import (
 	"github.com/containerd/platforms"
-	"github.com/dagger/dagger/internal/buildkit/frontend/dockerfile/instructions"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/dockerfile/instructions"
 	ocispecs "github.com/opencontainers/image-spec/specs-go/v1"
 )
 

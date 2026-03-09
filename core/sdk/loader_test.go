@@ -3,7 +3,7 @@ package sdk
 import (
 	"testing"
 
-	"github.com/dagger/dagger/engine"
+	"github.com/G-Research/dagger/engine"
 	"github.com/stretchr/testify/require"
 )
 

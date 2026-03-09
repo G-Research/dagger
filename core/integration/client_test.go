@@ -9,13 +9,13 @@ import (
 	"testing"
 	"time"
 
-	"dagger.io/dagger"
-	"github.com/dagger/dagger/internal/buildkit/identity"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/internal/buildkit/identity"
 	"github.com/koron-go/prefixw"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
 
-	"github.com/dagger/dagger/internal/testutil"
+	"github.com/G-Research/dagger/internal/testutil"
 	"github.com/dagger/testctx"
 )
 

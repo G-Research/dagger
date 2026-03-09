@@ -6,15 +6,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
 	"github.com/opencontainers/go-digest"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/dagger/dagger/dagql/call"
-	"github.com/dagger/dagger/engine"
-	"github.com/dagger/dagger/engine/slog"
-	"github.com/dagger/dagger/network"
+	"github.com/G-Research/dagger/dagql/call"
+	"github.com/G-Research/dagger/engine"
+	"github.com/G-Research/dagger/engine/slog"
+	"github.com/G-Research/dagger/network"
 )
 
 const (

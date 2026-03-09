@@ -9,7 +9,7 @@ import (
 	"github.com/dagger/testctx"
 	"github.com/stretchr/testify/require"
 
-	"dagger.io/dagger"
+	"github.com/G-Research/dagger"
 )
 
 type InterfaceSuite struct{}
@@ -144,7 +144,7 @@ func (m *Test) GetDuck() Duck {
 		},
 		{
 			sdk: "typescript",
-			depSource: `import { object, func } from "@dagger.io/dagger"
+			depSource: `import { object, func } from "@github.com/G-Research/dagger"
 
 @object()
 export class Mallard {
@@ -155,7 +155,7 @@ export class Mallard {
 }
 			
 `,
-			testSource: `import { dag, object, func } from "@dagger.io/dagger"
+			testSource: `import { dag, object, func } from "@github.com/G-Research/dagger"
 
 export interface Duck {
   quack: () => Promise<string>

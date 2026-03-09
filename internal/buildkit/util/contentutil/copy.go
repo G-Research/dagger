@@ -8,8 +8,8 @@ import (
 
 	"github.com/containerd/containerd/v2/core/content"
 	"github.com/containerd/containerd/v2/core/images"
-	"github.com/dagger/dagger/internal/buildkit/util/resolver/limited"
-	"github.com/dagger/dagger/internal/buildkit/util/resolver/retryhandler"
+	"github.com/G-Research/dagger/internal/buildkit/util/resolver/limited"
+	"github.com/G-Research/dagger/internal/buildkit/util/resolver/retryhandler"
 	ocispecs "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/pkg/errors"
 )

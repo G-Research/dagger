@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"dagger.io/dagger"
+	"github.com/G-Research/dagger"
 )
 
 func ExampleContainer() {
@@ -61,7 +61,7 @@ func ExampleGitRepository() {
 	}
 	defer client.Close()
 
-	readme, err := client.Git("https://github.com/dagger/dagger").
+	readme, err := client.Git("https://github.com/G-Research/dagger").
 		Tag("v0.3.0").
 		Tree().File("README.md").Contents(ctx)
 	if err != nil {
@@ -82,7 +82,7 @@ func ExampleDirectory_DockerBuild() {
 	}
 	defer client.Close()
 
-	daggerImg := client.Git("https://github.com/dagger/dagger").
+	daggerImg := client.Git("https://github.com/G-Research/dagger").
 		Tag("v0.3.0").
 		Tree().
 		DockerBuild()

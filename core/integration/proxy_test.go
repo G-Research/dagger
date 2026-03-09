@@ -13,12 +13,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dagger/dagger/internal/buildkit/identity"
+	"github.com/G-Research/dagger/internal/buildkit/identity"
 	"github.com/dagger/testctx"
 	"github.com/goproxy/goproxy"
 	"github.com/stretchr/testify/require"
 
-	"dagger.io/dagger"
+	"github.com/G-Research/dagger"
 )
 
 type proxyTest struct {

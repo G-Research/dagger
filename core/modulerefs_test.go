@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/dagger/dagger/engine/vcs"
+	"github.com/G-Research/dagger/engine/vcs"
 	"github.com/stretchr/testify/require"
 )
 

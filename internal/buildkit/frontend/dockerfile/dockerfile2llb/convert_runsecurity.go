@@ -6,9 +6,9 @@ package dockerfile2llb
 import (
 	"github.com/pkg/errors"
 
-	"github.com/dagger/dagger/internal/buildkit/client/llb"
-	"github.com/dagger/dagger/internal/buildkit/frontend/dockerfile/instructions"
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
+	"github.com/G-Research/dagger/internal/buildkit/client/llb"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/dockerfile/instructions"
+	"github.com/G-Research/dagger/internal/buildkit/solver/pb"
 )
 
 func dispatchRunSecurity(c *instructions.RunCommand) (llb.RunOption, error) {

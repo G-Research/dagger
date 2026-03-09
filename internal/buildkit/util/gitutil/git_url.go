@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/dagger/dagger/internal/buildkit/util/sshutil"
+	"github.com/G-Research/dagger/internal/buildkit/util/sshutil"
 	"github.com/pkg/errors"
 )
 
@@ -33,7 +33,7 @@ var protoRegexp = regexp.MustCompile(`^[a-zA-Z0-9]+://`)
 // URL is a custom URL type that points to a remote Git repository.
 //
 // URLs can be parsed from both standard URLs (e.g.
-// "https://github.com/dagger/dagger/internal/buildkit.git"), as well as SCP-like URLs (e.g.
+// "https://github.com/G-Research/dagger/internal/buildkit.git"), as well as SCP-like URLs (e.g.
 // "git@github.com:moby/buildkit.git").
 //
 // See https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols

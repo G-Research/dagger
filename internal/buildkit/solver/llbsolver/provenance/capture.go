@@ -3,10 +3,10 @@ package provenance
 import (
 	"sort"
 
-	resourcestypes "github.com/dagger/dagger/internal/buildkit/executor/resources/types"
-	provenancetypes "github.com/dagger/dagger/internal/buildkit/solver/llbsolver/provenance/types"
-	"github.com/dagger/dagger/internal/buildkit/solver/result"
-	"github.com/dagger/dagger/internal/buildkit/util/urlutil"
+	resourcestypes "github.com/G-Research/dagger/internal/buildkit/executor/resources/types"
+	provenancetypes "github.com/G-Research/dagger/internal/buildkit/solver/llbsolver/provenance/types"
+	"github.com/G-Research/dagger/internal/buildkit/solver/result"
+	"github.com/G-Research/dagger/internal/buildkit/util/urlutil"
 	distreference "github.com/distribution/reference"
 	digest "github.com/opencontainers/go-digest"
 )
@@ -115,7 +115,7 @@ func (c *Capture) AddImage(i provenancetypes.ImageSource) {
 			}
 			if v.Platform != nil && i.Platform != nil {
 				// NOTE: Deliberately excluding OSFeatures, as there's no extant (or rational) case where a source image is an index and contains images distinguished only by OSFeature
-				// See https://github.com/dagger/dagger/internal/buildkit/pull/4387#discussion_r1376234241 and https://github.com/opencontainers/image-spec/issues/1147
+				// See https://github.com/G-Research/dagger/internal/buildkit/pull/4387#discussion_r1376234241 and https://github.com/opencontainers/image-spec/issues/1147
 				if v.Platform.Architecture == i.Platform.Architecture && v.Platform.OS == i.Platform.OS && v.Platform.OSVersion == i.Platform.OSVersion && v.Platform.Variant == i.Platform.Variant {
 					return
 				}

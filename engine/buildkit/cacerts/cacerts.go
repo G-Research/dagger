@@ -8,8 +8,8 @@ import (
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/dagger/dagger/engine/buildkit/containerfs"
-	"github.com/dagger/dagger/engine/distconsts"
+	"github.com/G-Research/dagger/engine/buildkit/containerfs"
+	"github.com/G-Research/dagger/engine/distconsts"
 )
 
 const (

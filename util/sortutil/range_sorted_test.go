@@ -3,7 +3,7 @@ package sortutil_test
 import (
 	"testing"
 
-	"github.com/dagger/dagger/util/sortutil"
+	"github.com/G-Research/dagger/util/sortutil"
 	"github.com/stretchr/testify/require"
 )
 

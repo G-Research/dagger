@@ -5,7 +5,7 @@ go 1.25.3
 require (
 	github.com/99designs/gqlgen v0.17.81
 	github.com/Khan/genqlient v0.8.1
-	github.com/dagger/dagger v0.0.0-00010101000000-000000000000
+	github.com/G-Research/dagger v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/otel v1.38.0
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.14.2
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.14.0
@@ -29,7 +29,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 )
 
-replace github.com/dagger/dagger => ../..
+replace github.com/G-Research/dagger => ../..
 
 require (
 	github.com/G-Research/dagger v0.19.11

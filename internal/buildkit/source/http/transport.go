@@ -5,8 +5,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/session/upload"
+	"github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/session/upload"
 	"github.com/pkg/errors"
 )
 

@@ -30,16 +30,16 @@ import (
 	"text/template"
 	"time"
 
-	bkconfig "github.com/dagger/dagger/internal/buildkit/cmd/buildkitd/config"
-	"github.com/dagger/dagger/internal/buildkit/identity"
-	resolverconfig "github.com/dagger/dagger/internal/buildkit/util/resolver/config"
+	bkconfig "github.com/G-Research/dagger/internal/buildkit/cmd/buildkitd/config"
+	"github.com/G-Research/dagger/internal/buildkit/identity"
+	resolverconfig "github.com/G-Research/dagger/internal/buildkit/util/resolver/config"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/errgroup"
 
-	"dagger.io/dagger"
-	"github.com/dagger/dagger/internal/testutil"
-	"github.com/dagger/dagger/network"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/internal/testutil"
+	"github.com/G-Research/dagger/network"
 	"github.com/dagger/testctx"
 	"mvdan.cc/sh/v3/syntax"
 )

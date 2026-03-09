@@ -3,7 +3,7 @@ package main
 import (
 	"strings"
 
-	"github.com/dagger/dagger/modules/gha/api"
+	"github.com/G-Research/dagger/modules/gha/api"
 )
 
 type Permission string

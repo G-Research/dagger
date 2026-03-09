@@ -23,7 +23,7 @@ const (
 
 var (
 	// Package is filled at linking time
-	Package = "github.com/dagger/dagger/internal/buildkit"
+	Package = "github.com/G-Research/dagger/internal/buildkit"
 
 	// Version holds the complete version number. Filled in at linking time.
 	Version = defaultVersion

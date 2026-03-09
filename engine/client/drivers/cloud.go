@@ -9,8 +9,8 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/dagger/dagger/engine/client/imageload"
-	"github.com/dagger/dagger/internal/cloud"
+	"github.com/G-Research/dagger/engine/client/imageload"
+	"github.com/G-Research/dagger/internal/cloud"
 )
 
 var TLSHandshakeTimeout = 15 * time.Second

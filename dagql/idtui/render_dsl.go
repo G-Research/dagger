@@ -9,7 +9,7 @@ import (
 	"github.com/frioux/shellquote"
 	"github.com/muesli/termenv"
 
-	callpbv1 "github.com/dagger/dagger/dagql/call/callpbv1"
+	callpbv1 "github.com/G-Research/dagger/dagql/call/callpbv1"
 )
 
 // DSL for Pretty-Printing GraphQL Field Calls

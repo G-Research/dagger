@@ -7,7 +7,7 @@ import (
 	"context"
 
 	"github.com/containerd/containerd/v2/core/mount"
-	"github.com/dagger/dagger/internal/buildkit/util/compression"
+	"github.com/G-Research/dagger/internal/buildkit/util/compression"
 	ocispecs "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/pkg/errors"
 )

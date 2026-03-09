@@ -14,8 +14,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	"github.com/dagger/dagger/dagql/call/callpbv1"
-	"github.com/dagger/dagger/util/hashutil"
+	"github.com/G-Research/dagger/dagql/call/callpbv1"
+	"github.com/G-Research/dagger/util/hashutil"
 )
 
 var marshalBufPool = &sync.Pool{New: func() any {

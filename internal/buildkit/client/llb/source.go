@@ -9,11 +9,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dagger/dagger/internal/buildkit/client/llb/sourceresolver"
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
-	"github.com/dagger/dagger/internal/buildkit/util/apicaps"
-	"github.com/dagger/dagger/internal/buildkit/util/gitutil"
-	"github.com/dagger/dagger/internal/buildkit/util/sshutil"
+	"github.com/G-Research/dagger/internal/buildkit/client/llb/sourceresolver"
+	"github.com/G-Research/dagger/internal/buildkit/solver/pb"
+	"github.com/G-Research/dagger/internal/buildkit/util/apicaps"
+	"github.com/G-Research/dagger/internal/buildkit/util/gitutil"
+	"github.com/G-Research/dagger/internal/buildkit/util/sshutil"
 	"github.com/distribution/reference"
 	digest "github.com/opencontainers/go-digest"
 	"github.com/pkg/errors"
@@ -235,7 +235,7 @@ const (
 // Git returns a state that represents a git repository.
 // Example:
 //
-//	st := llb.Git("https://github.com/dagger/dagger/internal/buildkit.git", "v0.11.6")
+//	st := llb.Git("https://github.com/G-Research/dagger/internal/buildkit.git", "v0.11.6")
 //
 // The example fetches the v0.11.6 tag of the buildkit repository.
 // You can also use a commit hash or a branch name.

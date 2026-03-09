@@ -9,8 +9,8 @@ import (
 	"syscall"
 
 	"github.com/containerd/continuity/fs"
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
-	"github.com/dagger/dagger/internal/buildkit/util/system"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/buildkit/util/system"
 )
 
 func MountStubsCleaner(ctx context.Context, dir string, mounts []Mount, recursive bool) func() {
@@ -75,7 +75,7 @@ func MountStubsCleaner(ctx context.Context, dir string, mounts []Mount, recursiv
 			}
 
 			// Back up the timestamps of the dir for reproducible builds
-			// https://github.com/dagger/dagger/internal/buildkit/issues/3148
+			// https://github.com/G-Research/dagger/internal/buildkit/issues/3148
 			parent := filepath.Dir(p)
 			if realPath, err := fs.RootPath(dir, strings.TrimPrefix(parent, dir)); err != nil || realPath != parent {
 				continue

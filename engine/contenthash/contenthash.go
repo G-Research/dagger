@@ -3,7 +3,7 @@ package contenthash
 import (
 	"context"
 
-	"github.com/dagger/dagger/internal/buildkit/cache"
+	"github.com/G-Research/dagger/internal/buildkit/cache"
 	"github.com/opencontainers/go-digest"
 )
 

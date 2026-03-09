@@ -24,17 +24,17 @@ import (
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/cenkalti/backoff/v4"
-	"github.com/dagger/dagger/internal/buildkit/identity"
+	"github.com/G-Research/dagger/internal/buildkit/identity"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 
-	"dagger.io/dagger"
-	"dagger.io/dagger/telemetry"
-	"github.com/dagger/dagger/cmd/codegen/introspection"
-	"github.com/dagger/dagger/core/modules"
-	"github.com/dagger/dagger/engine"
-	"github.com/dagger/dagger/engine/distconsts"
-	"github.com/dagger/dagger/internal/testutil"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/telemetry"
+	"github.com/G-Research/dagger/cmd/codegen/introspection"
+	"github.com/G-Research/dagger/core/modules"
+	"github.com/G-Research/dagger/engine"
+	"github.com/G-Research/dagger/engine/distconsts"
+	"github.com/G-Research/dagger/internal/testutil"
 	"github.com/dagger/testctx"
 )
 
@@ -207,7 +207,7 @@ class Test:
  *
  * Long description, with full sentences.
  */
-import { object, func } from '@dagger.io/dagger'
+import { object, func } from '@github.com/G-Research/dagger'
 
 /**
  * Test object, short description
@@ -230,7 +230,7 @@ export class Test {
 /**
  * Not the main file
  */
-import { object, func } from '@dagger.io/dagger'
+import { object, func } from '@github.com/G-Research/dagger'
 
 @object()
 export class Foo {
@@ -247,7 +247,7 @@ export class Foo {
  *
  * Long description, with full sentences.
  */
-import { object, func } from '@dagger.io/dagger'
+import { object, func } from '@github.com/G-Research/dagger'
 import { Foo } from "./foo"
 
 /**
@@ -340,7 +340,7 @@ class Test:
 		{
 			sdk: "typescript",
 			source: `
-import { object, func } from "@dagger.io/dagger"
+import { object, func } from "@github.com/G-Research/dagger"
 
 @object()
 export class Test {
@@ -451,7 +451,7 @@ class Test:
 		},
 		{
 			sdk: "typescript",
-			source: `import { object, func } from "@dagger.io/dagger"
+			source: `import { object, func } from "@github.com/G-Research/dagger"
 
 @object()
 export class Test {
@@ -604,7 +604,7 @@ class Test:
 		},
 		{
 			sdk: "typescript",
-			source: `import { dag, object, func } from "@dagger.io/dagger"
+			source: `import { dag, object, func } from "@github.com/G-Research/dagger"
 
 @object()
 export class Test {
@@ -669,7 +669,7 @@ class Test:
 		{
 			sdk: "typescript",
 			source: `
-import { dag, object, func } from "@dagger.io/dagger"
+import { dag, object, func } from "@github.com/G-Research/dagger"
 
 var someDefault = dag.container().from("` + alpineImage + `")
 
@@ -891,7 +891,7 @@ class Test:
 `
 
 var useTSOuter = `
-import { dag, object, func } from '@dagger.io/dagger'
+import { dag, object, func } from '@github.com/G-Research/dagger'
 
 @object()
 export class Test {
@@ -1113,7 +1113,7 @@ class Test:
 		{
 			sdk: "typescript",
 			source: `
-import { dag, object, func } from '@dagger.io/dagger'
+import { dag, object, func } from '@github.com/G-Research/dagger'
 
 @object()
 export class Test {
@@ -1256,7 +1256,7 @@ class Test:
 			{
 				sdk: "typescript",
 				source: `
-import { Directory, object, func } from '@dagger.io/dagger';
+import { Directory, object, func } from '@github.com/G-Research/dagger';
 
 @object()
 export class Test {
@@ -1394,7 +1394,7 @@ class Test:
 			{
 				sdk: "typescript",
 				source: `
-import { dag, object, func } from "@dagger.io/dagger"
+import { dag, object, func } from "@github.com/G-Research/dagger"
 
 @object()
 export class Test {
@@ -1464,7 +1464,7 @@ class Test:
 			{
 				sdk: "typescript",
 				source: `
-import { object, func } from "@dagger.io/dagger"
+import { object, func } from "@github.com/G-Research/dagger"
 
 @object()
 export class Test {
@@ -1544,7 +1544,7 @@ class Test:
 			WithWorkdir("/work/test").
 			With(daggerExec("init", "--name=test", "--sdk=typescript")).
 			With(sdkSource("typescript", fmt.Sprintf(`
-import { dag, File, object, func } from "@dagger.io/dagger"
+import { dag, File, object, func } from "@github.com/G-Research/dagger"
 
 @object()
 export class Test {
@@ -1637,7 +1637,7 @@ class Test:
 		{
 			sdk: "typescript",
 			source: `
-import { dag, Container, object, func } from "@dagger.io/dagger"
+import { dag, Container, object, func } from "@github.com/G-Research/dagger"
 
 @object()
 export class WrappedContainer {
@@ -2319,7 +2319,7 @@ type Test struct {}
 
 // TestUnbundleSDK verifies that you can implement a SDK without
 // having to implements the full interface but only the ones you want.
-// cc: https://github.com/dagger/dagger/issues/7707
+// cc: https://github.com/G-Research/dagger/issues/7707
 func (ModuleSuite) TestUnbundleSDK(ctx context.Context, t *testctx.T) {
 	t.Run("only codegen", func(ctx context.Context, t *testctx.T) {
 		c := connect(ctx, t)
@@ -3509,7 +3509,7 @@ func (ModuleSuite) TestUnicodePath(ctx context.Context, t *testctx.T) {
 }
 
 func (ModuleSuite) TestStartServices(ctx context.Context, t *testctx.T) {
-	// regression test for https://github.com/dagger/dagger/pull/6914
+	// regression test for https://github.com/G-Research/dagger/pull/6914
 	t.Run("use service in multiple functions", func(ctx context.Context, t *testctx.T) {
 		c := connect(ctx, t)
 
@@ -3572,7 +3572,7 @@ func (ModuleSuite) TestStartServices(ctx context.Context, t *testctx.T) {
 		require.Equal(t, "hey there", strings.TrimSpace(out))
 	})
 
-	// regression test for https://github.com/dagger/dagger/issues/6951
+	// regression test for https://github.com/G-Research/dagger/issues/6951
 	t.Run("service in multiple containers", func(ctx context.Context, t *testctx.T) {
 		c := connect(ctx, t)
 
@@ -3920,7 +3920,7 @@ func (t *Test) Call(
 			},
 			{
 				sdk: "typescript",
-				source: `import { object, func, Directory, argument } from "@dagger.io/dagger"
+				source: `import { object, func, Directory, argument } from "@github.com/G-Research/dagger"
 
 @object()
 export class Test {
@@ -4199,7 +4199,7 @@ class Test:
 			},
 			{
 				sdk: "typescript",
-				source: `import { Directory, File, object, func, argument } from "@dagger.io/dagger"
+				source: `import { Directory, File, object, func, argument } from "@github.com/G-Research/dagger"
 
 @object()
 export class Test {
@@ -4470,7 +4470,7 @@ class Test:
 			},
 			{
 				sdk: "typescript",
-				source: `import { Directory, File, object, func, argument } from "@dagger.io/dagger"
+				source: `import { Directory, File, object, func, argument } from "@github.com/G-Research/dagger"
 
 @object()
 export class Test {
@@ -4659,7 +4659,7 @@ class Test:
 			},
 			{
 				sdk: "typescript",
-				source: `import { Directory, File,object, func, argument } from "@dagger.io/dagger"
+				source: `import { Directory, File,object, func, argument } from "@github.com/G-Research/dagger"
 @object()
 export class Test {
   @func()
@@ -5002,7 +5002,7 @@ func (m *Test) TestRepoLocalAbs(
 
 func (m *Test) TestRepoRemote(
 	ctx context.Context,
-	// +defaultPath="https://github.com/dagger/dagger.git"
+	// +defaultPath="https://github.com/G-Research/dagger.git"
 	git *dagger.GitRepository,
 ) (string, error) {
 	return m.commitAndRef(ctx, git.Tag("v0.18.2"))
@@ -5018,7 +5018,7 @@ func (m *Test) TestRefLocal(
 
 func (m *Test) TestRefRemote(
 	ctx context.Context,
-	// +defaultPath="https://github.com/dagger/dagger.git#v0.18.3"
+	// +defaultPath="https://github.com/G-Research/dagger.git#v0.18.3"
 	git *dagger.GitRef,
 ) (string, error) {
 	return m.commitAndRef(ctx, git)
@@ -5054,7 +5054,7 @@ class Test:
 		return await self.commit_and_ref(git.head())
 
 	@function
-	async def test_repo_remote(self, git: Annotated[dagger.GitRepository, DefaultPath("https://github.com/dagger/dagger.git")]) -> str:
+	async def test_repo_remote(self, git: Annotated[dagger.GitRepository, DefaultPath("https://github.com/G-Research/dagger.git")]) -> str:
 		return await self.commit_and_ref(git.tag("v0.18.2"))
 
 	@function
@@ -5062,7 +5062,7 @@ class Test:
 		return await self.commit_and_ref(git)
 
 	@function
-	async def test_ref_remote(self, git: Annotated[dagger.GitRef, DefaultPath("https://github.com/dagger/dagger.git#v0.18.3")]) -> str:
+	async def test_ref_remote(self, git: Annotated[dagger.GitRef, DefaultPath("https://github.com/G-Research/dagger.git#v0.18.3")]) -> str:
 		return await self.commit_and_ref(git)
 
 	async def commit_and_ref(self, ref: dagger.GitRef) -> str:
@@ -5073,7 +5073,7 @@ class Test:
 		},
 		{
 			sdk: "typescript",
-			source: `import { GitRepository, GitRef, object, func, argument } from "@dagger.io/dagger"
+			source: `import { GitRepository, GitRef, object, func, argument } from "@github.com/G-Research/dagger"
 
 @object()
 export class Test {
@@ -5093,7 +5093,7 @@ export class Test {
 
 	@func()
 	async testRepoRemote(
-		@argument({ defaultPath: "https://github.com/dagger/dagger.git" }) git: GitRepository,
+		@argument({ defaultPath: "https://github.com/G-Research/dagger.git" }) git: GitRepository,
 	): Promise<string> {
 		return await this.commitAndRef(git.tag("v0.18.2"))
 	}
@@ -5107,7 +5107,7 @@ export class Test {
 
 	@func()
 	async testRefRemote(
-		@argument({ defaultPath: "https://github.com/dagger/dagger.git#v0.18.3" }) git: GitRef,
+		@argument({ defaultPath: "https://github.com/G-Research/dagger.git#v0.18.3" }) git: GitRef,
 	): Promise<string> {
 		return await this.commitAndRef(git)
 	}
@@ -5145,7 +5145,7 @@ public class Test {
     }
 
     @Function
-    public String testRepoRemote(@DefaultPath("https://github.com/dagger/dagger.git") GitRepository git) throws ExecutionException, DaggerQueryException, InterruptedException {
+    public String testRepoRemote(@DefaultPath("https://github.com/G-Research/dagger.git") GitRepository git) throws ExecutionException, DaggerQueryException, InterruptedException {
         return this.commitAndRef(git.tag("v0.18.2"));
     }
 
@@ -5155,7 +5155,7 @@ public class Test {
     }
 
     @Function
-    public String testRefRemote(@DefaultPath("https://github.com/dagger/dagger.git#v0.18.3") GitRef git) throws ExecutionException, DaggerQueryException, InterruptedException {
+    public String testRefRemote(@DefaultPath("https://github.com/G-Research/dagger.git#v0.18.3") GitRef git) throws ExecutionException, DaggerQueryException, InterruptedException {
         return this.commitAndRef(git);
     }
 
@@ -5221,7 +5221,7 @@ func (ModuleSuite) TestContextGitRemote(ctx context.Context, t *testctx.T) {
 
 	modGen := goGitBase(t, c)
 
-	remoteModule := "github.com/dagger/dagger-test-modules"
+	remoteModule := "github.com/G-Research/dagger-test-modules"
 	remoteRef := "context-git"
 	g := c.Git(remoteModule).Ref(remoteRef)
 	commit, err := g.Commit(ctx)
@@ -5229,7 +5229,7 @@ func (ModuleSuite) TestContextGitRemote(ctx context.Context, t *testctx.T) {
 	fullref, err := g.Ref(ctx)
 	require.NoError(t, err)
 
-	modPath := "github.com/dagger/dagger-test-modules/context-git@" + remoteRef
+	modPath := "github.com/G-Research/dagger-test-modules/context-git@" + remoteRef
 
 	t.Run("repo local", func(ctx context.Context, t *testctx.T) {
 		out, err := modGen.With(daggerCallAt(modPath, "test-repo-local")).Stdout(ctx)
@@ -5263,7 +5263,7 @@ func (ModuleSuite) TestContextGitRemoteDep(ctx context.Context, t *testctx.T) {
 
 	c := connect(ctx, t)
 
-	remoteRepo := "github.com/dagger/dagger-test-modules"
+	remoteRepo := "github.com/G-Research/dagger-test-modules"
 	remoteModule := remoteRepo + "/context-git"
 
 	// this commit is *not* the target of any version
@@ -5906,7 +5906,7 @@ func (m *Test) Dep(ctx context.Context, n float64) (float64, error) {
 		},
 		{
 			sdk: "typescript",
-			source: `import { dag, float, object, func } from "@dagger.io/dagger"
+			source: `import { dag, float, object, func } from "@github.com/G-Research/dagger"
 
 @object()
 export class Test {
@@ -6154,7 +6154,7 @@ func (ModuleSuite) TestTypedefSourceMaps(ctx context.Context, t *testctx.T) {
 type Test struct {}
     `
 
-	tsBaseSrc := `import { object, func } from "@dagger.io/dagger"
+	tsBaseSrc := `import { object, func } from "@github.com/G-Research/dagger"
 
 @object()
 export class Test {}`
@@ -6242,7 +6242,7 @@ func (m *Dep) Collect(MyEnum, MyInterface) error {
 		},
 		{
 			sdk: "typescript",
-			src: `import { object, func } from "@dagger.io/dagger"
+			src: `import { object, func } from "@github.com/G-Research/dagger"
 
 export enum MyEnum {
   A = "MyEnumA",
@@ -6372,7 +6372,7 @@ func (m *Test) PrintDefault(ctx context.Context) (string, error) {
 		},
 		//		{
 		//			sdk: "typescript",
-		//			source: `import { dag, Container, object, func } from "@dagger.io/dagger"
+		//			source: `import { dag, Container, object, func } from "@github.com/G-Research/dagger"
 		//
 		// @object()
 		// export class Test {
@@ -6507,7 +6507,7 @@ type Fooer interface {
 func (m *Test) CallFoo(ctx context.Context, foo Fooer, value int) (string, error) {
 	return foo.Foo(ctx, value)
 }`
-	const tsSrc = `import { field, func, object } from "@dagger.io/dagger"
+	const tsSrc = `import { field, func, object } from "@github.com/G-Research/dagger"
 
   /** @deprecated This module is deprecated and will be removed in future versions. */
   @object()
@@ -6914,7 +6914,7 @@ func (m *Test) Legacy(
 		},
 		{
 			sdk: "typescript",
-			contents: `import { func, object } from "@dagger.io/dagger"
+			contents: `import { func, object } from "@github.com/G-Research/dagger"
 
 @object()
 export class Test {
@@ -7069,10 +7069,10 @@ func (m *Test) Legacy(
 `,
 		},
 		// todo(guillaume): re-enable once we have a way to resolve external libs default values in TS
-		// https://github.com/dagger/dagger/pull/11319
+		// https://github.com/G-Research/dagger/pull/11319
 		// 		{
 		// 			sdk: "typescript",
-		// 			contents: `import { func, object } from "@dagger.io/dagger"
+		// 			contents: `import { func, object } from "@github.com/G-Research/dagger"
 
 		// @object()
 		// export class Test {
@@ -7089,7 +7089,7 @@ func (m *Test) Legacy(
 		// 		},
 		{
 			sdk: "typescript",
-			contents: `import { func, object } from "@dagger.io/dagger"
+			contents: `import { func, object } from "@github.com/G-Research/dagger"
 
 @object()
 export class Test {
@@ -7256,7 +7256,7 @@ func (ModuleSuite) TestPrivateDeps(ctx context.Context, t *testctx.T) {
 		privateDepCode := `package main
 
 import (
-	"github.com/dagger/dagger-test-modules/privatedeps/pkg/cooldep"
+	"github.com/G-Research/dagger-test-modules/privatedeps/pkg/cooldep"
 )
 
 type Foo struct{}
@@ -7273,7 +7273,7 @@ func (m *Foo) HowCoolIsDagger() string {
   "sdk": {
     "source": "go",
     "config": {
-      "goprivate": "github.com/dagger/dagger-test-modules"
+      "goprivate": "github.com/G-Research/dagger-test-modules"
     }
   }
 }`
@@ -7544,7 +7544,7 @@ class Test:
 			source: `
 import crypto from "crypto"
 
-import {  object, func } from "@dagger.io/dagger"
+import {  object, func } from "@github.com/G-Research/dagger"
 
 @object()
 export class Test {
@@ -7873,7 +7873,7 @@ func (m *Depdep) TestFile(
 		require.NoError(t, err, string(initOutput))
 
 		installCmd := hostDaggerCommand(ctx, t, modDir, "install",
-			"github.com/dagger/dagger-test-modules/contextual-git-bug@"+vcsTestCaseCommit)
+			"github.com/G-Research/dagger-test-modules/contextual-git-bug@"+vcsTestCaseCommit)
 		installOutput, err := installCmd.CombinedOutput()
 		require.NoError(t, err, string(installOutput))
 

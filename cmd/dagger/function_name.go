@@ -3,7 +3,7 @@ package main
 import (
 	"strings"
 
-	"github.com/dagger/dagger/engine/client"
+	"github.com/G-Research/dagger/engine/client"
 )
 
 func initModuleParams(a []string) client.Params {

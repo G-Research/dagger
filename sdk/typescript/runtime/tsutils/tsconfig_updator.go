@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	daggerLibPathAlias       = "@dagger.io/dagger"
-	daggerTelemetryPathAlias = "@dagger.io/dagger/telemetry"
+	daggerLibPathAlias       = "@github.com/G-Research/dagger"
+	daggerTelemetryPathAlias = "@github.com/G-Research/dagger/telemetry"
 
 	daggerLibPath          = "./sdk/index.ts"
 	daggerTelemetryLibPath = "./sdk/telemetry.ts"
@@ -24,7 +24,7 @@ func DefaultTSConfig() string {
 func UpdateTSConfigForModule(tsConfig string) (string, error) {
 	tsConfig = removeJSONComments(tsConfig)
 
-	// Add path."@dagger.io/dagger"=["./sdk/index.ts"]
+	// Add path."@github.com/G-Research/dagger"=["./sdk/index.ts"]
 	tsConfig, err := sjson.Set(tsConfig,
 		"compilerOptions.paths."+gjson.Escape(daggerLibPathAlias),
 		[]string{daggerLibPath},
@@ -33,7 +33,7 @@ func UpdateTSConfigForModule(tsConfig string) (string, error) {
 		return "", fmt.Errorf("failed to update tsconfig paths: %w", err)
 	}
 
-	// Add path."@dagger.io/dagger/telemetry"=["./sdk/telemetry.ts"]
+	// Add path."@github.com/G-Research/dagger/telemetry"=["./sdk/telemetry.ts"]
 	tsConfig, err = sjson.Set(tsConfig,
 		"compilerOptions.paths."+gjson.Escape(daggerTelemetryPathAlias),
 		[]string{daggerTelemetryLibPath},
@@ -54,13 +54,13 @@ func UpdateTSConfigForModule(tsConfig string) (string, error) {
 func UpdateTSConfigForClient(tsConfig string, isRemote bool) (string, error) {
 	tsConfig = removeJSONComments(tsConfig)
 
-	// If the dagger library is remote, we don't need to override @dagger.io/dagger
-	// and @dagger.io/dagger/telemetry
+	// If the dagger library is remote, we don't need to override @github.com/G-Research/dagger
+	// and @github.com/G-Research/dagger/telemetry
 	if isRemote {
 		return tsConfig, nil
 	}
 
-	// Add path."@dagger.io/dagger/telemetry"=["./sdk/telemetry.ts"]
+	// Add path."@github.com/G-Research/dagger/telemetry"=["./sdk/telemetry.ts"]
 	tsConfig, err := sjson.Set(tsConfig,
 		"compilerOptions.paths."+gjson.Escape(daggerTelemetryPathAlias),
 		[]string{daggerTelemetryLibPath},
@@ -69,7 +69,7 @@ func UpdateTSConfigForClient(tsConfig string, isRemote bool) (string, error) {
 		return "", fmt.Errorf("failed to update tsconfig paths %s: %w", daggerTelemetryPathAlias, err)
 	}
 
-	// Add path."@dagger.io/dagger"=["./sdk/index.ts"]
+	// Add path."@github.com/G-Research/dagger"=["./sdk/index.ts"]
 	tsConfig, err = sjson.Set(tsConfig,
 		"compilerOptions.paths."+gjson.Escape(daggerLibPathAlias),
 		[]string{daggerLibPath},

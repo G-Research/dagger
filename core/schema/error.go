@@ -3,12 +3,12 @@ package schema
 import (
 	"context"
 
-	"dagger.io/dagger/telemetry"
+	"github.com/G-Research/dagger/telemetry"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/dagger/dagger/core"
-	"github.com/dagger/dagger/dagql"
+	"github.com/G-Research/dagger/core"
+	"github.com/G-Research/dagger/dagql"
 )
 
 type errorSchema struct{}

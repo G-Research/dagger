@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"dagger.io/dagger"
-	"github.com/dagger/dagger/cmd/codegen/introspection"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/cmd/codegen/introspection"
 	"github.com/spf13/cobra"
 )
 

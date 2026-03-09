@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"dagger.io/dagger/querybuilder"
-	"github.com/dagger/dagger/dagql/idtui"
-	"github.com/dagger/dagger/engine/client"
+	"github.com/G-Research/dagger/querybuilder"
+	"github.com/G-Research/dagger/dagql/idtui"
+	"github.com/G-Research/dagger/engine/client"
 	"github.com/spf13/cobra"
 )
 

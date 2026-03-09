@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"dagger.io/dagger"
-	"github.com/dagger/dagger/core/modules"
-	"github.com/dagger/dagger/engine/client"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/core/modules"
+	"github.com/G-Research/dagger/engine/client"
 	"github.com/juju/ansiterm/tabwriter"
 	"github.com/spf13/cobra"
 )

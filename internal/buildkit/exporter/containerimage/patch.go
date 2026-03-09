@@ -3,9 +3,9 @@ package containerimage
 import (
 	"context"
 
-	"github.com/dagger/dagger/internal/buildkit/cache"
-	"github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/solver"
+	"github.com/G-Research/dagger/internal/buildkit/cache"
+	"github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/solver"
 	ocispecs "github.com/opencontainers/image-spec/specs-go/v1"
 )
 

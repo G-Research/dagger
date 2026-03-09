@@ -5,7 +5,7 @@ import (
 	"io"
 	"time"
 
-	controlapi "github.com/dagger/dagger/internal/buildkit/api/services/control"
+	controlapi "github.com/G-Research/dagger/internal/buildkit/api/services/control"
 	"github.com/pkg/errors"
 )
 

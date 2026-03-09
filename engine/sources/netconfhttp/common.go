@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/dagger/dagger/internal/buildkit/executor/oci"
+	"github.com/G-Research/dagger/internal/buildkit/executor/oci"
 )
 
 func createResolver(dns *oci.DNSConfig) (*net.Resolver, []string) {

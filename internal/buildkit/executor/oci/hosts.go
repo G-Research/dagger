@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/dagger/dagger/internal/buildkit/executor"
-	"github.com/dagger/dagger/internal/buildkit/identity"
+	"github.com/G-Research/dagger/internal/buildkit/executor"
+	"github.com/G-Research/dagger/internal/buildkit/identity"
 	"github.com/docker/docker/pkg/idtools"
 	"github.com/pkg/errors"
 )

@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 
-	"dagger.io/dagger"
+	"github.com/G-Research/dagger"
 )
 
 // Group all tests that are specific to Python only.

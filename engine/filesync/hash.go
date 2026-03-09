@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	fstypes "github.com/dagger/dagger/internal/fsutil/types"
+	fstypes "github.com/G-Research/dagger/internal/fsutil/types"
 	"github.com/zeebo/xxh3"
 )
 
@@ -33,7 +33,7 @@ func (h *statHash) Reset() {
 	h.Hash.Reset()
 
 	// this is similar to upstream's NewFromStat func but avoids overhead of creating tar headers
-	// https://github.com/dagger/dagger/internal/buildkit/blob/44504feda1ce39bb8578537a6e6a93f90bdf4220/cache/contenthash/filehash.go#L42-L42
+	// https://github.com/G-Research/dagger/internal/buildkit/blob/44504feda1ce39bb8578537a6e6a93f90bdf4220/cache/contenthash/filehash.go#L42-L42
 
 	// skip name of file since contenthash includes that on its own
 	// skip mtime since all relevant metadata + file contents that impact modtime are included in the hash

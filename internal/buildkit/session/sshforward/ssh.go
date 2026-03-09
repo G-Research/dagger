@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/dagger/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/session"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/metadata"

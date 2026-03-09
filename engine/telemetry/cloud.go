@@ -8,8 +8,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/dagger/dagger/engine/slog"
-	"github.com/dagger/dagger/internal/cloud/auth"
+	"github.com/G-Research/dagger/engine/slog"
+	"github.com/G-Research/dagger/internal/cloud/auth"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"

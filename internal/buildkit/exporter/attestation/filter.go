@@ -3,7 +3,7 @@ package attestation
 import (
 	"bytes"
 
-	"github.com/dagger/dagger/internal/buildkit/exporter"
+	"github.com/G-Research/dagger/internal/buildkit/exporter"
 )
 
 func Filter(attestations []exporter.Attestation, include map[string][]byte, exclude map[string][]byte) []exporter.Attestation {

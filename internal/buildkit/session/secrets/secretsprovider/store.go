@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/dagger/dagger/internal/buildkit/session/secrets"
+	"github.com/G-Research/dagger/internal/buildkit/session/secrets"
 	"github.com/pkg/errors"
 	"github.com/tonistiigi/units"
 )

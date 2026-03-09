@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dagger/dagger/dagql/dagui"
+	"github.com/G-Research/dagger/dagql/dagui"
 	"github.com/stretchr/testify/require"
 )
 

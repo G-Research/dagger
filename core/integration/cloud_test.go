@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/dagger/dagger/internal/cloud/auth"
+	"github.com/G-Research/dagger/internal/cloud/auth"
 	"github.com/dagger/testctx"
 	"github.com/stretchr/testify/require"
 )

@@ -5,18 +5,18 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dagger/dagger/internal/buildkit/cache"
-	"github.com/dagger/dagger/internal/buildkit/client/llb"
-	"github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/solver"
-	"github.com/dagger/dagger/internal/buildkit/solver/llbsolver/provenance"
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
-	"github.com/dagger/dagger/internal/buildkit/source"
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/buildkit/cache"
+	"github.com/G-Research/dagger/internal/buildkit/client/llb"
+	"github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/solver"
+	"github.com/G-Research/dagger/internal/buildkit/solver/llbsolver/provenance"
+	"github.com/G-Research/dagger/internal/buildkit/solver/pb"
+	"github.com/G-Research/dagger/internal/buildkit/source"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
 	"github.com/opencontainers/go-digest"
 
-	"dagger.io/dagger/telemetry"
-	"github.com/dagger/dagger/engine/contenthash"
+	"github.com/G-Research/dagger/telemetry"
+	"github.com/G-Research/dagger/engine/contenthash"
 )
 
 const (

@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/dagger/dagger/internal/buildkit/client/llb"
+	"github.com/G-Research/dagger/internal/buildkit/client/llb"
 	"github.com/opencontainers/go-digest"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/otel/trace/embedded"
 	"go.opentelemetry.io/otel/trace/noop"
 
-	"dagger.io/dagger/telemetry"
+	"github.com/G-Research/dagger/telemetry"
 )
 
 func WithTracePropagation(ctx context.Context) llb.ConstraintsOpt {

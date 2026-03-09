@@ -13,24 +13,24 @@ import (
 	"slices"
 	"time"
 
-	"dagger.io/dagger/telemetry"
+	"github.com/G-Research/dagger/telemetry"
 	"github.com/containerd/containerd/v2/core/images"
 	"github.com/containerd/containerd/v2/core/leases"
 	cerrdefs "github.com/containerd/errdefs"
-	"github.com/dagger/dagger/internal/buildkit/client/llb"
-	"github.com/dagger/dagger/internal/buildkit/client/llb/sourceresolver"
-	"github.com/dagger/dagger/internal/buildkit/frontend/dockerfile/shell"
-	"github.com/dagger/dagger/internal/buildkit/util/leaseutil"
-	"github.com/dagger/dagger/util/hashutil"
+	"github.com/G-Research/dagger/internal/buildkit/client/llb"
+	"github.com/G-Research/dagger/internal/buildkit/client/llb/sourceresolver"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/dockerfile/shell"
+	"github.com/G-Research/dagger/internal/buildkit/util/leaseutil"
+	"github.com/G-Research/dagger/util/hashutil"
 	"github.com/distribution/reference"
 	"github.com/opencontainers/go-digest"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/vektah/gqlparser/v2/ast"
 
-	"github.com/dagger/dagger/core"
-	"github.com/dagger/dagger/dagql"
-	"github.com/dagger/dagger/engine/buildkit"
-	"github.com/dagger/dagger/engine/slog"
+	"github.com/G-Research/dagger/core"
+	"github.com/G-Research/dagger/dagql"
+	"github.com/G-Research/dagger/engine/buildkit"
+	"github.com/G-Research/dagger/engine/slog"
 )
 
 type containerSchema struct{}
@@ -670,7 +670,7 @@ func (s *containerSchema) Install(srv *dagql.Server) {
 		dagql.Func("withRegistryAuth", s.withRegistryAuth).
 			Doc(`Attach credentials for future publishing to a registry. Use in combination with publish`).
 			Args(
-				dagql.Arg("address").Doc(`The image address that needs authentication. Same format as "docker push". Example: "registry.dagger.io/dagger:latest"`),
+				dagql.Arg("address").Doc(`The image address that needs authentication. Same format as "docker push". Example: "registry.github.com/G-Research/dagger:latest"`),
 				dagql.Arg("username").Doc(`The username to authenticate with. Example: "alice"`),
 				dagql.Arg("secret").Doc(`The API key, password or token to authenticate to this registry`),
 			),

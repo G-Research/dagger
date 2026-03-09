@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"dagger.io/dagger"
+	"github.com/G-Research/dagger"
 	"github.com/dagger/testctx"
 	"github.com/stretchr/testify/require"
 )
@@ -43,7 +43,7 @@ func (PHPSuite) TestInit(ctx context.Context, t *testctx.T) {
 			With(daggerExec(
 				"init",
 				"--name=bare",
-				"--sdk=github.com/dagger/dagger/sdk/php")).
+				"--sdk=github.com/G-Research/dagger/sdk/php")).
 			With(daggerCall("container-echo", "--string-arg", "hello", "stdout")).
 			Stdout(ctx)
 

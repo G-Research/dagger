@@ -13,7 +13,7 @@ import (
 	"github.com/Netflix/go-expect"
 	"github.com/containerd/continuity/fs"
 	"github.com/creack/pty"
-	"github.com/dagger/dagger/internal/testutil"
+	"github.com/G-Research/dagger/internal/testutil"
 	"github.com/dagger/testctx"
 	"github.com/muesli/termenv"
 	"github.com/stretchr/testify/require"
@@ -446,7 +446,7 @@ type Test struct {
 		"context"
 		"fmt"
 
-		"dagger.io/dagger"
+		"github.com/G-Research/dagger"
 	)
 
 	func main() {

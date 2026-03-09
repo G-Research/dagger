@@ -9,8 +9,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	"github.com/dagger/dagger/engine/server"
-	"github.com/dagger/dagger/engine/slog"
+	"github.com/G-Research/dagger/engine/server"
+	"github.com/G-Research/dagger/engine/slog"
 )
 
 var (

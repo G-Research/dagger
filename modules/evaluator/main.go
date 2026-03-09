@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"strings"
 
-	"dagger.io/dagger/telemetry"
+	"github.com/G-Research/dagger/telemetry"
 	"github.com/sourcegraph/conc/pool"
 	"go.opentelemetry.io/otel/trace"
 )

@@ -9,12 +9,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dagger/dagger/internal/buildkit/identity"
+	"github.com/G-Research/dagger/internal/buildkit/identity"
 	"github.com/stretchr/testify/require"
 
-	"dagger.io/dagger"
-	"github.com/dagger/dagger/core"
-	"github.com/dagger/dagger/internal/testutil"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/core"
+	"github.com/G-Research/dagger/internal/testutil"
 	"github.com/dagger/testctx"
 )
 
@@ -841,20 +841,20 @@ func (DirectorySuite) TestDiff(ctx context.Context, t *testctx.T) {
 		require.Equal(t, []string{"a-file"}, res.Directory.Diff.Entries)
 	})
 
-	// this is a regression test for: https://github.com/dagger/dagger/pull/7328
+	// this is a regression test for: https://github.com/G-Research/dagger/pull/7328
 	t.Run("equivalent", func(ctx context.Context, t *testctx.T) {
 		c := connect(ctx, t)
-		a := c.Git("github.com/dagger/dagger").Ref("main").Tree()
+		a := c.Git("github.com/G-Research/dagger").Ref("main").Tree()
 		b := c.Directory().WithDirectory("", a)
 		ents, err := a.Diff(b).Entries(ctx)
 		require.NoError(t, err)
 		require.Len(t, ents, 0)
 	})
 
-	// this is a regression test for: https://github.com/dagger/dagger/pull/11107
+	// this is a regression test for: https://github.com/G-Research/dagger/pull/11107
 	t.Run("equivalent subdirs", func(ctx context.Context, t *testctx.T) {
 		c := connect(ctx, t)
-		a := c.Git("github.com/dagger/dagger").Ref("main").Tree().Directory("engine")
+		a := c.Git("github.com/G-Research/dagger").Ref("main").Tree().Directory("engine")
 		b := c.Directory().WithDirectory("engine", a).Directory("engine")
 		_, err := a.Diff(b).Sync(ctx)
 		require.NoError(t, err)
@@ -891,7 +891,7 @@ func (DirectorySuite) TestDiff(ctx context.Context, t *testctx.T) {
 	/*
 		This triggers a nil panic in Buildkit!
 
-		Issue: https://github.com/dagger/dagger/issues/3337
+		Issue: https://github.com/G-Research/dagger/issues/3337
 
 		This might be fixed once we update Buildkit.
 
@@ -1403,7 +1403,7 @@ func (DirectorySuite) TestDirectoryName(ctx context.Context, t *testctx.T) {
 	})
 
 	t.Run("git directory", func(ctx context.Context, t *testctx.T) {
-		dir := c.Git("https://github.com/dagger/dagger#ee32df913f57c876e067bd5ecc159561510b6f50").Head().Tree()
+		dir := c.Git("https://github.com/G-Research/dagger#ee32df913f57c876e067bd5ecc159561510b6f50").Head().Tree()
 
 		t.Run("root directory", func(ctx context.Context, t *testctx.T) {
 			rootName, err := dir.Name(ctx)

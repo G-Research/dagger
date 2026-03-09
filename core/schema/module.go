@@ -8,9 +8,9 @@ import (
 	"slices"
 	"time"
 
-	"github.com/dagger/dagger/core"
-	"github.com/dagger/dagger/core/sdk"
-	"github.com/dagger/dagger/dagql"
+	"github.com/G-Research/dagger/core"
+	"github.com/G-Research/dagger/core/sdk"
+	"github.com/G-Research/dagger/dagql"
 )
 
 type moduleSchema struct{}

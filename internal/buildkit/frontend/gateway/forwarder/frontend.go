@@ -3,12 +3,12 @@ package forwarder
 import (
 	"context"
 
-	"github.com/dagger/dagger/internal/buildkit/executor"
-	"github.com/dagger/dagger/internal/buildkit/frontend"
-	"github.com/dagger/dagger/internal/buildkit/frontend/gateway/client"
-	"github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
-	"github.com/dagger/dagger/internal/buildkit/worker"
+	"github.com/G-Research/dagger/internal/buildkit/executor"
+	"github.com/G-Research/dagger/internal/buildkit/frontend"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/gateway/client"
+	"github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/solver/pb"
+	"github.com/G-Research/dagger/internal/buildkit/worker"
 )
 
 func NewGatewayForwarder(w worker.Infos, f client.BuildFunc) frontend.Frontend {

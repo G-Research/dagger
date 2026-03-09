@@ -23,13 +23,13 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"golang.org/x/term"
 
-	"dagger.io/dagger"
-	"dagger.io/dagger/telemetry"
-	"github.com/dagger/dagger/dagql/call"
-	"github.com/dagger/dagger/dagql/call/callpbv1"
-	"github.com/dagger/dagger/dagql/dagui"
-	"github.com/dagger/dagger/engine/session/prompt"
-	"github.com/dagger/dagger/util/cleanups"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/telemetry"
+	"github.com/G-Research/dagger/dagql/call"
+	"github.com/G-Research/dagger/dagql/call/callpbv1"
+	"github.com/G-Research/dagger/dagql/dagui"
+	"github.com/G-Research/dagger/engine/session/prompt"
+	"github.com/G-Research/dagger/util/cleanups"
 )
 
 type (

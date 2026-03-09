@@ -1,7 +1,7 @@
 package errdefs
 
 import (
-	serrdefs "github.com/dagger/dagger/internal/buildkit/solver/errdefs"
+	serrdefs "github.com/G-Research/dagger/internal/buildkit/solver/errdefs"
 )
 
 // FileActionError will be returned when an error is encountered when solving

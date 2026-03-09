@@ -4,9 +4,9 @@ import (
 	"context"
 	"sync"
 
-	"github.com/dagger/dagger/internal/buildkit/errdefs"
-	"github.com/dagger/dagger/internal/buildkit/solver/internal/pipe"
-	"github.com/dagger/dagger/internal/buildkit/util/cond"
+	"github.com/G-Research/dagger/internal/buildkit/errdefs"
+	"github.com/G-Research/dagger/internal/buildkit/solver/internal/pipe"
+	"github.com/G-Research/dagger/internal/buildkit/util/cond"
 	"github.com/pkg/errors"
 )
 

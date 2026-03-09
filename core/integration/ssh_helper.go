@@ -20,7 +20,7 @@ import (
 
 // Private key used to test the new SSH modules ref format
 // It has read-only access to our modules testing private repositories.
-// These are all quasi-mirrors of github.com/dagger/dagger-test-modules
+// These are all quasi-mirrors of github.com/G-Research/dagger-test-modules
 // - gitlab.com/dagger-modules/private/test/more/dagger-test-modules-private.git
 // - bitbucket.org/dagger-modules/private-modules-test
 // - dev.azure.com/daggere2e/private/_git/dagger-test-modules

@@ -11,7 +11,7 @@ import (
 	ocispecs "github.com/opencontainers/image-spec/specs-go/v1"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/dagger/dagger/engine/distconsts"
+	"github.com/G-Research/dagger/engine/distconsts"
 
 	"dagger/engine-dev/consts"
 	"dagger/engine-dev/internal/dagger"
@@ -226,10 +226,10 @@ func (build *Builder) Go(version bool, race bool) *dagger.Go {
 func (build *Builder) goWithSource(source *dagger.Directory, version bool, race bool) *dagger.Go {
 	var values []string
 	if version && build.version != "" {
-		values = append(values, "github.com/dagger/dagger/engine.Version="+build.version)
+		values = append(values, "github.com/G-Research/dagger/engine.Version="+build.version)
 	}
 	if version && build.tag != "" {
-		values = append(values, "github.com/dagger/dagger/engine.Tag="+build.tag)
+		values = append(values, "github.com/G-Research/dagger/engine.Tag="+build.tag)
 	}
 	return dag.Go(dagger.GoOpts{
 		Source: source,

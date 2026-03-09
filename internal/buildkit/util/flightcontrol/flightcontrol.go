@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dagger/dagger/internal/buildkit/util/progress"
+	"github.com/G-Research/dagger/internal/buildkit/util/progress"
 	"github.com/pkg/errors"
 )
 

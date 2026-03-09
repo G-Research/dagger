@@ -12,9 +12,9 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/vektah/gqlparser/v2/ast"
 
-	"github.com/dagger/dagger/dagql/call"
-	"github.com/dagger/dagger/engine"
-	"github.com/dagger/dagger/engine/slog"
+	"github.com/G-Research/dagger/dagql/call"
+	"github.com/G-Research/dagger/engine"
+	"github.com/G-Research/dagger/engine/slog"
 )
 
 // Class is a class of Object types.

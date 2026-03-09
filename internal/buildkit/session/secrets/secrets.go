@@ -3,8 +3,8 @@ package secrets
 import (
 	"context"
 
-	"github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/util/grpcerrors"
+	"github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/util/grpcerrors"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 )

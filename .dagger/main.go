@@ -6,8 +6,8 @@ import (
 	"context"
 	"os"
 
-	"github.com/dagger/dagger/.dagger/internal/dagger"
-	"github.com/dagger/dagger/util/parallel"
+	"github.com/G-Research/dagger/.dagger/internal/dagger"
+	"github.com/G-Research/dagger/util/parallel"
 )
 
 // A dev environment for the DaggerDev Engine

@@ -14,10 +14,10 @@ import (
 	"github.com/containerd/containerd/v2/plugins/snapshots/overlay/overlayutils"
 	"github.com/containerd/continuity/fs"
 	"github.com/containerd/continuity/sysx"
-	"github.com/dagger/dagger/internal/buildkit/identity"
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
-	"github.com/dagger/dagger/internal/buildkit/util/leaseutil"
-	"github.com/dagger/dagger/internal/buildkit/util/overlay"
+	"github.com/G-Research/dagger/internal/buildkit/identity"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/buildkit/util/leaseutil"
+	"github.com/G-Research/dagger/internal/buildkit/util/overlay"
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
@@ -404,7 +404,7 @@ func (a *applier) applyCopy(ctx context.Context, ca *changeApply) error {
 				return errors.Wrapf(err, "failed to get xattr %s of src path %s", xattr, ca.srcPath)
 			}
 			if err := sysx.LSetxattr(ca.dstPath, xattr, xattrVal, 0); err != nil {
-				// This can often fail, so just log it: https://github.com/dagger/dagger/internal/buildkit/issues/1189
+				// This can often fail, so just log it: https://github.com/G-Research/dagger/internal/buildkit/issues/1189
 				bklog.G(ctx).Debugf("failed to set xattr %s of path %s during apply", xattr, ca.dstPath)
 			}
 		}

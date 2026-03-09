@@ -9,8 +9,8 @@ import (
 	"syscall"
 
 	"github.com/containernetworking/plugins/pkg/ns"
-	resourcestypes "github.com/dagger/dagger/internal/buildkit/executor/resources/types"
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
+	resourcestypes "github.com/G-Research/dagger/internal/buildkit/executor/resources/types"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
 	"github.com/pkg/errors"
 )
 

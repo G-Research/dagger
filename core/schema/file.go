@@ -6,8 +6,8 @@ import (
 	"io/fs"
 	"path/filepath"
 
-	"github.com/dagger/dagger/core"
-	"github.com/dagger/dagger/dagql"
+	"github.com/G-Research/dagger/core"
+	"github.com/G-Research/dagger/dagql"
 )
 
 type fileSchema struct{}

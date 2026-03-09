@@ -546,7 +546,7 @@ import "context"
 type Test struct {}
 
 func (m *Test) Fn(ctx context.Context) (string, error) {
-	return dag.ModuleSource("https://github.com/dagger/dagger.git@v0.12.6").CloneURL(ctx)
+	return dag.ModuleSource("https://github.com/G-Research/dagger.git@v0.12.6").CloneURL(ctx)
 }
 `,
 		).
@@ -554,7 +554,7 @@ func (m *Test) Fn(ctx context.Context) (string, error) {
 		Stdout(ctx)
 
 	require.NoError(t, err)
-	require.Equal(t, "https://github.com/dagger/dagger.git", out)
+	require.Equal(t, "https://github.com/G-Research/dagger.git", out)
 }
 
 func (LegacySuite) TestGoCodegenOptionals(ctx context.Context, t *testctx.T) {
@@ -628,15 +628,15 @@ import (
 type Test struct {}
 
 func (m *Test) GetCommit(ctx context.Context, cmtID string) (string, error) {
-	return dag.Git("github.com/dagger/dagger", dagger.GitOpts{KeepGitDir: true}).Commit(cmtID).Commit(ctx)
+	return dag.Git("github.com/G-Research/dagger", dagger.GitOpts{KeepGitDir: true}).Commit(cmtID).Commit(ctx)
 }
 
 func (m *Test) GetContents(ctx context.Context, cmtID string) (string, error) {
-	return dag.Git("github.com/dagger/dagger", dagger.GitOpts{KeepGitDir: true}).Commit(cmtID).Tree().File(".git/HEAD").Contents(ctx)
+	return dag.Git("github.com/G-Research/dagger", dagger.GitOpts{KeepGitDir: true}).Commit(cmtID).Tree().File(".git/HEAD").Contents(ctx)
 }
 
 func (m *Test) GetContentsNoKeepGitDirOpt(ctx context.Context, cmtID string) (string, error) {
-	return dag.Git("github.com/dagger/dagger").Commit(cmtID).Tree().File(".git/HEAD").Contents(ctx)
+	return dag.Git("github.com/G-Research/dagger").Commit(cmtID).Tree().File(".git/HEAD").Contents(ctx)
 }
 `)
 
@@ -1108,7 +1108,7 @@ class Test:
 		},
 		{
 			sdk: "typescript",
-			source: `import { object, func } from "@dagger.io/dagger"
+			source: `import { object, func } from "@github.com/G-Research/dagger"
 
 /**
  * Enum for Status
@@ -1180,7 +1180,7 @@ func (LegacySuite) TestLegacyTypescriptEnumDecorator(ctx context.Context, t *tes
 
 	c := connect(ctx, t)
 
-	tsSrc := `import { enumType, func, object } from "@dagger.io/dagger"
+	tsSrc := `import { enumType, func, object } from "@github.com/G-Research/dagger"
 
 @enumType()
 export class LegacyStatus {
@@ -1315,7 +1315,7 @@ class Test:
 		},
 		{
 			sdk: "typescript",
-			source: `import { dag, object, func, DepStatus } from "@dagger.io/dagger"
+			source: `import { dag, object, func, DepStatus } from "@github.com/G-Research/dagger"
 
 @object()
 export class Test {
@@ -1376,15 +1376,15 @@ import "context"
 type Test struct {}
 
 func (m *Test) Commit(ctx context.Context, name string) (string, error) {
-	return dag.Git("github.com/dagger/dagger").Commit(name).Tree().File("LICENSE").Contents(ctx)
+	return dag.Git("github.com/G-Research/dagger").Commit(name).Tree().File("LICENSE").Contents(ctx)
 }
 
 func (m *Test) Tag(ctx context.Context, name string) (string, error) {
-	return dag.Git("github.com/dagger/dagger").Tag(name).Tree().File("LICENSE").Contents(ctx)
+	return dag.Git("github.com/G-Research/dagger").Tag(name).Tree().File("LICENSE").Contents(ctx)
 }
 
 func (m *Test) Branch(ctx context.Context, name string) (string, error) {
-	return dag.Git("github.com/dagger/dagger").Branch(name).Tree().File("LICENSE").Contents(ctx)
+	return dag.Git("github.com/G-Research/dagger").Branch(name).Tree().File("LICENSE").Contents(ctx)
 }
 `)
 

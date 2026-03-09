@@ -1,7 +1,7 @@
 package dagql
 
 import (
-	"github.com/dagger/dagger/dagql/call"
+	"github.com/G-Research/dagger/dagql/call"
 	"github.com/opencontainers/go-digest"
 )
 

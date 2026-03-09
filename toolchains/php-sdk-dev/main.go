@@ -209,7 +209,7 @@ func (t PhpSdkDev) ReleaseDryRun(
 	// +default="HEAD"
 	sourceTag string,
 	// Target git remote to fake-release *to*
-	// +default="https://github.com/dagger/dagger-php-sdk.git"
+	// +default="https://github.com/G-Research/dagger-php-sdk.git"
 	destRemote string,
 ) error {
 	return dag.GitReleaser().DryRun(
@@ -242,7 +242,7 @@ func (t PhpSdkDev) Release(
 	sourceTag string,
 
 	// +optional
-	// +default="https://github.com/dagger/dagger-php-sdk.git"
+	// +default="https://github.com/G-Research/dagger-php-sdk.git"
 	dest string,
 	// +optional
 	githubToken *dagger.Secret,

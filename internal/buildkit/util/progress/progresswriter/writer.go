@@ -3,8 +3,8 @@ package progresswriter
 import (
 	"time"
 
-	"github.com/dagger/dagger/internal/buildkit/client"
-	"github.com/dagger/dagger/internal/buildkit/identity"
+	"github.com/G-Research/dagger/internal/buildkit/client"
+	"github.com/G-Research/dagger/internal/buildkit/identity"
 	digest "github.com/opencontainers/go-digest"
 )
 

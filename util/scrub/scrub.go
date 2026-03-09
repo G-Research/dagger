@@ -4,8 +4,8 @@ import (
 	"regexp"
 	"strings"
 
-	"dagger.io/dagger/telemetry"
-	"github.com/dagger/dagger/dagql/idtui"
+	"github.com/G-Research/dagger/telemetry"
+	"github.com/G-Research/dagger/dagql/idtui"
 	"github.com/vito/midterm"
 )
 

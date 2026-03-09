@@ -14,20 +14,20 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/dagger/dagger/engine/slog"
-	"github.com/dagger/dagger/util/hashutil"
-	"github.com/dagger/dagger/util/parallel"
+	"github.com/G-Research/dagger/engine/slog"
+	"github.com/G-Research/dagger/util/hashutil"
+	"github.com/G-Research/dagger/util/parallel"
 
-	"dagger.io/dagger/telemetry"
-	"github.com/dagger/dagger/core"
-	"github.com/dagger/dagger/core/modules"
-	"github.com/dagger/dagger/core/sdk"
-	"github.com/dagger/dagger/dagql"
-	"github.com/dagger/dagger/dagql/call"
-	"github.com/dagger/dagger/engine"
-	"github.com/dagger/dagger/engine/buildkit"
-	"github.com/dagger/dagger/engine/client/pathutil"
-	"github.com/dagger/dagger/engine/server/resource"
+	"github.com/G-Research/dagger/telemetry"
+	"github.com/G-Research/dagger/core"
+	"github.com/G-Research/dagger/core/modules"
+	"github.com/G-Research/dagger/core/sdk"
+	"github.com/G-Research/dagger/dagql"
+	"github.com/G-Research/dagger/dagql/call"
+	"github.com/G-Research/dagger/engine"
+	"github.com/G-Research/dagger/engine/buildkit"
+	"github.com/G-Research/dagger/engine/client/pathutil"
+	"github.com/G-Research/dagger/engine/server/resource"
 	"github.com/iancoleman/strcase"
 	"github.com/opencontainers/go-digest"
 	"golang.org/x/sync/errgroup"
@@ -605,7 +605,7 @@ func (s *moduleSourceSchema) gitModuleSource(
 	}
 
 	// TODO:(sipsma) support sparse loading of git repos similar to how local dirs are loaded.
-	// Related: https://github.com/dagger/dagger/issues/6292
+	// Related: https://github.com/G-Research/dagger/issues/6292
 	err = dag.Select(ctx, gitRef, &gitSrc.ContextDirectory,
 		dagql.Selector{Field: "tree"},
 	)
@@ -622,7 +622,7 @@ func (s *moduleSourceSchema) gitModuleSource(
 		configPath = filepath.Join(gitSrc.SourceRootSubpath, modules.Filename)
 	} else {
 		// first validate the given path exists at all, otherwise weird things like
-		// `dagger -m github.com/dagger/dagger/not/a/real/dir` can succeed because
+		// `dagger -m github.com/G-Research/dagger/not/a/real/dir` can succeed because
 		// they find-up to a real dagger.json
 		statFS := core.StatFSFunc(func(ctx context.Context, path string) (string, *core.Stat, error) {
 			return core.CallDirStat(ctx, gitSrc.ContextDirectory, path)

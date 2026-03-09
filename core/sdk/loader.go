@@ -8,11 +8,11 @@ import (
 	"slices"
 	"strings"
 
-	"dagger.io/dagger/telemetry"
-	"github.com/dagger/dagger/core"
-	"github.com/dagger/dagger/dagql"
-	"github.com/dagger/dagger/engine"
-	"github.com/dagger/dagger/engine/distconsts"
+	"github.com/G-Research/dagger/telemetry"
+	"github.com/G-Research/dagger/core"
+	"github.com/G-Research/dagger/dagql"
+	"github.com/G-Research/dagger/engine"
+	"github.com/G-Research/dagger/engine/distconsts"
 	"github.com/opencontainers/go-digest"
 )
 
@@ -68,7 +68,7 @@ func (l *Loader) SDKForModule(
 	for _, sdk := range validInbuiltSDKs {
 		fmt.Fprintln(stdio.Stderr, "-", sdk)
 	}
-	fmt.Fprintln(stdio.Stderr, "- any git module ref, e.g. github.com/dagger/dagger/sdk/elixir@main")
+	fmt.Fprintln(stdio.Stderr, "- any git module ref, e.g. github.com/G-Research/dagger/sdk/elixir@main")
 	fmt.Fprintln(stdio.Stderr, "- any local module path, e.g. ./my-sdk")
 
 	return nil, fmt.Errorf("invalid SDK: %q", sdk.Source)
@@ -133,11 +133,11 @@ func (l *Loader) namedSDK(
 	case sdkTypescript:
 		return l.loadBuiltinSDK(ctx, root, sdk, digest.Digest(os.Getenv(distconsts.TypescriptSDKManifestDigestEnvName)))
 	case sdkJava:
-		return l.SDKForModule(ctx, root, &core.SDKConfig{Source: "github.com/dagger/dagger/sdk/java" + sdkSuffix, Config: sdk.Config, Experimental: sdk.Experimental}, nil)
+		return l.SDKForModule(ctx, root, &core.SDKConfig{Source: "github.com/G-Research/dagger/sdk/java" + sdkSuffix, Config: sdk.Config, Experimental: sdk.Experimental}, nil)
 	case sdkPHP:
-		return l.SDKForModule(ctx, root, &core.SDKConfig{Source: "github.com/dagger/dagger/sdk/php" + sdkSuffix, Config: sdk.Config, Experimental: sdk.Experimental}, nil)
+		return l.SDKForModule(ctx, root, &core.SDKConfig{Source: "github.com/G-Research/dagger/sdk/php" + sdkSuffix, Config: sdk.Config, Experimental: sdk.Experimental}, nil)
 	case sdkElixir:
-		return l.SDKForModule(ctx, root, &core.SDKConfig{Source: "github.com/dagger/dagger/sdk/elixir" + sdkSuffix, Config: sdk.Config, Experimental: sdk.Experimental}, nil)
+		return l.SDKForModule(ctx, root, &core.SDKConfig{Source: "github.com/G-Research/dagger/sdk/elixir" + sdkSuffix, Config: sdk.Config, Experimental: sdk.Experimental}, nil)
 	}
 
 	return nil, errUnknownBuiltinSDK

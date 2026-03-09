@@ -17,7 +17,7 @@ var helpers map[string]struct{}
 var helpersMu sync.RWMutex
 
 func init() {
-	typeurl.Register((*Stack)(nil), "github.com/dagger/dagger/internal/buildkit", "stack.Stack+json")
+	typeurl.Register((*Stack)(nil), "github.com/G-Research/dagger/internal/buildkit", "stack.Stack+json")
 
 	helpers = map[string]struct{}{}
 }

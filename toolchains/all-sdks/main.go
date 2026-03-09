@@ -7,7 +7,7 @@ import (
 
 	"dagger/all-sdks/internal/dagger"
 
-	"github.com/dagger/dagger/util/parallel"
+	"github.com/G-Research/dagger/util/parallel"
 )
 
 type AllSdks struct{}
@@ -98,7 +98,7 @@ func all[T any]() []namedSDK[T] {
 }
 
 // Merge Changesets together
-// FIXME: move this to core dagger: https://github.com/dagger/dagger/issues/11189
+// FIXME: move this to core dagger: https://github.com/G-Research/dagger/issues/11189
 // FIXME: this duplicates the same function in .dagger/util.go
 // (cross-module function sharing is a PITA)
 func changesetMerge(changesets ...*dagger.Changeset) *dagger.Changeset {

@@ -8,7 +8,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/dagger/dagger/dagql"
+	"github.com/G-Research/dagger/dagql"
 
 	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
 	"github.com/modelcontextprotocol/go-sdk/mcp"

@@ -1,6 +1,6 @@
 package exptypes
 
-import commonexptypes "github.com/dagger/dagger/internal/buildkit/exporter/exptypes"
+import commonexptypes "github.com/G-Research/dagger/internal/buildkit/exporter/exptypes"
 
 type ImageExporterOptKey string
 

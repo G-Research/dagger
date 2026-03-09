@@ -3,9 +3,9 @@ package sourcepolicy
 import (
 	"context"
 
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
-	spb "github.com/dagger/dagger/internal/buildkit/sourcepolicy/pb"
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/buildkit/solver/pb"
+	spb "github.com/G-Research/dagger/internal/buildkit/sourcepolicy/pb"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )

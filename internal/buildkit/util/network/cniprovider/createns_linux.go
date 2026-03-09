@@ -11,7 +11,7 @@ import (
 	"syscall"
 
 	"github.com/containerd/containerd/v2/pkg/oci"
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
 	specs "github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"

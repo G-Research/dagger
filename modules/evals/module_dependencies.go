@@ -22,7 +22,7 @@ func (e *ModuleDependencies) Name() string {
 }
 
 func (e *ModuleDependencies) Prompt(ctx context.Context, base *dagger.LLM) (*dagger.LLM, error) {
-	err := dag.ModuleSource("github.com/dagger/dagger-test-modules/llm-dir-module-depender").AsModule().Serve(ctx, dagger.ModuleServeOpts{
+	err := dag.ModuleSource("github.com/G-Research/dagger-test-modules/llm-dir-module-depender").AsModule().Serve(ctx, dagger.ModuleServeOpts{
 		IncludeDependencies: true,
 	})
 	if err != nil {

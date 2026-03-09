@@ -14,8 +14,8 @@ import (
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
-	"dagger.io/dagger"
-	"github.com/dagger/dagger/engine/client"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/engine/client"
 )
 
 var (

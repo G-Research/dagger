@@ -13,12 +13,12 @@ import (
 	"testing"
 
 	"github.com/containerd/platforms"
-	"github.com/dagger/dagger/engine/distconsts"
-	"github.com/dagger/dagger/internal/buildkit/identity"
+	"github.com/G-Research/dagger/engine/distconsts"
+	"github.com/G-Research/dagger/internal/buildkit/identity"
 	"github.com/dagger/testctx"
 	"github.com/stretchr/testify/require"
 
-	"dagger.io/dagger"
+	"github.com/G-Research/dagger"
 )
 
 type CallSuite struct{}
@@ -328,17 +328,17 @@ func (m *Test) Fn(
 				subpath string
 			}{
 				{
-					baseURL: "https://github.com/dagger/dagger",
+					baseURL: "https://github.com/G-Research/dagger",
 				},
 				{
-					baseURL: "https://github.com/dagger/dagger",
+					baseURL: "https://github.com/G-Research/dagger",
 					subpath: ".changes",
 				},
 				{
-					baseURL: "https://github.com/dagger/dagger.git",
+					baseURL: "https://github.com/G-Research/dagger.git",
 				},
 				{
-					baseURL: "https://github.com/dagger/dagger.git",
+					baseURL: "https://github.com/G-Research/dagger.git",
 					subpath: ".changes",
 				},
 			} {
@@ -416,7 +416,7 @@ func (m *Test) FnRef(ref *dagger.GitRef) *dagger.Directory {
 				With(daggerExec("init", "--source=.", "--name=test", "--sdk=go")).
 				WithNewFile("main.go", src)
 
-			remote := "https://github.com/dagger/dagger.git"
+			remote := "https://github.com/G-Research/dagger.git"
 			out, err := modGen.With(daggerCall("fn-repo", "--repo", remote, "file", "--path=.git/HEAD", "contents")).Stdout(ctx)
 			require.NoError(t, err)
 			require.Equal(t, "ref: refs/heads/main", strings.TrimSpace(out))
@@ -2651,7 +2651,7 @@ class Test:
 		},
 		{
 			sdk: "typescript",
-			source: `import { func, object } from "@dagger.io/dagger"
+			source: `import { func, object } from "@github.com/G-Research/dagger"
 
 export enum Language {
   Go = "GO",

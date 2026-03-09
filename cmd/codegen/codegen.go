@@ -9,10 +9,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dagger/dagger/cmd/codegen/generator"
-	gogenerator "github.com/dagger/dagger/cmd/codegen/generator/go"
-	typescriptgenerator "github.com/dagger/dagger/cmd/codegen/generator/typescript"
-	"github.com/dagger/dagger/cmd/codegen/introspection"
+	"github.com/G-Research/dagger/cmd/codegen/generator"
+	gogenerator "github.com/G-Research/dagger/cmd/codegen/generator/go"
+	typescriptgenerator "github.com/G-Research/dagger/cmd/codegen/generator/typescript"
+	"github.com/G-Research/dagger/cmd/codegen/introspection"
 )
 
 type GenFunc func(ctx context.Context, schema *introspection.Schema, schemaVersion string) (*generator.GeneratedState, error)

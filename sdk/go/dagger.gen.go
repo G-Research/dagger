@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"dagger.io/dagger/querybuilder"
+	"github.com/G-Research/dagger/querybuilder"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
@@ -24,7 +24,7 @@ var marshalCtx = context.Background()
 
 // assertNotNil panic if the given value is nil.
 // This function is used to validate that input with pointer type are not nil.
-// See https://github.com/dagger/dagger/issues/5696 for more context.
+// See https://github.com/G-Research/dagger/issues/5696 for more context.
 func assertNotNil(argName string, value any) {
 	// We use reflect because just comparing value to nil is not working since
 	// the value is wrapped into a type when passed as parameter.

@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"dagger.io/dagger"
+	"github.com/G-Research/dagger"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/context"
 
@@ -24,7 +24,7 @@ func (JavaSuite) TestInit(_ context.Context, t *testctx.T) {
 		modGen := c.Container().From(golangImage).
 			WithMountedFile(testCLIBinPath, daggerCliFile(t, c)).
 			WithWorkdir("/work").
-			With(daggerExec("init", "--name=bare", "--sdk=github.com/dagger/dagger/sdk/java"))
+			With(daggerExec("init", "--name=bare", "--sdk=github.com/G-Research/dagger/sdk/java"))
 
 		out, err := modGen.
 			With(daggerQuery(`{bare{containerEcho(stringArg:"hello"){stdout}}}`)).
@@ -370,7 +370,7 @@ func (JavaSuite) TestEnum(_ context.Context, t *testctx.T) {
 func (JavaSuite) TestGitRef(ctx context.Context, t *testctx.T) {
 	c := connect(ctx, t)
 	out, err := goGitBase(t, c).
-		With(daggerExec("functions", "-m", "github.com/dagger/dagger-test-modules/java-module")).
+		With(daggerExec("functions", "-m", "github.com/G-Research/dagger-test-modules/java-module")).
 		CombinedOutput(ctx)
 	require.NoError(t, err)
 	require.Contains(t, out, "container-echo")

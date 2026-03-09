@@ -4,8 +4,8 @@ import (
 	"strconv"
 	"strings"
 
-	bkconfig "github.com/dagger/dagger/internal/buildkit/cmd/buildkitd/config"
-	"github.com/dagger/dagger/internal/buildkit/util/disk"
+	bkconfig "github.com/G-Research/dagger/internal/buildkit/cmd/buildkitd/config"
+	"github.com/G-Research/dagger/internal/buildkit/util/disk"
 	"github.com/pkg/errors"
 )
 

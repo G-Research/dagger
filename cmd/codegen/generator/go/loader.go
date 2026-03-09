@@ -7,8 +7,8 @@ import (
 	"go/parser"
 	"go/token"
 
-	"dagger.io/dagger/telemetry"
-	"github.com/dagger/dagger/cmd/codegen/trace"
+	"github.com/G-Research/dagger/telemetry"
+	"github.com/G-Research/dagger/cmd/codegen/trace"
 	"golang.org/x/tools/go/packages"
 )
 

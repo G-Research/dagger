@@ -3,7 +3,7 @@ package core
 import (
 	"context"
 
-	"github.com/dagger/dagger/engine/buildkit"
+	"github.com/G-Research/dagger/engine/buildkit"
 	"github.com/vektah/gqlparser/v2/ast"
 )
 

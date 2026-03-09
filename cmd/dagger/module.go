@@ -11,8 +11,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/dagger/dagger/util/gitutil"
-	"github.com/dagger/dagger/util/parallel"
+	"github.com/G-Research/dagger/util/gitutil"
+	"github.com/G-Research/dagger/util/parallel"
 	"github.com/go-git/go-git/v5"
 	"github.com/juju/ansiterm/tabwriter"
 	"github.com/muesli/termenv"
@@ -21,13 +21,13 @@ import (
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
 
-	"dagger.io/dagger"
-	"dagger.io/dagger/telemetry"
-	"github.com/dagger/dagger/analytics"
-	"github.com/dagger/dagger/core/modules"
-	"github.com/dagger/dagger/engine/client"
-	"github.com/dagger/dagger/engine/client/pathutil"
-	"github.com/dagger/dagger/engine/slog"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/telemetry"
+	"github.com/G-Research/dagger/analytics"
+	"github.com/G-Research/dagger/core/modules"
+	"github.com/G-Research/dagger/engine/client"
+	"github.com/G-Research/dagger/engine/client/pathutil"
+	"github.com/G-Research/dagger/engine/slog"
 )
 
 var (
@@ -772,7 +772,7 @@ var toolchainInstallCmd = &cobra.Command{
 	Use:     "install [options] <module>",
 	Short:   "Install a toolchain to the current module",
 	Long:    "Install another module as a toolchain to the current module.",
-	Example: "dagger toolchain install github.com/dagger/dagger/toolchains/go",
+	Example: "dagger toolchain install github.com/G-Research/dagger/toolchains/go",
 	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, extraArgs []string) (rerr error) {
 		ctx := cmd.Context()

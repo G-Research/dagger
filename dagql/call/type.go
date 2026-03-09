@@ -3,7 +3,7 @@ package call
 import (
 	"github.com/vektah/gqlparser/v2/ast"
 
-	"github.com/dagger/dagger/dagql/call/callpbv1"
+	"github.com/G-Research/dagger/dagql/call/callpbv1"
 )
 
 type Type struct {

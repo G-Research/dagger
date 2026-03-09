@@ -3,7 +3,7 @@ package call
 import (
 	"fmt"
 
-	"github.com/dagger/dagger/dagql/call/callpbv1"
+	"github.com/G-Research/dagger/dagql/call/callpbv1"
 )
 
 type Module struct {

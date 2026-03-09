@@ -1,6 +1,6 @@
 package config
 
-import "github.com/dagger/dagger/internal/buildkit/util/compression"
+import "github.com/G-Research/dagger/internal/buildkit/util/compression"
 
 type RefConfig struct {
 	Compression            compression.Config

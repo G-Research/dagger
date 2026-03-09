@@ -3,8 +3,8 @@ package fileoptypes
 import (
 	"context"
 
-	"github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
+	"github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/solver/pb"
 )
 
 type Ref interface {

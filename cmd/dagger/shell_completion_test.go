@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"dagger.io/dagger"
-	"github.com/dagger/dagger/dagql/idtui"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/dagql/idtui"
 	"github.com/dagger/testctx"
 	"github.com/stretchr/testify/require"
 )

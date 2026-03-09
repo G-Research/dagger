@@ -11,8 +11,8 @@ import (
 
 	"github.com/iancoleman/strcase"
 
-	"github.com/dagger/dagger/cmd/codegen/generator"
-	"github.com/dagger/dagger/cmd/codegen/introspection"
+	"github.com/G-Research/dagger/cmd/codegen/generator"
+	"github.com/G-Research/dagger/cmd/codegen/introspection"
 )
 
 func TypescriptTemplateFuncs(

@@ -6,12 +6,12 @@ import (
 	"slices"
 
 	"github.com/containerd/containerd/v2/pkg/labels"
-	"github.com/dagger/dagger/internal/buildkit/cache/remotecache"
-	v1 "github.com/dagger/dagger/internal/buildkit/cache/remotecache/v1"
-	"github.com/dagger/dagger/internal/buildkit/session"
-	"github.com/dagger/dagger/internal/buildkit/solver"
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
-	"github.com/dagger/dagger/internal/buildkit/util/compression"
+	"github.com/G-Research/dagger/internal/buildkit/cache/remotecache"
+	v1 "github.com/G-Research/dagger/internal/buildkit/cache/remotecache/v1"
+	"github.com/G-Research/dagger/internal/buildkit/session"
+	"github.com/G-Research/dagger/internal/buildkit/solver"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/internal/buildkit/util/compression"
 	digest "github.com/opencontainers/go-digest"
 	"github.com/pkg/errors"
 )

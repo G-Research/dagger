@@ -38,7 +38,7 @@ func (i *Introspector) AsEntrypoint(
 
 	clientBindings *dagger.File,
 ) *dagger.Container {
-	// Synthesize a minimal @dagger.io/dagger package so TS can resolve the bare import.
+	// Synthesize a minimal @github.com/G-Research/dagger package so TS can resolve the bare import.
 	sdkPkg := dag.Directory().
 		WithFile("client.gen.ts", clientBindings).
 		WithNewFile("index.ts", tsutils.StaticBundleModuleIndexTS).
@@ -47,8 +47,8 @@ func (i *Introspector) AsEntrypoint(
 
 	return i.Ctr.
 		WithMountedDirectory("src", sourceCode).
-		// Make it resolvable by Node/TS: @dagger.io/dagger -> node_modules package
-		WithMountedDirectory("node_modules/@dagger.io/dagger", sdkPkg).
+		// Make it resolvable by Node/TS: @github.com/G-Research/dagger -> node_modules package
+		WithMountedDirectory("node_modules/@github.com/G-Research/dagger", sdkPkg).
 		// Keep the old location too so the CLI arg still points to a file
 		WithMountedDirectory("sdk", sdkPkg).
 		WithEnvVariable("TYPEDEF_OUTPUT_FILE", outputFilePath).

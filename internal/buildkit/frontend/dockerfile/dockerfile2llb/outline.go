@@ -4,10 +4,10 @@ import (
 	"maps"
 	"sort"
 
-	"github.com/dagger/dagger/internal/buildkit/frontend/dockerfile/instructions"
-	"github.com/dagger/dagger/internal/buildkit/frontend/dockerfile/parser"
-	"github.com/dagger/dagger/internal/buildkit/frontend/subrequests/outline"
-	pb "github.com/dagger/dagger/internal/buildkit/solver/pb"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/dockerfile/instructions"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/dockerfile/parser"
+	"github.com/G-Research/dagger/internal/buildkit/frontend/subrequests/outline"
+	pb "github.com/G-Research/dagger/internal/buildkit/solver/pb"
 )
 
 type outlineCapture struct {

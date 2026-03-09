@@ -16,9 +16,9 @@ import (
 	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/ringbuf"
 
-	"github.com/dagger/dagger/engine/ebpf"
-	"github.com/dagger/dagger/engine/ebpf/internal/ebpfutil"
-	"github.com/dagger/dagger/engine/slog"
+	"github.com/G-Research/dagger/engine/ebpf"
+	"github.com/G-Research/dagger/engine/ebpf/internal/ebpfutil"
+	"github.com/G-Research/dagger/engine/slog"
 )
 
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -cflags "-O2 -g -Wall -Werror -D__TARGET_ARCH_x86 -I../bpf" -target amd64 ovlinuse ./bpf/ovl_inuse.bpf.c

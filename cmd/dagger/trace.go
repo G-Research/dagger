@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"dagger.io/dagger/telemetry"
-	"github.com/dagger/dagger/dagql/dagui"
-	"github.com/dagger/dagger/engine/slog"
-	cloud "github.com/dagger/dagger/internal/cloud"
-	"github.com/dagger/dagger/internal/cloud/auth"
-	"github.com/dagger/dagger/util/cleanups"
+	"github.com/G-Research/dagger/telemetry"
+	"github.com/G-Research/dagger/dagql/dagui"
+	"github.com/G-Research/dagger/engine/slog"
+	cloud "github.com/G-Research/dagger/internal/cloud"
+	"github.com/G-Research/dagger/internal/cloud/auth"
+	"github.com/G-Research/dagger/util/cleanups"
 	"github.com/spf13/cobra"
 )
 

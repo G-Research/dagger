@@ -3,8 +3,8 @@ package container
 import (
 	"net"
 
-	"github.com/dagger/dagger/internal/buildkit/executor"
-	"github.com/dagger/dagger/internal/buildkit/solver/pb"
+	"github.com/G-Research/dagger/internal/buildkit/executor"
+	"github.com/G-Research/dagger/internal/buildkit/solver/pb"
 	"github.com/pkg/errors"
 )
 

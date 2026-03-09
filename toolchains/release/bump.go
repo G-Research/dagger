@@ -4,7 +4,7 @@ import (
 	"context"
 	"toolchains/release/internal/dagger"
 
-	"github.com/dagger/dagger/util/parallel"
+	"github.com/G-Research/dagger/util/parallel"
 )
 
 // Change the required dagger engine version across all components
@@ -46,7 +46,7 @@ func (r *Release) Bump(
 }
 
 // Merge Changesets together
-// FIXME: move this to core dagger: https://github.com/dagger/dagger/issues/11189
+// FIXME: move this to core dagger: https://github.com/G-Research/dagger/issues/11189
 func changesetMerge(changesets ...*dagger.Changeset) *dagger.Changeset {
 	before := dag.Directory()
 	for _, changeset := range changesets {

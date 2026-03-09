@@ -181,7 +181,7 @@ const (
 	// The subpath of the module, relative to the root, e.g. "/modules/my-module"
 	ModuleSubpathAttr = "dagger.io/module.subpath"
 
-	// The HTML URL of the module, e.g. "https://github.com/dagger/dagger"
+	// The HTML URL of the module, e.g. "https://github.com/G-Research/dagger"
 	ModuleHTMLRepoURLAttr = "dagger.io/module.htmlRepoURL"
 
 	// The normalized module ref, e.g. "githuv.com/dagger/dagger@abc123"

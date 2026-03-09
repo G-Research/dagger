@@ -12,8 +12,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"dagger.io/dagger"
-	"github.com/dagger/dagger/core/modules"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/core/modules"
 	"github.com/dagger/testctx"
 )
 
@@ -877,7 +877,7 @@ class Test:
 		{
 			sdk: "typescript",
 			mainSource: `
-import { dag, Directory, object, func } from "@dagger.io/dagger"
+import { dag, Directory, object, func } from "@github.com/G-Research/dagger"
 
 @object()
 export class Test {
@@ -1218,10 +1218,10 @@ var vcsTestCases = []vcsTestCase{
 	// GitHub public repository
 	{
 		name:                     "GitHub public",
-		gitTestRepoRef:           "github.com/dagger/dagger-test-modules",
+		gitTestRepoRef:           "github.com/G-Research/dagger-test-modules",
 		gitTestRepoCommit:        vcsTestCaseCommit,
 		expectedHost:             "github.com",
-		expectedBaseHTMLURL:      "github.com/dagger/dagger-test-modules",
+		expectedBaseHTMLURL:      "github.com/G-Research/dagger-test-modules",
 		expectedURLPathComponent: "tree",
 		expectedPathPrefix:       "",
 	},
@@ -1304,7 +1304,7 @@ var vcsTestCases = []vcsTestCase{
 		gitTestRepoRef:           "git@github.com:dagger/dagger-test-modules.git",
 		gitTestRepoCommit:        vcsTestCaseCommit,
 		expectedHost:             "github.com",
-		expectedBaseHTMLURL:      "github.com/dagger/dagger-test-modules",
+		expectedBaseHTMLURL:      "github.com/G-Research/dagger-test-modules",
 		expectedURLPathComponent: "tree",
 		expectedPathPrefix:       "",
 		skipProxyTest:            true,
@@ -1503,7 +1503,7 @@ func (ConfigSuite) TestDepPins(ctx context.Context, t *testctx.T) {
 
 	c := connect(ctx, t)
 
-	repo := "github.com/dagger/dagger-test-modules/versioned"
+	repo := "github.com/G-Research/dagger-test-modules/versioned"
 	branch := "main"
 	commit := "82adc5f7997e43ab3027810347298405f32a44db"
 
@@ -1555,7 +1555,7 @@ func (ConfigSuite) TestDepPinsStayPinned(ctx context.Context, t *testctx.T) {
 
 	c := connect(ctx, t)
 
-	repo := "github.com/dagger/dagger-test-modules/versioned"
+	repo := "github.com/G-Research/dagger-test-modules/versioned"
 	branch := "main"
 	commit := "82adc5f7997e43ab3027810347298405f32a44db"
 
@@ -1596,7 +1596,7 @@ func (ConfigSuite) TestDepWritePins(ctx context.Context, t *testctx.T) {
 		c := connect(ctx, t)
 
 		// get the latest commit on main
-		repo := "github.com/dagger/dagger-test-modules"
+		repo := "github.com/G-Research/dagger-test-modules"
 		head := c.Git(repo).Head()
 		commit, err := head.Commit(ctx)
 		require.NoError(t, err)
@@ -1628,7 +1628,7 @@ func (ConfigSuite) TestDepWritePins(ctx context.Context, t *testctx.T) {
 		c := connect(ctx, t)
 
 		// get the latest commit on main
-		repo := "github.com/dagger/dagger-test-modules"
+		repo := "github.com/G-Research/dagger-test-modules"
 		branch := "main"
 		commit, err := c.Git(repo).Branch(branch).Commit(ctx)
 		require.NoError(t, err)
@@ -1658,7 +1658,7 @@ func (ConfigSuite) TestDepWritePins(ctx context.Context, t *testctx.T) {
 		c := connect(ctx, t)
 
 		// get the latest commit on main
-		repo := "github.com/dagger/dagger-test-modules"
+		repo := "github.com/G-Research/dagger-test-modules"
 		branch := "main"
 		commit, err := c.Git(repo).Branch(branch).Commit(ctx)
 		require.NoError(t, err)

@@ -7,7 +7,7 @@ import (
 	"os"
 	"sync"
 
-	dagger "dagger.io/dagger"
+	dagger "github.com/G-Research/dagger"
 )
 
 var client *dagger.Client

@@ -5,7 +5,7 @@ import (
 
 	"github.com/vektah/gqlparser/v2/ast"
 
-	"github.com/dagger/dagger/dagql"
+	"github.com/G-Research/dagger/dagql"
 )
 
 type GeneratedCode struct {

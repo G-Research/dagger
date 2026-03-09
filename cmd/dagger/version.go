@@ -9,9 +9,9 @@ import (
 	"os"
 
 	"github.com/containerd/platforms"
-	"github.com/dagger/dagger/dagql/idtui"
-	"github.com/dagger/dagger/engine/distconsts"
-	enginetel "github.com/dagger/dagger/engine/telemetry"
+	"github.com/G-Research/dagger/dagql/idtui"
+	"github.com/G-Research/dagger/engine/distconsts"
+	enginetel "github.com/G-Research/dagger/engine/telemetry"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -23,7 +23,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/mod/semver"
 
-	"github.com/dagger/dagger/engine"
+	"github.com/G-Research/dagger/engine"
 )
 
 var forceVersionCheck bool
@@ -169,7 +169,7 @@ func versionNag(w io.Writer, latest string) {
 		"\n"+
 
 		"To upgrade, see https://docs.dagger.io/install\n"+
-		output.String("https://github.com/dagger/dagger/releases/tag/"+latest).Foreground(termenv.ANSIYellow).String()+
+		output.String("https://github.com/G-Research/dagger/releases/tag/"+latest).Foreground(termenv.ANSIYellow).String()+
 		"\n",
 	)
 }

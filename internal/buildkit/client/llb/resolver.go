@@ -1,7 +1,7 @@
 package llb
 
 import (
-	"github.com/dagger/dagger/internal/buildkit/client/llb/sourceresolver"
+	"github.com/G-Research/dagger/internal/buildkit/client/llb/sourceresolver"
 )
 
 // WithMetaResolver adds a metadata resolver to an image

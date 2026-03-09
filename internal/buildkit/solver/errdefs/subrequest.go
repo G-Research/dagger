@@ -4,11 +4,11 @@ import (
 	fmt "fmt"
 
 	"github.com/containerd/typeurl/v2"
-	"github.com/dagger/dagger/internal/buildkit/util/grpcerrors"
+	"github.com/G-Research/dagger/internal/buildkit/util/grpcerrors"
 )
 
 func init() {
-	typeurl.Register((*Subrequest)(nil), "github.com/dagger/dagger/internal/buildkit", "errdefs.Subrequest+json")
+	typeurl.Register((*Subrequest)(nil), "github.com/G-Research/dagger/internal/buildkit", "errdefs.Subrequest+json")
 }
 
 type UnsupportedSubrequestError struct {

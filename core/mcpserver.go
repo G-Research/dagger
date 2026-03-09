@@ -10,8 +10,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/dagger/dagger/dagql"
-	"github.com/dagger/dagger/internal/buildkit/util/bklog"
+	"github.com/G-Research/dagger/dagql"
+	"github.com/G-Research/dagger/internal/buildkit/util/bklog"
 	"github.com/mark3labs/mcp-go/mcp"
 	mcpserver "github.com/mark3labs/mcp-go/server"
 )

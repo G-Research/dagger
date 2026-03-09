@@ -4,8 +4,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/dagger/dagger/internal/buildkit/exporter"
-	commonexptypes "github.com/dagger/dagger/internal/buildkit/exporter/exptypes"
+	"github.com/G-Research/dagger/internal/buildkit/exporter"
+	commonexptypes "github.com/G-Research/dagger/internal/buildkit/exporter/exptypes"
 	"github.com/pkg/errors"
 )
 

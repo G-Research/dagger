@@ -3,8 +3,8 @@ package testutil
 import (
 	"context"
 
-	"dagger.io/dagger"
-	"github.com/dagger/dagger/core"
+	"github.com/G-Research/dagger"
+	"github.com/G-Research/dagger/core"
 	"github.com/dagger/testctx"
 )
 

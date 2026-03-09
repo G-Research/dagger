@@ -2,10 +2,10 @@ module toolchains/release
 
 go 1.24.4
 
-replace github.com/dagger/dagger => ../..
+replace github.com/G-Research/dagger => ../..
 
 require (
-	github.com/dagger/dagger v0.0.0-00010101000000-000000000000
+	github.com/G-Research/dagger v0.0.0-00010101000000-000000000000
 	github.com/go-task/slim-sprig/v3 v3.0.0
 	golang.org/x/mod v0.29.0
 	golang.org/x/sync v0.17.0

@@ -7,9 +7,9 @@ import (
 	"os/exec"
 	"strings"
 
-	"dagger.io/dagger/telemetry"
-	"github.com/dagger/dagger/engine/client/imageload"
-	"github.com/dagger/dagger/util/traceexec"
+	"github.com/G-Research/dagger/telemetry"
+	"github.com/G-Research/dagger/engine/client/imageload"
+	"github.com/G-Research/dagger/util/traceexec"
 	"github.com/docker/cli/cli/connhelper/commandconn"
 )
 
@@ -65,7 +65,7 @@ func (d docker) ContainerRun(ctx context.Context, name string, opts runOpts) err
 	args := []string{"run",
 		"--name", name,
 		"-d",
-		"--restart", "always", // load-bearing to prevent https://github.com/dagger/dagger/issues/7785 from being fatal
+		"--restart", "always", // load-bearing to prevent https://github.com/G-Research/dagger/issues/7785 from being fatal
 	}
 	for _, volume := range opts.volumes {
 		args = append(args, "-v", volume)

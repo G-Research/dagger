@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	controlapi "github.com/dagger/dagger/internal/buildkit/api/services/control"
-	"github.com/dagger/dagger/internal/buildkit/session"
+	controlapi "github.com/G-Research/dagger/internal/buildkit/api/services/control"
+	"github.com/G-Research/dagger/internal/buildkit/session"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )

@@ -5,11 +5,11 @@ package idtui
 
 import (
 	"context"
-	"dagger.io/dagger"
+	"github.com/G-Research/dagger"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
-	"github.com/dagger/dagger/dagql/dagui"
-	"github.com/dagger/dagger/util/cleanups"
+	"github.com/G-Research/dagger/dagql/dagui"
+	"github.com/G-Research/dagger/util/cleanups"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
