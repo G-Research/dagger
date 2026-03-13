@@ -743,8 +743,8 @@ func (ContainerSuite) TestWithDefaultArgs(ctx context.Context, t *testctx.T) {
 				}
 			}
 		}`, nil)
+	require.NoError(t, err)
 	t.Run("default alpine (no entrypoint)", func(ctx context.Context, t *testctx.T) {
-		require.NoError(t, err)
 		require.Empty(t, res.Container.From.Entrypoint)
 		require.Equal(t, []string{"/bin/sh"}, res.Container.From.DefaultArgs)
 	})
@@ -5334,6 +5334,27 @@ func (ContainerSuite) TestWithFileOnMountedFile(ctx context.Context, t *testctx.
 	f2Contents, err = ctr.WithFile("/mnt/f2", f4).File("/mnt/f2").Contents(ctx)
 	require.NoError(t, err)
 	require.Equal(t, "4", f2Contents)
+}
+
+func (ContainerSuite) TestWithHostMount(ctx context.Context, t *testctx.T) {
+	c := connect(ctx, t)
+
+	ctr := c.Container().
+		From(alpineImage).
+		WithMountedHostDirectory(".", "/hostdir").
+		WithExec([]string{"touch", "/hostdir/newfile"}, dagger.ContainerWithExecOpts{Expect: dagger.ReturnTypeSuccess})
+
+	_, err := ctr.Stdout(ctx)
+	require.NoError(t, err)
+
+	ctr = c.Container().
+		From(alpineImage).
+		WithMountedHostDirectory(".", "/hostdir").
+		WithExec([]string{"ls", "-la", "/hostdir"}, dagger.ContainerWithExecOpts{Expect: dagger.ReturnTypeSuccess})
+
+	output, err := ctr.Stdout(ctx)
+	require.NoError(t, err)
+	require.Contains(t, output, "newfile")
 }
 
 func (ContainerSuite) TestFileCaching(ctx context.Context, t *testctx.T) {

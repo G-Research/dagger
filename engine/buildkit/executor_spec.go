@@ -304,16 +304,43 @@ func (w *Worker) setupNetwork(ctx context.Context, state *execState) error {
 	return nil
 }
 
+func (w *Worker) setupVolumes(_ context.Context, state *execState) error {
+	if w.execMD == nil {
+		return nil
+	}
+
+	for _, hm := range w.execMD.HostMounts {
+		absSrc, err := pathutil.Abs(hm.Source)
+		if err != nil {
+			return fmt.Errorf("get absolute path of host mount source: %w", err)
+		}
+
+		// ensure the source path exists
+		_, err = os.Stat(absSrc)
+		if err != nil {
+			return fmt.Errorf("ensure host mount source exists: %w", err)
+		}
+
+		fmt.Printf("Mounting host directory %s to container at %s\n", absSrc, hm.Target)
+
+		state.mounts = append(state.mounts, executor.Mount{
+			Src:      hostBindMount{srcPath: absSrc, rw: true},
+			Dest:     hm.Target,
+			Readonly: false,
+		})
+	}
+	return nil
+}
+
 type hostBindMount struct {
 	srcPath string
+	rw      bool
 }
 
 var _ executor.Mountable = (*hostBindMount)(nil)
 
 func (m hostBindMount) Mount(_ context.Context, readonly bool) (executor.MountableRef, error) {
-	if !readonly {
-		return nil, errors.New("host bind mounts must be readonly")
-	}
+	m.rw = !readonly
 	return hostBindMountRef(m), nil
 }
 
@@ -322,10 +349,19 @@ type hostBindMountRef hostBindMount
 var _ executor.MountableRef = (*hostBindMountRef)(nil)
 
 func (m hostBindMountRef) Mount() ([]mount.Mount, func() error, error) {
+	opts := []string{"rbind"}
+	if !m.rw {
+		opts = append(opts, "ro")
+	}
+
+	// release is a no-op: the caller that mounts this into the container
+	// rootfs is responsible for unmounting the actual destination. Attempting
+	// to unmount the host source here can race with the mount application and
+	// may be incorrect if the source is not a mountpoint.
 	return []mount.Mount{{
 		Type:    "bind",
 		Source:  m.srcPath,
-		Options: []string{"ro", "rbind"},
+		Options: opts,
 	}}, func() error { return nil }, nil
 }
 
@@ -434,7 +470,7 @@ func (w *Worker) setupRootfs(ctx context.Context, state *execState) error {
 	overlayIncompatDirs := overlay.VolatileIncompatDirs(rootMnts)
 
 	state.cleanups.Add("unmount rootfs", func() error {
-		if err := mount.Unmount(state.rootfsPath, 0); err != nil {
+		if err := mount.Unmount(state.rootfsPath, unix.MNT_DETACH); err != nil {
 			return err
 		}
 		for _, dir := range overlayIncompatDirs {
@@ -557,7 +593,7 @@ func (w *Worker) setupRootfs(ctx context.Context, state *execState) error {
 		overlayIncompatDir := overlay.VolatileIncompatDir(mnt)
 
 		state.cleanups.Add("unmount from rootfs "+mnt.Target, func() error {
-			if err := mount.Unmount(dstPath, 0); err != nil {
+			if err := mount.Unmount(dstPath, unix.MNT_DETACH); err != nil {
 				return err
 			}
 			if overlayIncompatDir != "" {
