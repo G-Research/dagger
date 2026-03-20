@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# hack/tmp-prepare-build — Run this BEFORE ./hack/build
+# Prepares the environment by installing a compatible dagger CLI (v0.19.10)
+# and cleaning up any incompatible v0.20.1 artifacts.
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$REPO_ROOT"
+
+TARGET_VERSION="v1.0.0-beta.3"
+
+echo "==> Preparing build environment for dagger $TARGET_VERSION"
+
+# 1. Stop incompatible dagger engine containers
+if docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'dagger-engine-v0.20'; then
+    echo "==> Stopping incompatible dagger-engine-v0.20.* container(s)..."
+    docker ps --format '{{.Names}}' | grep 'dagger-engine-v0.20' | xargs -r docker stop
+fi
+
+# 2. Clean stale artifacts
+echo "==> Cleaning stale bin/ artifacts..."
+rm -f ./bin/dagger ./bin/engine.tar
+
+# 3. Unset interfering env vars
+unset _EXPERIMENTAL_DAGGER_RUNNER_HOST 2>/dev/null || true
+unset _EXPERIMENTAL_DAGGER_DEV_CONTAINER 2>/dev/null || true
+unset _EXPERIMENTAL_DAGGER_DEV_IMAGE 2>/dev/null || true
+
+# 4. Install correct dagger CLI
+echo "==> Installing dagger CLI $TARGET_VERSION..."
+DAGGER_VERSION="$TARGET_VERSION" ./install.sh
+
+# 5. Set PATH so hack/build finds the right binary
+export PATH="$REPO_ROOT/bin:$PATH"
+
+# 6. Verify
+echo ""
+echo "==> Verification:"
+echo "    which dagger: $(which dagger)"
+echo "    dagger version: $(./bin/dagger version)"
+echo ""
+echo "==> Ready! Now run:"
+echo "    export PATH=\"$(pwd)/bin:\$PATH\""
+echo "    ./hack/build"
