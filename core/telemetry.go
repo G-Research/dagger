@@ -135,9 +135,6 @@ type moduleCallRef struct {
 
 func parseCallerCalleeRefs(ctx context.Context, q *Query, callID *call.ID) (*moduleCallRef, *moduleCallRef) {
 	cm, _ := q.MainClientCallerMetadata(ctx)
-	if cm == nil {
-		return nil, nil
-	}
 	fc, _ := q.CurrentFunctionCall(ctx)
 	m, _ := q.CurrentModule(ctx)
 	sd, _ := q.CurrentServedDeps(ctx)
@@ -163,13 +160,8 @@ func parseCallerCalleeRefs(ctx context.Context, q *Query, callID *call.ID) (*mod
 		callerRef.functionName = fc.Name
 		callerRef.typeName = fc.ParentName
 		if ms.Git != nil {
-			str := ms.AsString()
-			idx := strings.LastIndex(str, "@")
-			if idx != -1 {
-				callerRef.ref, callerRef.version = str[:idx], str[idx+1:]
-			} else {
-				callerRef.ref = str
-			}
+			idx := strings.LastIndex(ms.AsString(), "@")
+			callerRef.ref, callerRef.version = ms.AsString()[:idx], ms.AsString()[idx+1:]
 		} else if gremote, ok := cm.Labels["dagger.io/git.remote"]; ok {
 			callerRef.ref = path.Join(gremote, ms.SourceRootSubpath)
 			if gref, ok := cm.Labels["dagger.io/git.ref"]; ok {
