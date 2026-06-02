@@ -1,6 +1,9 @@
 package sdk
 
-import "errors"
+import (
+	"errors"
+	"os"
+)
 
 // WorkspaceModule describes the SDK module a workspace should install for a
 // child module runtime.
@@ -28,6 +31,11 @@ func WorkspaceModuleForRuntime(runtime string) (WorkspaceModule, bool, error) {
 func workspaceModuleForBuiltinSDK(sdkName sdk, suffix string) (WorkspaceModule, bool) {
 	switch sdkName {
 	case sdkGo:
+		// When DAGGER_GO_SDK_OFFLINE is set (see goSDKOfflineEnv in go_sdk.go),
+		// do NOT install the Go SDK as a git workspace module, instead use the builtin.
+		if os.Getenv(goSDKOfflineEnv) != "" {
+			return WorkspaceModule{}, false
+		}
 		return WorkspaceModule{Name: "go-sdk", Source: "github.com/dagger/go-sdk"}, true
 	case sdkDang:
 		return WorkspaceModule{Name: "dang-sdk", Source: "github.com/dagger/dang-sdk"}, true
