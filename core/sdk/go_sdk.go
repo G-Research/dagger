@@ -27,8 +27,25 @@ const (
 	// Set to a commit on https://github.com/dagger/dagger-go-sdk if an unreleased
 	// change is needed in the generated library.
 	// Otherwise, update it to the latest known commit during release.
-	goSDKLibVersion = "1309520660f6a5b35ef97b4fbe151e32a06a8dc5" // v0.21.7
+	goSDKLibVersion = "336f7b79a6df9834f16d8b4d105e05b9b1a39981" // v0.21.6
+
+	// goSDKOfflineEnv, when set to any non-empty value on the engine container,
+	// omits --lib-version from codegen calls. That makes the Go codegen treat
+	// LibVersion as empty: it skips the `go get dagger.io/dagger@<commit>` step
+	// and drops the require from the generated go.mod, so module init/develop
+	// works without network access to dagger.io.
+	goSDKOfflineEnv = "DAGGER_GO_SDK_OFFLINE"
 )
+
+// goSDKLibVersionArgs returns the --lib-version arg pair for codegen, unless
+// the offline env var is set, in which case it returns nil so codegen treats
+// LibVersion as empty.
+func goSDKLibVersionArgs() dagql.ArrayInput[dagql.String] {
+	if os.Getenv(goSDKOfflineEnv) != "" {
+		return nil
+	}
+	return dagql.ArrayInput[dagql.String]{"--lib-version", dagql.String(goSDKLibVersion)}
+}
 
 var goSDKExecMDDigest = digest.FromString("go-sdk-with-exec-execmd")
 
@@ -393,15 +410,14 @@ func (sdk *goSDK) ModuleTypes(
 			Args: []dagql.NamedInput{
 				{
 					Name: "args",
-					Value: dagql.ArrayInput[dagql.String]{
+					Value: append(dagql.ArrayInput[dagql.String]{
 						"codegen",
 						"generate-typedefs",
 						"--module-source-path", dagql.String(filepath.Join(goSDKUserModContextDirPath, srcSubpath)),
 						"--module-name", dagql.String(modName),
 						"--introspection-json-path", goSDKIntrospectionJSONPath,
-						"--lib-version", dagql.String(goSDKLibVersion),
 						"--output", GoSDKModuleIDPath,
-					},
+					}, goSDKLibVersionArgs()...),
 				},
 				{
 					Name:  "experimentalPrivilegedNesting",
@@ -630,8 +646,8 @@ func (sdk *goSDK) baseWithCodegen(
 		"--module-source-path", dagql.String(filepath.Join(goSDKUserModContextDirPath, srcSubpath)),
 		"--module-name", dagql.String(modName),
 		"--introspection-json-path", goSDKIntrospectionJSONPath,
-		"--lib-version", dagql.String(goSDKLibVersion),
 	}
+	codegenArgs = append(codegenArgs, goSDKLibVersionArgs()...)
 	if !src.Self().ConfigExists {
 		codegenArgs = append(codegenArgs, "--is-init")
 	}
