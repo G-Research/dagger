@@ -14,6 +14,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          # Need full history + tags so we can resolve the latest tag.
+          # fetch-depth: 0 alone doesn't bring tags (checkout's refspec doesn't
+          # auto-follow them), so fetch-tags must be set explicitly.
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Resolve latest tag
+        run: |
+          # Tags live on the upstream repo, not this fork, so fetch them first.
+          git fetch --tags https://github.com/dagger/dagger.git
+          # Latest tag reachable from HEAD (highest version, including pre-releases).
+          SEMVER=$(git tag --merged HEAD | sort -V | tail -1)
+          if [ -z "$SEMVER" ]; then
+            echo "No tag reachable from HEAD" >&2
+            exit 1
+          fi
+          echo "Latest tag: ${SEMVER}"
+          echo "SEMVER=${SEMVER}" >> "$GITHUB_ENV"
 
       - name: Build dagger and engine
         run: |
@@ -32,9 +51,10 @@ jobs:
       - name: Tag and push engine images
         run: |
           REPO_LC=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_REF=ghcr.io/${REPO_LC}/engine:${SEMVER}-${GITHUB_SHA::7}
 
-          docker tag localhost/dagger-engine.dev:latest ghcr.io/${REPO_LC}/engine:latest
-          docker tag localhost/dagger-engine.dev:latest ghcr.io/${REPO_LC}/engine:${GITHUB_SHA}
+          docker tag localhost/dagger-engine.dev:latest ${IMAGE_REF}
+          docker push ${IMAGE_REF}
 
-          docker push ghcr.io/${REPO_LC}/engine:latest
-          docker push ghcr.io/${REPO_LC}/engine:${GITHUB_SHA}
+          echo "Pushed image, pull with:"
+          echo "  docker pull ${IMAGE_REF}"
