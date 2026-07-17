@@ -13545,6 +13545,9 @@ class Query(Root):
         cache_key: str | None = None,
         insecure_skip_host_key_check: bool | None = False,
         experimental_service_host: "Service | None" = None,
+        connect_timeout: int | None = 10,
+        server_alive_interval: int | None = 15,
+        server_alive_count_max: int | None = 3,
     ) -> "Volume":
         """Constructs an SSHFS volume.
 
@@ -13568,6 +13571,16 @@ class Query(Root):
         experimental_service_host:
             Service to use as the SSHFS network endpoint while verifying the
             original host key.
+        connect_timeout:
+            Timeout, in seconds, for establishing the SSH connection. Zero
+            uses the ssh default.
+        server_alive_interval:
+            Interval, in seconds, between SSH keepalive probes on an idle
+            connection. Zero disables keepalive probes.
+        server_alive_count_max:
+            Number of unanswered SSH keepalive probes tolerated before the
+            connection is torn down. Only meaningful with serverAliveInterval.
+            Zero uses the ssh default.
         """
         _args = [
             Arg("endpoint", endpoint),
@@ -13576,6 +13589,9 @@ class Query(Root):
             Arg("cacheKey", cache_key, None),
             Arg("insecureSkipHostKeyCheck", insecure_skip_host_key_check, False),
             Arg("experimentalServiceHost", experimental_service_host, None),
+            Arg("connectTimeout", connect_timeout, 10),
+            Arg("serverAliveInterval", server_alive_interval, 15),
+            Arg("serverAliveCountMax", server_alive_count_max, 3),
         ]
         _ctx = self._select("sshfsVolume", _args)
         return Volume(_ctx)

@@ -35,6 +35,74 @@ func (VolumeSuite) TestSSHFSVolumeMount(ctx context.Context, t *testctx.T) {
 	require.Equal(t, fixture.contents, out)
 }
 
+// sshfsChaosKiller drops the client's sshd connection exactly once, when the
+// client creates /data/KILL, then clears the marker. It only kills
+// per-connection children (classic "sshd: root@notty" or the newer split
+// "sshd-session"), never the -D listener, so recovery isn't confounded by the
+// whole daemon bouncing.
+const sshfsChaosKiller = `(
+	while true; do
+		if [ -e /data/KILL ]; then
+			rm -f /data/KILL
+			for p in /proc/[0-9]*; do
+				cmd=$(tr '\0' ' ' < "$p/cmdline" 2>/dev/null) || continue
+				case "$cmd" in *-D*) continue ;; esac
+				case "$cmd" in
+					*"sshd: "*|*"sshd-session"*) kill "${p##*/}" 2>/dev/null || true ;;
+				esac
+			done
+		fi
+		sleep 1
+	done
+) &`
+
+func (VolumeSuite) TestSSHFSVolumeReconnectsAfterDrop(ctx context.Context, t *testctx.T) {
+	c := connect(ctx, t)
+	fixture := newSSHFSVolumeFixtureWithChaos(ctx, t, c, "reconnect payload\n", sshfsChaosKiller)
+
+	// Read once to establish the connection, wait past a server-side kill, then
+	// retry reading. sshfs -o reconnect does NOT replay the in-flight op, so the
+	// read that discovers the dropped connection may itself EIO; a subsequent
+	// read must succeed once the mount recovers. Each read is bounded so a true
+	// hang is caught, not only EIO. Emit PASS/FAIL rather than exiting non-zero
+	// so the diagnostic below still runs.
+	out, err := c.Container().
+		From(alpineImage).
+		WithMountedVolume("/mnt", fixture.Volume(c)).
+		WithExec([]string{"sh", "-c", `
+result=FAIL
+timeout 5 cat /mnt/hello.txt >/dev/null 2>&1 || true
+# Trigger exactly one server-side disconnect, then let the mount recover.
+: > /mnt/KILL || true
+sleep 5
+i=0
+while [ "$i" -lt 20 ]; do
+	if timeout 5 cat /mnt/hello.txt >/dev/null 2>&1; then result=PASS; break; fi
+	i=$((i + 1))
+	sleep 2
+done
+echo "$result"
+`}).
+		Stdout(ctx)
+	require.NoError(t, err)
+
+	// Read the sshd server log through a fresh volume (a new sshfs process, so it
+	// works even if the first mount stayed wedged) to see reconnection attempts.
+	sshdLog, logErr := c.Container().
+		From(alpineImage).
+		WithEnvVariable("CACHEBUST", identity.NewID()).
+		WithMountedVolume("/mnt", fixture.Volume(c), dagger.ContainerWithMountedVolumeOpts{ReadOnly: true}).
+		WithExec([]string{"sh", "-c", "tail -n 60 /mnt/sshd.log 2>&1 || true"}).
+		Stdout(ctx)
+	if logErr != nil {
+		t.Logf("could not read sshd log: %v", logErr)
+	} else {
+		t.Logf("sshd server log (tail):\n%s", sshdLog)
+	}
+
+	require.Equal(t, "PASS", strings.TrimSpace(out), "mount did not recover after reconnect")
+}
+
 func (VolumeSuite) TestSSHFSVolumeRejectsWrongKnownHosts(ctx context.Context, t *testctx.T) {
 	c := connect(ctx, t)
 	fixture := newSSHFSVolumeFixture(ctx, t, c, "hello from sshfs\n")
@@ -155,6 +223,13 @@ func (f sshfsVolumeFixture) VolumeWithKnownHosts(c *dagger.Client, knownHosts *d
 }
 
 func newSSHFSVolumeFixture(ctx context.Context, t *testctx.T, c *dagger.Client, contents string) sshfsVolumeFixture {
+	return newSSHFSVolumeFixtureWithChaos(ctx, t, c, contents, "")
+}
+
+// newSSHFSVolumeFixtureWithChaos builds the sshd fixture, optionally injecting a
+// shell snippet (chaos) into the service startup script just before sshd is
+// exec'd. Existing callers pass "" and get the unmodified service.
+func newSSHFSVolumeFixtureWithChaos(ctx context.Context, t *testctx.T, c *dagger.Client, contents, chaos string) sshfsVolumeFixture {
 	t.Helper()
 
 	const (
@@ -181,8 +256,7 @@ ssh-keygen -t ed25519 -f /root/.ssh/id_ed25519 -N ""
 	userPubKey, err := keygen.File("/root/.ssh/id_ed25519.pub").Contents(ctx)
 	require.NoError(t, err)
 
-	setupScript := c.Directory().
-		WithNewFile("start.sh", `#!/bin/sh
+	startScript := `#!/bin/sh
 set -eu
 
 mkdir -p /run/sshd /root/.ssh
@@ -204,10 +278,15 @@ PubkeyAuthentication yes
 PermitRootLogin prohibit-password
 AuthorizedKeysFile .ssh/authorized_keys
 Subsystem sftp internal-sftp
+LogLevel VERBOSE
 EOF
 
-exec "$(which sshd)" -D -e -f /etc/ssh/sshd_config
-`, dagger.DirectoryWithNewFileOpts{Permissions: 0o755}).
+` + chaos + `
+
+exec "$(which sshd)" -D -E /data/sshd.log -f /etc/ssh/sshd_config
+`
+	setupScript := c.Directory().
+		WithNewFile("start.sh", startScript, dagger.DirectoryWithNewFileOpts{Permissions: 0o755}).
 		File("start.sh")
 
 	service := keygen.

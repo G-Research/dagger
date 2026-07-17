@@ -13445,6 +13445,18 @@ type SshfsVolumeOpts struct {
 	InsecureSkipHostKeyCheck bool
 	// Service to use as the SSHFS network endpoint while verifying the original host key.
 	ExperimentalServiceHost *Service
+	// Timeout, in seconds, for establishing the SSH connection. Zero uses the ssh default.
+	//
+	// Default: 10
+	ConnectTimeout int
+	// Interval, in seconds, between SSH keepalive probes on an idle connection. Zero disables keepalive probes.
+	//
+	// Default: 15
+	ServerAliveInterval int
+	// Number of unanswered SSH keepalive probes tolerated before the connection is torn down. Only meaningful with serverAliveInterval. Zero uses the ssh default.
+	//
+	// Default: 3
+	ServerAliveCountMax int
 }
 
 // Constructs an SSHFS volume.
@@ -13467,6 +13479,18 @@ func (r *Query) SshfsVolume(endpoint string, privateKey *Secret, opts ...SshfsVo
 		// `experimentalServiceHost` optional argument
 		if !querybuilder.IsZeroValue(opts[i].ExperimentalServiceHost) {
 			q = q.Arg("experimentalServiceHost", opts[i].ExperimentalServiceHost)
+		}
+		// `connectTimeout` optional argument
+		if !querybuilder.IsZeroValue(opts[i].ConnectTimeout) {
+			q = q.Arg("connectTimeout", opts[i].ConnectTimeout)
+		}
+		// `serverAliveInterval` optional argument
+		if !querybuilder.IsZeroValue(opts[i].ServerAliveInterval) {
+			q = q.Arg("serverAliveInterval", opts[i].ServerAliveInterval)
+		}
+		// `serverAliveCountMax` optional argument
+		if !querybuilder.IsZeroValue(opts[i].ServerAliveCountMax) {
+			q = q.Arg("serverAliveCountMax", opts[i].ServerAliveCountMax)
 		}
 	}
 	q = q.Arg("endpoint", endpoint)

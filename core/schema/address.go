@@ -612,6 +612,24 @@ func (s *addressSchema) volume(
 			Value: dagql.Boolean(true),
 		})
 	}
+	if parsed.HasConnectTimeout {
+		argsList = append(argsList, dagql.NamedInput{
+			Name:  "connectTimeout",
+			Value: dagql.Int(parsed.ConnectTimeout),
+		})
+	}
+	if parsed.HasServerAliveInterval {
+		argsList = append(argsList, dagql.NamedInput{
+			Name:  "serverAliveInterval",
+			Value: dagql.Int(parsed.ServerAliveInterval),
+		})
+	}
+	if parsed.HasServerAliveCountMax {
+		argsList = append(argsList, dagql.NamedInput{
+			Name:  "serverAliveCountMax",
+			Value: dagql.Int(parsed.ServerAliveCountMax),
+		})
+	}
 
 	err = srv.Select(ctx, srv.Root(), &inst, dagql.Selector{
 		Field: "sshfsVolume",
@@ -641,6 +659,12 @@ type sshfsVolumeAddress struct {
 	KnownHostsAddr           string
 	CacheKey                 string
 	InsecureSkipHostKeyCheck bool
+	ConnectTimeout           int
+	ServerAliveInterval      int
+	ServerAliveCountMax      int
+	HasConnectTimeout        bool
+	HasServerAliveInterval   bool
+	HasServerAliveCountMax   bool
 }
 
 func parseSSHFSVolumeAddress(addr string) (sshfsVolumeAddress, error) {
@@ -676,6 +700,16 @@ func parseSSHFSVolumeAddress(addr string) (sshfsVolumeAddress, error) {
 		}
 	}
 	queryVals.Del("insecureSkipHostKeyCheck")
+
+	if parsed.ConnectTimeout, parsed.HasConnectTimeout, err = parseSSHFSVolumeIntParam(queryVals, "connectTimeout"); err != nil {
+		return parsed, err
+	}
+	if parsed.ServerAliveInterval, parsed.HasServerAliveInterval, err = parseSSHFSVolumeIntParam(queryVals, "serverAliveInterval"); err != nil {
+		return parsed, err
+	}
+	if parsed.ServerAliveCountMax, parsed.HasServerAliveCountMax, err = parseSSHFSVolumeIntParam(queryVals, "serverAliveCountMax"); err != nil {
+		return parsed, err
+	}
 
 	if len(queryVals) > 0 {
 		return parsed, fmt.Errorf("unsupported volume address query parameter %q", firstQueryKey(queryVals))
@@ -739,6 +773,24 @@ func loadAddressSecret(ctx context.Context, srv *dagql.Server, addr string) (dag
 		return inst, err
 	}
 	return inst, nil
+}
+
+// parseSSHFSVolumeIntParam reads and removes a non-negative int query param.
+// The bool return reports whether the param was present.
+func parseSSHFSVolumeIntParam(vals url.Values, key string) (int, bool, error) {
+	raw := vals.Get(key)
+	vals.Del(key)
+	if raw == "" {
+		return 0, false, nil
+	}
+	n, err := strconv.Atoi(raw)
+	if err != nil {
+		return 0, false, fmt.Errorf("parse %s: %w", key, err)
+	}
+	if n < 0 {
+		return 0, false, fmt.Errorf("%s must not be negative", key)
+	}
+	return n, true, nil
 }
 
 func firstQueryKey(vals url.Values) string {

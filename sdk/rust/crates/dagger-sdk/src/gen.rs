@@ -13322,6 +13322,9 @@ pub struct QuerySshfsVolumeOpts<'a> {
     /// Optional cache equivalence key. If set, volumes with the same cacheKey may be considered equivalent for cache lookups, still subject to their resource dependencies.
     #[builder(setter(into, strip_option), default)]
     pub cache_key: Option<&'a str>,
+    /// Timeout, in seconds, for establishing the SSH connection. Zero uses the ssh default.
+    #[builder(setter(into, strip_option), default)]
+    pub connect_timeout: Option<isize>,
     /// Service to use as the SSHFS network endpoint while verifying the original host key.
     #[builder(setter(into, strip_option), default)]
     pub experimental_service_host: Option<Id>,
@@ -13331,6 +13334,12 @@ pub struct QuerySshfsVolumeOpts<'a> {
     /// known_hosts material used to verify the remote host key. Required unless insecureSkipHostKeyCheck is true.
     #[builder(setter(into, strip_option), default)]
     pub known_hosts: Option<Id>,
+    /// Number of unanswered SSH keepalive probes tolerated before the connection is torn down. Only meaningful with serverAliveInterval. Zero uses the ssh default.
+    #[builder(setter(into, strip_option), default)]
+    pub server_alive_count_max: Option<isize>,
+    /// Interval, in seconds, between SSH keepalive probes on an idle connection. Zero disables keepalive probes.
+    #[builder(setter(into, strip_option), default)]
+    pub server_alive_interval: Option<isize>,
 }
 impl IntoID<Id> for Query {
     fn into_id(
@@ -14084,6 +14093,15 @@ impl Query {
         }
         if let Some(experimental_service_host) = opts.experimental_service_host {
             query = query.arg("experimentalServiceHost", experimental_service_host);
+        }
+        if let Some(connect_timeout) = opts.connect_timeout {
+            query = query.arg("connectTimeout", connect_timeout);
+        }
+        if let Some(server_alive_interval) = opts.server_alive_interval {
+            query = query.arg("serverAliveInterval", server_alive_interval);
+        }
+        if let Some(server_alive_count_max) = opts.server_alive_count_max {
+            query = query.arg("serverAliveCountMax", server_alive_count_max);
         }
         Volume {
             proc: self.proc.clone(),

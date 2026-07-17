@@ -533,7 +533,7 @@
                     <a href="../Dagger/Volume.html"><abbr title="Dagger\Volume">Volume</abbr></a>
                 </div>
                 <div class="col-md-8">
-                    <a href="#method_sshfsVolume">sshfsVolume</a>(string $endpoint, <a href="../Dagger/Secret.html"><abbr title="Dagger\Secret">Secret</abbr></a> $privateKey, <abbr title="Dagger\Dagger\Secret">Secret</abbr>|null $knownHosts = null, string|null $cacheKey = null, bool|null $insecureSkipHostKeyCheck = false, <abbr title="Dagger\Dagger\Service">Service</abbr>|null $experimentalServiceHost = null)
+                    <a href="#method_sshfsVolume">sshfsVolume</a>(string $endpoint, <a href="../Dagger/Secret.html"><abbr title="Dagger\Secret">Secret</abbr></a> $privateKey, <abbr title="Dagger\Dagger\Secret">Secret</abbr>|null $knownHosts = null, string|null $cacheKey = null, bool|null $insecureSkipHostKeyCheck = false, <abbr title="Dagger\Dagger\Service">Service</abbr>|null $experimentalServiceHost = null, int|null $connectTimeout = 10, int|null $serverAliveInterval = 15, int|null $serverAliveCountMax = 3)
         
                                             <p><p>Constructs an SSHFS volume.</p></p>                </div>
                 <div class="col-md-2"></div>
@@ -2254,7 +2254,7 @@
                     <h3 id="method_sshfsVolume">
         <div class="location">at line 466</div>
         <code>                    <a href="../Dagger/Volume.html"><abbr title="Dagger\Volume">Volume</abbr></a>
-    <strong>sshfsVolume</strong>(string $endpoint, <a href="../Dagger/Secret.html"><abbr title="Dagger\Secret">Secret</abbr></a> $privateKey, <abbr title="Dagger\Dagger\Secret">Secret</abbr>|null $knownHosts = null, string|null $cacheKey = null, bool|null $insecureSkipHostKeyCheck = false, <abbr title="Dagger\Dagger\Service">Service</abbr>|null $experimentalServiceHost = null)
+    <strong>sshfsVolume</strong>(string $endpoint, <a href="../Dagger/Secret.html"><abbr title="Dagger\Secret">Secret</abbr></a> $privateKey, <abbr title="Dagger\Dagger\Secret">Secret</abbr>|null $knownHosts = null, string|null $cacheKey = null, bool|null $insecureSkipHostKeyCheck = false, <abbr title="Dagger\Dagger\Service">Service</abbr>|null $experimentalServiceHost = null, int|null $connectTimeout = 10, int|null $serverAliveInterval = 15, int|null $serverAliveCountMax = 3)
         </code>
     </h3>
     <div class="details">    
@@ -2298,6 +2298,21 @@
                 <td>$experimentalServiceHost</td>
                 <td></td>
             </tr>
+                    <tr>
+                <td>int|null</td>
+                <td>$connectTimeout</td>
+                <td></td>
+            </tr>
+                    <tr>
+                <td>int|null</td>
+                <td>$serverAliveInterval</td>
+                <td></td>
+            </tr>
+                    <tr>
+                <td>int|null</td>
+                <td>$serverAliveCountMax</td>
+                <td></td>
+            </tr>
             </table>
 
             
@@ -2319,7 +2334,7 @@
             </div>
                     <div class="method-item">
                     <h3 id="method_typeDef">
-        <div class="location">at line 495</div>
+        <div class="location">at line 507</div>
         <code>                    <a href="../Dagger/TypeDef.html"><abbr title="Dagger\TypeDef">TypeDef</abbr></a>
     <strong>typeDef</strong>()
         </code>
@@ -2351,7 +2366,7 @@
             </div>
                     <div class="method-item">
                     <h3 id="method_version">
-        <div class="location">at line 504</div>
+        <div class="location">at line 516</div>
         <code>                    string
     <strong>version</strong>()
         </code>
@@ -2383,7 +2398,7 @@
             </div>
                     <div class="method-item">
                     <h3 id="method_with">
-        <div class="location">at line 513</div>
+        <div class="location">at line 525</div>
         <code>                    <a href="../Dagger/Client.html"><abbr title="Dagger\Client">Client</abbr></a>
     <strong>with</strong>(<abbr title="Dagger\Dagger\Directory">Directory</abbr>|null $sdkSourceDir = null)
         </code>

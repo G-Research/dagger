@@ -32,6 +32,11 @@ type SSHFSVolumeConfig struct {
 	// endpoint when the connection host is later rewritten through a service.
 	HostKeyAlias string
 	ServiceHost  dagql.ObjectResult[*Service]
+	// ssh connection timeout and keepalive tuning, in seconds. Zero omits the
+	// corresponding ssh option and uses its default.
+	ConnectTimeout      int
+	ServerAliveInterval int
+	ServerAliveCountMax int
 }
 
 func (*Volume) Type() *ast.Type {
@@ -112,6 +117,9 @@ type persistedSSHFSVolumePayload struct {
 	InsecureSkipHostKeyCheck bool   `json:"insecureSkipHostKeyCheck,omitempty"`
 	HostKeyAlias             string `json:"hostKeyAlias,omitempty"`
 	ServiceHostResultID      uint64 `json:"serviceHostResultID,omitempty"`
+	ConnectTimeout           int    `json:"connectTimeout,omitempty"`
+	ServerAliveInterval      int    `json:"serverAliveInterval,omitempty"`
+	ServerAliveCountMax      int    `json:"serverAliveCountMax,omitempty"`
 }
 
 func (vol *Volume) EncodePersistedObject(ctx context.Context, cache dagql.PersistedObjectCache) (dagql.PersistedObjectEncoding, error) {
@@ -135,6 +143,9 @@ func (vol *Volume) EncodePersistedObject(ctx context.Context, cache dagql.Persis
 			PrivateKeyResultID:       privateKeyID,
 			InsecureSkipHostKeyCheck: vol.SSHFS.InsecureSkipHostKeyCheck,
 			HostKeyAlias:             vol.SSHFS.HostKeyAlias,
+			ConnectTimeout:           vol.SSHFS.ConnectTimeout,
+			ServerAliveInterval:      vol.SSHFS.ServerAliveInterval,
+			ServerAliveCountMax:      vol.SSHFS.ServerAliveCountMax,
 		}
 		if vol.SSHFS.KnownHosts.Self() != nil {
 			knownHostsID, err := encodePersistedObjectRef(cache, vol.SSHFS.KnownHosts, "volume known hosts")
@@ -193,6 +204,9 @@ func (*Volume) DecodePersistedObject(ctx context.Context, dag *dagql.Server, _ u
 			InsecureSkipHostKeyCheck: persisted.SSHFS.InsecureSkipHostKeyCheck,
 			HostKeyAlias:             persisted.SSHFS.HostKeyAlias,
 			ServiceHost:              serviceHost,
+			ConnectTimeout:           persisted.SSHFS.ConnectTimeout,
+			ServerAliveInterval:      persisted.SSHFS.ServerAliveInterval,
+			ServerAliveCountMax:      persisted.SSHFS.ServerAliveCountMax,
 		}
 	default:
 		return nil, fmt.Errorf("decode persisted volume: unsupported backend %q", persisted.Backend)

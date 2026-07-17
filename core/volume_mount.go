@@ -11,8 +11,10 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	ctrdmount "github.com/containerd/containerd/v2/core/mount"
+	"github.com/dagger/dagger/engine/slog"
 	bkcache "github.com/dagger/dagger/engine/snapshots"
 	"github.com/dagger/dagger/internal/buildkit/identity"
 	"github.com/moby/sys/userns"
@@ -129,6 +131,7 @@ func mountSSHFSVolume(ctx context.Context, readonly bool, cfg *SSHFSVolumeConfig
 		}
 	}
 
+	debug := sshfsDebugEnabled()
 	args := sshfsCommandArgs(source, mountDir, sshfsCommandConfig{
 		Port:                     port,
 		PrivateKeyPath:           keyPath,
@@ -137,19 +140,46 @@ func mountSSHFSVolume(ctx context.Context, readonly bool, cfg *SSHFSVolumeConfig
 		InsecureSkipHostKeyCheck: cfg.InsecureSkipHostKeyCheck,
 		AllowOther:               sshfsAllowOther(),
 		Readonly:                 readonly,
+		ConnectTimeout:           cfg.ConnectTimeout,
+		ServerAliveInterval:      cfg.ServerAliveInterval,
+		ServerAliveCountMax:      cfg.ServerAliveCountMax,
+		Debug:                    debug,
 	})
-	var stderr bytes.Buffer
 	cmd := osexec.CommandContext(ctx, "sshfs", args...)
-	cmd.Stderr = &stderr
-	if err = runProcessGroup(ctx, cmd); err != nil {
-		_ = unmountWithDetachFallback(mountDir)()
-		return nil, nil, fmt.Errorf("mount sshfs volume: %w%s", err, formatCommandStderr(stderr.Bytes()))
-	}
 
-	// sshfs must daemonize here. runProcessGroup waits for the parent sshfs
-	// process to report mount readiness, while the detached FUSE daemon owns the
-	// mount until the executor calls the release function below.
-	release = joinCleanup(unmountWithDetachFallback(mountDir), release)
+	if debug {
+		// In debug mode sshfs runs foreground and logs the entire session
+		// (including any mid-transfer reconnects) to a persistent file, and we
+		// poll for mount readiness rather than waiting for the process to exit.
+		logPath := filepath.Join(os.TempDir(), "dagger-sshfs-debug-"+identity.NewID()+".log")
+		logFile, ferr := os.Create(logPath)
+		if ferr != nil {
+			return nil, nil, fmt.Errorf("create sshfs debug log: %w", ferr)
+		}
+		release = joinCleanup(logFile.Close, release)
+		cmd.Stdout = logFile
+		cmd.Stderr = logFile
+		slog.SpanLogger(ctx, InstrumentationLibrary).Info("sshfs debug logging enabled",
+			"log_path", logPath, "mount", mountDir)
+
+		stop, serr := startSSHFSForeground(ctx, cmd, mountDir)
+		if serr != nil {
+			return nil, nil, fmt.Errorf("mount sshfs volume: %w (see debug log %s)", serr, logPath)
+		}
+		release = joinCleanup(stop, joinCleanup(unmountWithDetachFallback(mountDir), release))
+	} else {
+		var stderr bytes.Buffer
+		cmd.Stderr = &stderr
+		if err = runProcessGroup(ctx, cmd); err != nil {
+			_ = unmountWithDetachFallback(mountDir)()
+			return nil, nil, fmt.Errorf("mount sshfs volume: %w%s", err, formatCommandStderr(stderr.Bytes()))
+		}
+
+		// sshfs must daemonize here. runProcessGroup waits for the parent sshfs
+		// process to report mount readiness, while the detached FUSE daemon owns the
+		// mount until the executor calls the release function below.
+		release = joinCleanup(unmountWithDetachFallback(mountDir), release)
+	}
 	bindOptions := []string{"rbind"}
 	if readonly {
 		bindOptions = append(bindOptions, "ro")
@@ -169,6 +199,10 @@ type sshfsCommandConfig struct {
 	InsecureSkipHostKeyCheck bool
 	AllowOther               bool
 	Readonly                 bool
+	ConnectTimeout           int
+	ServerAliveInterval      int
+	ServerAliveCountMax      int
+	Debug                    bool
 }
 
 func sshfsAllowOther() bool {
@@ -219,10 +253,89 @@ func sshfsCommandArgs(source, mountDir string, cfg sshfsCommandConfig) []string 
 			args = append(args, "-o", "HostKeyAlias="+cfg.HostKeyAlias)
 		}
 	}
+	// Automatically re-establish the SSH connection if it drops mid-session so a
+	// stalled/dropped link recovers instead of wedging the FUSE mount.
+	args = append(args, "-o", "reconnect")
+	if cfg.ServerAliveInterval > 0 {
+		args = append(args, "-o", fmt.Sprintf("ServerAliveInterval=%d", cfg.ServerAliveInterval))
+	}
+	if cfg.ServerAliveCountMax > 0 {
+		args = append(args, "-o", fmt.Sprintf("ServerAliveCountMax=%d", cfg.ServerAliveCountMax))
+	}
+	if cfg.ConnectTimeout > 0 {
+		args = append(args, "-o", fmt.Sprintf("ConnectTimeout=%d", cfg.ConnectTimeout))
+	}
 	if cfg.Readonly {
 		args = append(args, "-o", "ro")
 	}
+	if cfg.Debug {
+		// Foreground (-f) so the FUSE daemon keeps its stderr open and logs the
+		// whole session; the caller must poll for mount readiness instead of
+		// waiting for the process to daemonize.
+		args = append(args, "-f", "-o", "sshfs_debug", "-o", "loglevel=DEBUG3")
+	}
 	return args
+}
+
+func sshfsDebugEnabled() bool {
+	v := os.Getenv("DAGGER_SSHFS_DEBUG")
+	return v == "1" || strings.EqualFold(v, "true")
+}
+
+// sshfsIsMounted reports whether mountDir is a mount point in the current mount
+// namespace. Used by the debug path, where sshfs runs foreground and never
+// daemonizes, so process exit cannot signal mount readiness.
+func sshfsIsMounted(mountDir string) bool {
+	data, err := os.ReadFile("/proc/self/mountinfo")
+	if err != nil {
+		return false
+	}
+	return bytes.Contains(data, []byte(" "+mountDir+" "))
+}
+
+// startSSHFSForeground starts a foreground (-f) sshfs process, waits for the
+// mount to become ready by polling, and returns a stop function that tears the
+// process (and thus the mount) down. Unlike the daemonizing path, the process
+// stays alive for the whole mount lifetime.
+func startSSHFSForeground(ctx context.Context, cmd *osexec.Cmd, mountDir string) (func() error, error) {
+	cmd.SysProcAttr = &unix.SysProcAttr{Setpgid: true, Pdeathsig: unix.SIGTERM}
+	if err := cmd.Start(); err != nil {
+		return nil, fmt.Errorf("start sshfs: %w", err)
+	}
+	waitCh := make(chan error, 1)
+	go func() { waitCh <- cmd.Wait() }()
+
+	kill := func(sig unix.Signal) { _ = unix.Kill(-cmd.Process.Pid, sig) }
+	timeout := time.After(2 * time.Minute)
+	for {
+		if sshfsIsMounted(mountDir) {
+			break
+		}
+		select {
+		case werr := <-waitCh:
+			return nil, fmt.Errorf("sshfs exited before mount ready: %w", werr)
+		case <-ctx.Done():
+			kill(unix.SIGKILL)
+			<-waitCh
+			return nil, ctx.Err()
+		case <-timeout:
+			kill(unix.SIGKILL)
+			<-waitCh
+			return nil, fmt.Errorf("sshfs mount readiness timed out")
+		case <-time.After(150 * time.Millisecond):
+		}
+	}
+
+	return func() error {
+		kill(unix.SIGTERM)
+		select {
+		case <-waitCh:
+		case <-time.After(10 * time.Second):
+			kill(unix.SIGKILL)
+			<-waitCh
+		}
+		return nil
+	}, nil
 }
 
 func sshfsMountSource(ctx context.Context, cfg *SSHFSVolumeConfig) (string, string, func() error, error) {

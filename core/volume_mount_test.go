@@ -30,6 +30,7 @@ func TestSSHFSCommandArgsSecure(t *testing.T) {
 		"-o", "StrictHostKeyChecking=yes",
 		"-o", "UserKnownHostsFile=/tmp/known_hosts",
 		"-o", "HostKeyAlias=[example.com]:2222",
+		"-o", "reconnect",
 		"-o", "ro",
 	}, args)
 }
@@ -54,7 +55,74 @@ func TestSSHFSCommandArgsInsecure(t *testing.T) {
 		"-o", "allow_other",
 		"-o", "StrictHostKeyChecking=no",
 		"-o", "UserKnownHostsFile=/dev/null",
+		"-o", "reconnect",
 	}, args)
+}
+
+func TestSSHFSCommandArgsTimeoutAndKeepalive(t *testing.T) {
+	t.Parallel()
+
+	args := sshfsCommandArgs("git@example.com:/srv/repo", "/tmp/mnt", sshfsCommandConfig{
+		PrivateKeyPath:           "/tmp/key",
+		InsecureSkipHostKeyCheck: true,
+		ConnectTimeout:           10,
+		ServerAliveInterval:      15,
+		ServerAliveCountMax:      3,
+	})
+
+	require.Subset(t, args, []string{
+		"-o", "ServerAliveInterval=15",
+		"-o", "ServerAliveCountMax=3",
+		"-o", "ConnectTimeout=10",
+	})
+}
+
+func TestSSHFSCommandArgsReconnect(t *testing.T) {
+	t.Parallel()
+
+	args := sshfsCommandArgs("git@example.com:/srv/repo", "/tmp/mnt", sshfsCommandConfig{
+		PrivateKeyPath:           "/tmp/key",
+		InsecureSkipHostKeyCheck: true,
+	})
+
+	require.Subset(t, args, []string{"-o", "reconnect"})
+}
+
+func TestSSHFSCommandArgsDebug(t *testing.T) {
+	t.Parallel()
+
+	args := sshfsCommandArgs("git@example.com:/srv/repo", "/tmp/mnt", sshfsCommandConfig{
+		PrivateKeyPath:           "/tmp/key",
+		InsecureSkipHostKeyCheck: true,
+		Debug:                    true,
+	})
+
+	require.Subset(t, args, []string{"-f", "-o", "sshfs_debug", "-o", "loglevel=DEBUG3"})
+}
+
+func TestSSHFSCommandArgsNoDebugByDefault(t *testing.T) {
+	t.Parallel()
+
+	args := sshfsCommandArgs("git@example.com:/srv/repo", "/tmp/mnt", sshfsCommandConfig{
+		PrivateKeyPath:           "/tmp/key",
+		InsecureSkipHostKeyCheck: true,
+	})
+
+	require.NotContains(t, args, "-f")
+	require.NotContains(t, args, "sshfs_debug")
+}
+
+func TestSSHFSCommandArgsOmitsZeroTimeoutAndKeepalive(t *testing.T) {
+	t.Parallel()
+
+	args := sshfsCommandArgs("git@example.com:/srv/repo", "/tmp/mnt", sshfsCommandConfig{
+		PrivateKeyPath:           "/tmp/key",
+		InsecureSkipHostKeyCheck: true,
+	})
+
+	require.NotContains(t, args, "ServerAliveInterval=0")
+	require.NotContains(t, args, "ServerAliveCountMax=0")
+	require.NotContains(t, args, "ConnectTimeout=0")
 }
 
 func TestSSHFSCommandArgsWithoutAllowOther(t *testing.T) {

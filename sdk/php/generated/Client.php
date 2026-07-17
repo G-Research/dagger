@@ -470,6 +470,9 @@ class Client extends Client\AbstractClient implements Client\IdAble, Node
         ?string $cacheKey = null,
         ?bool $insecureSkipHostKeyCheck = false,
         ?Service $experimentalServiceHost = null,
+        ?int $connectTimeout = 10,
+        ?int $serverAliveInterval = 15,
+        ?int $serverAliveCountMax = 3,
     ): Volume {
         $innerQueryBuilder = new \Dagger\Client\QueryBuilder('sshfsVolume');
         $innerQueryBuilder->setArgument('endpoint', $endpoint);
@@ -485,6 +488,15 @@ class Client extends Client\AbstractClient implements Client\IdAble, Node
         }
         if (null !== $experimentalServiceHost) {
         $innerQueryBuilder->setArgument('experimentalServiceHost', $experimentalServiceHost);
+        }
+        if (null !== $connectTimeout) {
+        $innerQueryBuilder->setArgument('connectTimeout', $connectTimeout);
+        }
+        if (null !== $serverAliveInterval) {
+        $innerQueryBuilder->setArgument('serverAliveInterval', $serverAliveInterval);
+        }
+        if (null !== $serverAliveCountMax) {
+        $innerQueryBuilder->setArgument('serverAliveCountMax', $serverAliveCountMax);
         }
         return new \Dagger\Volume($this->client, $this->queryBuilderChain->chain($innerQueryBuilder));
     }

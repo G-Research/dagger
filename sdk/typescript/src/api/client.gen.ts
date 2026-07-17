@@ -2279,6 +2279,21 @@ export type ClientSshfsVolumeOpts = {
    * Service to use as the SSHFS network endpoint while verifying the original host key.
    */
   experimentalServiceHost?: Service
+
+  /**
+   * Timeout, in seconds, for establishing the SSH connection. Zero uses the ssh default.
+   */
+  connectTimeout?: number
+
+  /**
+   * Interval, in seconds, between SSH keepalive probes on an idle connection. Zero disables keepalive probes.
+   */
+  serverAliveInterval?: number
+
+  /**
+   * Number of unanswered SSH keepalive probes tolerated before the connection is torn down. Only meaningful with serverAliveInterval. Zero uses the ssh default.
+   */
+  serverAliveCountMax?: number
 }
 
 /**
@@ -13032,6 +13047,9 @@ export class Client extends BaseClient {
    * @param opts.cacheKey Optional cache equivalence key. If set, volumes with the same cacheKey may be considered equivalent for cache lookups, still subject to their resource dependencies.
    * @param opts.insecureSkipHostKeyCheck Disable SSH host key verification. This is insecure and must be explicitly opted into.
    * @param opts.experimentalServiceHost Service to use as the SSHFS network endpoint while verifying the original host key.
+   * @param opts.connectTimeout Timeout, in seconds, for establishing the SSH connection. Zero uses the ssh default.
+   * @param opts.serverAliveInterval Interval, in seconds, between SSH keepalive probes on an idle connection. Zero disables keepalive probes.
+   * @param opts.serverAliveCountMax Number of unanswered SSH keepalive probes tolerated before the connection is torn down. Only meaningful with serverAliveInterval. Zero uses the ssh default.
    */
   sshfsVolume = (
     endpoint: string,

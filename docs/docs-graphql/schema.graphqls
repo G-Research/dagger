@@ -5334,6 +5334,23 @@ type Query implements Node {
     Service to use as the SSHFS network endpoint while verifying the original host key.
     """
     experimentalServiceHost: ID @expectedType(name: "Service")
+
+    """
+    Timeout, in seconds, for establishing the SSH connection. Zero uses the ssh default.
+    """
+    connectTimeout: Int = 10
+
+    """
+    Interval, in seconds, between SSH keepalive probes on an idle connection. Zero disables keepalive probes.
+    """
+    serverAliveInterval: Int = 15
+
+    """
+    Number of unanswered SSH keepalive probes tolerated before the connection is
+    torn down. Only meaningful with serverAliveInterval. Zero uses the ssh
+    default.
+    """
+    serverAliveCountMax: Int = 3
   ): Volume!
 
   """Create a new TypeDef."""

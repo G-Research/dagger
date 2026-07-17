@@ -26,6 +26,9 @@ func (s *volumeSchema) Install(srv *dagql.Server) {
 				dagql.Arg("cacheKey").Doc("Optional cache equivalence key. If set, volumes with the same cacheKey may be considered equivalent for cache lookups, still subject to their resource dependencies."),
 				dagql.Arg("insecureSkipHostKeyCheck").Doc("Disable SSH host key verification. This is insecure and must be explicitly opted into."),
 				dagql.Arg("experimentalServiceHost").Doc("Service to use as the SSHFS network endpoint while verifying the original host key."),
+				dagql.Arg("connectTimeout").Doc("Timeout, in seconds, for establishing the SSH connection. Zero uses the ssh default."),
+				dagql.Arg("serverAliveInterval").Doc("Interval, in seconds, between SSH keepalive probes on an idle connection. Zero disables keepalive probes."),
+				dagql.Arg("serverAliveCountMax").Doc("Number of unanswered SSH keepalive probes tolerated before the connection is torn down. Only meaningful with serverAliveInterval. Zero uses the ssh default."),
 			),
 	}.Install(srv)
 
@@ -40,6 +43,9 @@ type sshfsVolumeArgs struct {
 	CacheKey                 dagql.Optional[dagql.String]
 	InsecureSkipHostKeyCheck bool `default:"false"`
 	ExperimentalServiceHost  dagql.Optional[core.ServiceID]
+	ConnectTimeout           int `default:"10"`
+	ServerAliveInterval      int `default:"15"`
+	ServerAliveCountMax      int `default:"3"`
 }
 
 func (s *volumeSchema) sshfsVolume(ctx context.Context, parent dagql.ObjectResult[*core.Query], args sshfsVolumeArgs) (dagql.ObjectResult[*core.Volume], error) {
@@ -52,6 +58,9 @@ func (s *volumeSchema) sshfsVolume(ctx context.Context, parent dagql.ObjectResul
 	}
 	if !args.KnownHosts.Valid && !args.InsecureSkipHostKeyCheck {
 		return dagql.ObjectResult[*core.Volume]{}, fmt.Errorf("knownHosts is required unless insecureSkipHostKeyCheck is true")
+	}
+	if args.ConnectTimeout < 0 || args.ServerAliveInterval < 0 || args.ServerAliveCountMax < 0 {
+		return dagql.ObjectResult[*core.Volume]{}, fmt.Errorf("connectTimeout, serverAliveInterval and serverAliveCountMax must not be negative")
 	}
 
 	srv, err := core.CurrentDagqlServer(ctx)
@@ -86,6 +95,9 @@ func (s *volumeSchema) sshfsVolume(ctx context.Context, parent dagql.ObjectResul
 			InsecureSkipHostKeyCheck: args.InsecureSkipHostKeyCheck,
 			HostKeyAlias:             hostKeyAlias,
 			ServiceHost:              serviceHost,
+			ConnectTimeout:           args.ConnectTimeout,
+			ServerAliveInterval:      args.ServerAliveInterval,
+			ServerAliveCountMax:      args.ServerAliveCountMax,
 		},
 	}
 	inst, err := dagql.NewObjectResultForCurrentCall(ctx, srv, vol)
