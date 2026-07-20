@@ -144,6 +144,7 @@ func mountSSHFSVolume(ctx context.Context, readonly bool, cfg *SSHFSVolumeConfig
 		ServerAliveInterval:      cfg.ServerAliveInterval,
 		ServerAliveCountMax:      cfg.ServerAliveCountMax,
 		Debug:                    debug,
+		Reconnect:                cfg.Reconnect,
 	})
 	cmd := osexec.CommandContext(ctx, "sshfs", args...)
 
@@ -170,15 +171,15 @@ func mountSSHFSVolume(ctx context.Context, readonly bool, cfg *SSHFSVolumeConfig
 	} else {
 		var stderr bytes.Buffer
 		cmd.Stderr = &stderr
-		if err = runProcessGroup(ctx, cmd); err != nil {
+		stop, serr := startSSHFSForeground(ctx, cmd, mountDir)
+		if serr != nil {
 			_ = unmountWithDetachFallback(mountDir)()
-			return nil, nil, fmt.Errorf("mount sshfs volume: %w%s", err, formatCommandStderr(stderr.Bytes()))
+			return nil, nil, fmt.Errorf("mount sshfs volume: %w%s", serr, formatCommandStderr(stderr.Bytes()))
 		}
-
-		// sshfs must daemonize here. runProcessGroup waits for the parent sshfs
-		// process to report mount readiness, while the detached FUSE daemon owns the
-		// mount until the executor calls the release function below.
-		release = joinCleanup(unmountWithDetachFallback(mountDir), release)
+		// The foreground process is the FUSE daemon; release tears it down
+		// (killing the process group so a blocked in-flight I/O returns EIO
+		// rather than wedging forever) before unmounting.
+		release = joinCleanup(stop, joinCleanup(unmountWithDetachFallback(mountDir), release))
 	}
 	bindOptions := []string{"rbind"}
 	if readonly {
@@ -203,6 +204,10 @@ type sshfsCommandConfig struct {
 	ServerAliveInterval      int
 	ServerAliveCountMax      int
 	Debug                    bool
+	// Reconnect retries the SSHFS transport in the background if the link
+	// drops. Off by default so a dropped link fails the in-flight I/O (EIO)
+	// quickly instead of retrying forever.
+	Reconnect bool
 }
 
 func sshfsAllowOther() bool {
@@ -254,8 +259,13 @@ func sshfsCommandArgs(source, mountDir string, cfg sshfsCommandConfig) []string 
 		}
 	}
 	// Automatically re-establish the SSH connection if it drops mid-session so a
-	// stalled/dropped link recovers instead of wedging the FUSE mount.
-	args = append(args, "-o", "reconnect")
+	// stalled/dropped link recovers instead of wedging the FUSE mount. Off by
+	// default: a dropped link then surfaces EIO to the caller and fails the
+	// exec quickly instead of retrying forever (which is what wedges large
+	// transfers). Opt in via the reconnect volume option.
+	if cfg.Reconnect {
+		args = append(args, "-o", "reconnect")
+	}
 	if cfg.ServerAliveInterval > 0 {
 		args = append(args, "-o", fmt.Sprintf("ServerAliveInterval=%d", cfg.ServerAliveInterval))
 	}
@@ -268,11 +278,15 @@ func sshfsCommandArgs(source, mountDir string, cfg sshfsCommandConfig) []string 
 	if cfg.Readonly {
 		args = append(args, "-o", "ro")
 	}
+	// Run foreground (-f) so the FUSE daemon is the managed process (not a
+	// detached child). This keeps it in a process group we control, so a
+	// stalled/dropped transport can be killed (returning EIO to the in-flight
+	// FUSE op) instead of wedging the exec forever. The caller polls for mount
+	// readiness instead of waiting for the process to daemonize.
+	args = append(args, "-f")
 	if cfg.Debug {
-		// Foreground (-f) so the FUSE daemon keeps its stderr open and logs the
-		// whole session; the caller must poll for mount readiness instead of
-		// waiting for the process to daemonize.
-		args = append(args, "-f", "-o", "sshfs_debug", "-o", "loglevel=DEBUG3")
+		// Keep the daemon's stderr open and log the whole session for debugging.
+		args = append(args, "-o", "sshfs_debug", "-o", "loglevel=DEBUG3")
 	}
 	return args
 }

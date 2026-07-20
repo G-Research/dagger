@@ -29,6 +29,7 @@ func (s *volumeSchema) Install(srv *dagql.Server) {
 				dagql.Arg("connectTimeout").Doc("Timeout, in seconds, for establishing the SSH connection. Zero uses the ssh default."),
 				dagql.Arg("serverAliveInterval").Doc("Interval, in seconds, between SSH keepalive probes on an idle connection. Zero disables keepalive probes."),
 				dagql.Arg("serverAliveCountMax").Doc("Number of unanswered SSH keepalive probes tolerated before the connection is torn down. Only meaningful with serverAliveInterval. Zero uses the ssh default."),
+				dagql.Arg("reconnect").Doc("Attempt to reconnect the SSHFS transport if the link drops mid-transfer instead of failing the in-flight I/O. Disabled by default: with it off, a dropped link fails fast (EIO) rather than retrying forever and wedging a large transfer."),
 			),
 	}.Install(srv)
 
@@ -43,9 +44,10 @@ type sshfsVolumeArgs struct {
 	CacheKey                 dagql.Optional[dagql.String]
 	InsecureSkipHostKeyCheck bool `default:"false"`
 	ExperimentalServiceHost  dagql.Optional[core.ServiceID]
-	ConnectTimeout           int `default:"10"`
-	ServerAliveInterval      int `default:"15"`
-	ServerAliveCountMax      int `default:"3"`
+	ConnectTimeout           int  `default:"10"`
+	ServerAliveInterval      int  `default:"15"`
+	ServerAliveCountMax      int  `default:"3"`
+	Reconnect                bool `default:"false"`
 }
 
 func (s *volumeSchema) sshfsVolume(ctx context.Context, parent dagql.ObjectResult[*core.Query], args sshfsVolumeArgs) (dagql.ObjectResult[*core.Volume], error) {
@@ -98,6 +100,7 @@ func (s *volumeSchema) sshfsVolume(ctx context.Context, parent dagql.ObjectResul
 			ConnectTimeout:           args.ConnectTimeout,
 			ServerAliveInterval:      args.ServerAliveInterval,
 			ServerAliveCountMax:      args.ServerAliveCountMax,
+			Reconnect:                args.Reconnect,
 		},
 	}
 	inst, err := dagql.NewObjectResultForCurrentCall(ctx, srv, vol)

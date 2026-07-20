@@ -638,6 +638,7 @@ defmodule Dagger.Client do
       |> QB.maybe_put_arg("connectTimeout", optional_args[:connect_timeout])
       |> QB.maybe_put_arg("serverAliveInterval", optional_args[:server_alive_interval])
       |> QB.maybe_put_arg("serverAliveCountMax", optional_args[:server_alive_count_max])
+      |> QB.maybe_put_arg("reconnect", optional_args[:reconnect])
 
     %Dagger.Volume{
       query_builder: query_builder,

@@ -37,6 +37,11 @@ type SSHFSVolumeConfig struct {
 	ConnectTimeout      int
 	ServerAliveInterval int
 	ServerAliveCountMax int
+	// Reconnect enables sshfs -o reconnect so a dropped transport is retried in
+	// the background. Off by default: with it disabled, a dropped link fails the
+	// in-flight I/O (EIO) quickly instead of retrying forever and wedging the
+	// exec (and the engine's exec loop) on a large transfer.
+	Reconnect bool
 }
 
 func (*Volume) Type() *ast.Type {
@@ -120,6 +125,7 @@ type persistedSSHFSVolumePayload struct {
 	ConnectTimeout           int    `json:"connectTimeout,omitempty"`
 	ServerAliveInterval      int    `json:"serverAliveInterval,omitempty"`
 	ServerAliveCountMax      int    `json:"serverAliveCountMax,omitempty"`
+	Reconnect                bool   `json:"reconnect,omitempty"`
 }
 
 func (vol *Volume) EncodePersistedObject(ctx context.Context, cache dagql.PersistedObjectCache) (dagql.PersistedObjectEncoding, error) {
@@ -146,6 +152,7 @@ func (vol *Volume) EncodePersistedObject(ctx context.Context, cache dagql.Persis
 			ConnectTimeout:           vol.SSHFS.ConnectTimeout,
 			ServerAliveInterval:      vol.SSHFS.ServerAliveInterval,
 			ServerAliveCountMax:      vol.SSHFS.ServerAliveCountMax,
+			Reconnect:                vol.SSHFS.Reconnect,
 		}
 		if vol.SSHFS.KnownHosts.Self() != nil {
 			knownHostsID, err := encodePersistedObjectRef(cache, vol.SSHFS.KnownHosts, "volume known hosts")
@@ -207,6 +214,7 @@ func (*Volume) DecodePersistedObject(ctx context.Context, dag *dagql.Server, _ u
 			ConnectTimeout:           persisted.SSHFS.ConnectTimeout,
 			ServerAliveInterval:      persisted.SSHFS.ServerAliveInterval,
 			ServerAliveCountMax:      persisted.SSHFS.ServerAliveCountMax,
+			Reconnect:                persisted.SSHFS.Reconnect,
 		}
 	default:
 		return nil, fmt.Errorf("decode persisted volume: unsupported backend %q", persisted.Backend)

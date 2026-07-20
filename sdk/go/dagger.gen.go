@@ -13457,6 +13457,8 @@ type SshfsVolumeOpts struct {
 	//
 	// Default: 3
 	ServerAliveCountMax int
+	// Attempt to reconnect the SSHFS transport if the link drops mid-transfer instead of failing the in-flight I/O. Disabled by default: with it off, a dropped link fails fast (EIO) rather than retrying forever and wedging a large transfer.
+	Reconnect bool
 }
 
 // Constructs an SSHFS volume.
@@ -13491,6 +13493,10 @@ func (r *Query) SshfsVolume(endpoint string, privateKey *Secret, opts ...SshfsVo
 		// `serverAliveCountMax` optional argument
 		if !querybuilder.IsZeroValue(opts[i].ServerAliveCountMax) {
 			q = q.Arg("serverAliveCountMax", opts[i].ServerAliveCountMax)
+		}
+		// `reconnect` optional argument
+		if !querybuilder.IsZeroValue(opts[i].Reconnect) {
+			q = q.Arg("reconnect", opts[i].Reconnect)
 		}
 	}
 	q = q.Arg("endpoint", endpoint)

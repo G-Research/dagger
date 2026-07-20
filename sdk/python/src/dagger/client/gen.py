@@ -13548,6 +13548,7 @@ class Query(Root):
         connect_timeout: int | None = 10,
         server_alive_interval: int | None = 15,
         server_alive_count_max: int | None = 3,
+        reconnect: bool | None = False,
     ) -> "Volume":
         """Constructs an SSHFS volume.
 
@@ -13581,6 +13582,11 @@ class Query(Root):
             Number of unanswered SSH keepalive probes tolerated before the
             connection is torn down. Only meaningful with serverAliveInterval.
             Zero uses the ssh default.
+        reconnect:
+            Attempt to reconnect the SSHFS transport if the link drops
+            mid-transfer instead of failing the in-flight I/O. Disabled by
+            default: with it off, a dropped link fails fast (EIO) rather than
+            retrying forever and wedging a large transfer.
         """
         _args = [
             Arg("endpoint", endpoint),
@@ -13592,6 +13598,7 @@ class Query(Root):
             Arg("connectTimeout", connect_timeout, 10),
             Arg("serverAliveInterval", server_alive_interval, 15),
             Arg("serverAliveCountMax", server_alive_count_max, 3),
+            Arg("reconnect", reconnect, False),
         ]
         _ctx = self._select("sshfsVolume", _args)
         return Volume(_ctx)

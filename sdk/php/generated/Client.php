@@ -498,6 +498,9 @@ class Client extends Client\AbstractClient implements Client\IdAble, Node
         if (null !== $serverAliveCountMax) {
         $innerQueryBuilder->setArgument('serverAliveCountMax', $serverAliveCountMax);
         }
+        if (null !== $reconnect) {
+        $innerQueryBuilder->setArgument('reconnect', $reconnect);
+        }
         return new \Dagger\Volume($this->client, $this->queryBuilderChain->chain($innerQueryBuilder));
     }
 

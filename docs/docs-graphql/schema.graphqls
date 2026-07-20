@@ -5351,6 +5351,11 @@ type Query implements Node {
     default.
     """
     serverAliveCountMax: Int = 3
+
+    """
+    Attempt to reconnect the SSHFS transport if the link drops mid-transfer instead of failing the in-flight I/O. Disabled by default: with it off, a dropped link fails fast (EIO) rather than retrying forever and wedging a large transfer.
+    """
+    reconnect: Boolean = false
   ): Volume!
 
   """Create a new TypeDef."""

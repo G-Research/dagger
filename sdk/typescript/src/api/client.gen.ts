@@ -2294,6 +2294,11 @@ export type ClientSshfsVolumeOpts = {
    * Number of unanswered SSH keepalive probes tolerated before the connection is torn down. Only meaningful with serverAliveInterval. Zero uses the ssh default.
    */
   serverAliveCountMax?: number
+
+  /**
+   * Attempt to reconnect the SSHFS transport if the link drops mid-transfer instead of failing the in-flight I/O. Disabled by default: with it off, a dropped link fails fast (EIO) rather than retrying forever and wedging a large transfer.
+   */
+  reconnect?: boolean
 }
 
 /**
@@ -13050,6 +13055,7 @@ export class Client extends BaseClient {
    * @param opts.connectTimeout Timeout, in seconds, for establishing the SSH connection. Zero uses the ssh default.
    * @param opts.serverAliveInterval Interval, in seconds, between SSH keepalive probes on an idle connection. Zero disables keepalive probes.
    * @param opts.serverAliveCountMax Number of unanswered SSH keepalive probes tolerated before the connection is torn down. Only meaningful with serverAliveInterval. Zero uses the ssh default.
+   * @param opts.reconnect Attempt to reconnect the SSHFS transport if the link drops mid-transfer instead of failing the in-flight I/O. Disabled by default: with it off, a dropped link fails fast (EIO) rather than retrying forever and wedging a large transfer.
    */
   sshfsVolume = (
     endpoint: string,

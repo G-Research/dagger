@@ -13337,6 +13337,9 @@ pub struct QuerySshfsVolumeOpts<'a> {
     /// Number of unanswered SSH keepalive probes tolerated before the connection is torn down. Only meaningful with serverAliveInterval. Zero uses the ssh default.
     #[builder(setter(into, strip_option), default)]
     pub server_alive_count_max: Option<isize>,
+    /// Attempt to reconnect the SSHFS transport if the link drops mid-transfer instead of failing the in-flight I/O. Disabled by default: with it off, a dropped link fails fast (EIO) rather than retrying forever and wedging a large transfer.
+    #[builder(setter(into, strip_option), default)]
+    pub reconnect: Option<bool>,
     /// Interval, in seconds, between SSH keepalive probes on an idle connection. Zero disables keepalive probes.
     #[builder(setter(into, strip_option), default)]
     pub server_alive_interval: Option<isize>,
@@ -14102,6 +14105,9 @@ impl Query {
         }
         if let Some(server_alive_count_max) = opts.server_alive_count_max {
             query = query.arg("serverAliveCountMax", server_alive_count_max);
+        }
+        if let Some(reconnect) = opts.reconnect {
+            query = query.arg("reconnect", reconnect);
         }
         Volume {
             proc: self.proc.clone(),

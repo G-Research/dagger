@@ -30,8 +30,8 @@ func TestSSHFSCommandArgsSecure(t *testing.T) {
 		"-o", "StrictHostKeyChecking=yes",
 		"-o", "UserKnownHostsFile=/tmp/known_hosts",
 		"-o", "HostKeyAlias=[example.com]:2222",
-		"-o", "reconnect",
 		"-o", "ro",
+		"-f",
 	}, args)
 }
 
@@ -55,7 +55,7 @@ func TestSSHFSCommandArgsInsecure(t *testing.T) {
 		"-o", "allow_other",
 		"-o", "StrictHostKeyChecking=no",
 		"-o", "UserKnownHostsFile=/dev/null",
-		"-o", "reconnect",
+		"-f",
 	}, args)
 }
 
@@ -83,6 +83,7 @@ func TestSSHFSCommandArgsReconnect(t *testing.T) {
 	args := sshfsCommandArgs("git@example.com:/srv/repo", "/tmp/mnt", sshfsCommandConfig{
 		PrivateKeyPath:           "/tmp/key",
 		InsecureSkipHostKeyCheck: true,
+		Reconnect:                true,
 	})
 
 	require.Subset(t, args, []string{"-o", "reconnect"})
@@ -108,7 +109,7 @@ func TestSSHFSCommandArgsNoDebugByDefault(t *testing.T) {
 		InsecureSkipHostKeyCheck: true,
 	})
 
-	require.NotContains(t, args, "-f")
+	require.Contains(t, args, "-f")
 	require.NotContains(t, args, "sshfs_debug")
 }
 
